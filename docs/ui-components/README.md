@@ -4,6 +4,8 @@ The component library is documented using **Atomic Design** principles. Componen
 
 This documentation is the spec that will eventually feed the production Blazor component library and Storybook.
 
+> 📁 **`_templates/`** holds reference-only scaffolding. Nothing in `_templates/` is ever treated as confirmed design. Real components live under the appropriate `atoms/`, `molecules/`, `organisms/` or `pages/` subfolder.
+
 ---
 
 ## Folder layout
@@ -13,31 +15,18 @@ This documentation is the spec that will eventually feed the production Blazor c
 /molecules   Forms, cards, search bars — small groups of atoms working together
 /organisms   Tables, dashboards, navigation, modals — distinct sections of a UI
 /pages       Full-screen layouts assembling organisms
+/_templates  Reference example(s) — never used as real spec
 ```
 
 ---
 
-## Template per component
+## Process for adding a real component
 
-Each component lives in its own Markdown file (`button.md`, `lead-form.md`, etc.) and contains:
-
-- **Purpose** — what this component is for and when to use it.
-- **Variants** — primary/secondary/destructive, sizes (sm/md/lg), etc.
-- **States** — default, hover, focus, active, disabled, loading, error, empty.
-- **Props / inputs** — the parameters that drive variants and states.
-- **Accessibility** — keyboard support, ARIA roles, contrast, screen-reader behaviour.
-- **Example usage** — link to journeys that use this component.
-- **Open questions**
-
-See `atoms/button.md` for a fully worked example.
-
----
-
-## Component index
-
-| Type | Component | File | Status |
-|---|---|---|---|
-| Atom | Button | [`atoms/button.md`](atoms/button.md) | Draft (worked example) |
+1. **Identify the component during a journey or design review.** Reference the source meeting note.
+2. **Pick the right level** (atom / molecule / organism / page).
+3. **Create a file** in that subfolder, `kebab-case.md`.
+4. **Use [`_templates/atom-example-button.md`](_templates/atom-example-button.md) as the shape reference** — never copy its content verbatim.
+5. **Fill in:** purpose · variants · states · props · accessibility · example usage in journeys · open questions.
 
 ---
 
@@ -46,3 +35,11 @@ See `atoms/button.md` for a fully worked example.
 - Naming: `kebab-case.md` matching the component name.
 - Reference Microsoft Fluent UI / Fluent 2 patterns where sensible — we're in the Microsoft ecosystem and users will recognise these.
 - Note any accessibility requirement that comes from being a regulated/reporting context.
+
+---
+
+## Component index
+
+| Type | Component | File | Status |
+|---|---|---|---|
+| _No real components yet — added as journeys uncover them._ | | | |

@@ -1,8 +1,8 @@
 {
   "$schema": "https://json-schema.org/draft/2020-12/schema",
-  "$id": "https://jewelgroup.co.uk/schemas/lead.schema.json",
-  "title": "Lead",
-  "description": "A potential customer enquiry, before qualification. Referenced from docs/user-journeys/01-onboarding-sales-lead.md. Worked example — confirm fields and constraints during the on-site role-play session.",
+  "$id": "https://jewelgroup.co.uk/schemas/_example/lead.schema.json",
+  "title": "Lead (EXAMPLE — not project content)",
+  "description": "REFERENCE EXAMPLE — not project content. Generic illustration of a JSON Schema entity definition. Fields, constraints and enums here have NOT been confirmed with Jewel Enterprises. Use only as scaffolding when defining real entities.",
   "type": "object",
   "required": [
     "id",
@@ -52,8 +52,7 @@
     "score": {
       "type": "integer",
       "minimum": 0,
-      "maximum": 100,
-      "description": "Auto-calculated from qualification fields. Rule set to be confirmed."
+      "maximum": 100
     },
     "qualification": {
       "type": "object",
@@ -77,12 +76,10 @@
       "maxLength": 2000
     },
     "ownerId": {
-      "type": "string",
-      "description": "User ID of the Sales Rep who owns this lead."
+      "type": "string"
     },
     "customerId": {
-      "type": ["string", "null"],
-      "description": "Populated once the lead converts to an existing Customer."
+      "type": ["string", "null"]
     },
     "createdAt": {
       "type": "string",

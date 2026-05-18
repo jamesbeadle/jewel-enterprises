@@ -1,9 +1,11 @@
-%% Workflow: Lead to Won Deal — cross-actor view
-%% Companion to docs/user-journeys/01-onboarding-sales-lead.md
-%% Worked example — replace with real process during discovery.
+%% =====================================================
+%% REFERENCE EXAMPLE — not project content.
+%% Generic cross-actor flow for illustration only.
+%% Not a confirmed Jewel Enterprises process.
+%% =====================================================
 
 flowchart TD
-    A([Lead created]) --> B{Existing\ncustomer match?}
+    A([Lead created]) --> B{Existing customer match?}
     B -- Yes --> M[Merge flow]
     B -- No --> C[Sales Rep qualifies lead]
     M --> C
@@ -12,7 +14,7 @@ flowchart TD
     D -- Yes --> E[Create Opportunity]
     E --> F[Sales Manager review]
     F --> G[Draft quote]
-    G --> H{Quote above\napproval threshold?}
+    G --> H{Quote above approval threshold?}
     H -- Yes --> I[Business Owner approves]
     H -- No --> J[Send to customer]
     I --> J
@@ -22,7 +24,5 @@ flowchart TD
     O --> P[Notify Finance for billing]
     P --> Q([Handover to Project Kickoff])
 
-    classDef actor fill:#eef,stroke:#446,stroke-width:1px;
-    classDef system fill:#efe,stroke:#464,stroke-width:1px;
     classDef terminal fill:#ffe,stroke:#664,stroke-width:1px;
     class A,L,Q terminal;

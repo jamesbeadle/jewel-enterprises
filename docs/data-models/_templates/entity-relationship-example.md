@@ -1,6 +1,9 @@
-# Entity Relationship Diagram
+> ⚠️ **REFERENCE EXAMPLE — not project content.**
+> Generic ERD for illustration only. Entities, attributes and relationships here have **not** been confirmed with Jewel Enterprises. Use as scaffolding when drawing the real ERD.
 
-Add entities and relationships to the diagram below as they are confirmed during scoping.
+---
+
+# Entity Relationship Diagram _(example)_
 
 ```mermaid
 erDiagram
@@ -31,4 +34,4 @@ erDiagram
     }
 ```
 
-> This is a **starting sketch** — refine as entities are confirmed. Treat each relationship as a question for the next role-play session.
+When real entities are confirmed, create `docs/data-models/entity-relationship.md` (without the `_templates/` prefix) and build the diagram from confirmed entities only.

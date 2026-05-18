@@ -1,10 +1,15 @@
-# Personas
-
-One card per user role. A persona is "Confirmed" once the named person in that role has reviewed and agreed it matches their day-to-day.
+> ⚠️ **REFERENCE TEMPLATE — not project content.**
+> Scaffolding for capturing persona cards. The P01 card below is a generic illustration with invented detail — do not treat as confirmed for Jewel Enterprises.
 
 ---
 
-## Template
+# Personas _(template)_
+
+When the real `docs/requirements/personas.md` is created during discovery, it should follow this structure: one section per persona, using the card template below. A persona is "Confirmed" once the named person in that role has reviewed and agreed the card matches their day-to-day.
+
+---
+
+## Card template (copy this block)
 
 ```markdown
 ## P{NN} — {Persona Name}
@@ -15,6 +20,7 @@ One card per user role. A persona is "Confirmed" once the named person in that r
 **Frequency on platform:** _Daily / Weekly / Monthly_
 **Status:** Draft | In Review | Confirmed
 **Reviewed by:** _name, date_
+**Sourced from:** _meeting note file path that captured this content_
 
 ### Goals
 - _what success looks like for them_
@@ -37,19 +43,21 @@ One card per user role. A persona is "Confirmed" once the named person in that r
 
 ---
 
-## P01 — Sales Rep
+## Example card (illustration only — never confirmed)
+
+## P01 — Sales Rep _(example)_
 
 **Role:** Sales Representative
 **Reports to:** Sales Manager
 **Tooling today:** Outlook, Excel pipeline tracker, Word for quotes, phone
 **Frequency on platform:** Daily
-**Status:** Draft — worked example
+**Status:** Example only
 **Reviewed by:** —
 
 ### Goals
 - Convert leads to won deals quickly.
-- Spend less time on admin (data entry, chasing approvals).
-- See their pipeline at a glance and know what to action today.
+- Spend less time on admin.
+- See their pipeline at a glance.
 
 ### Pain points (current state)
 - Pipeline lives in a shared Excel — out of date, easy to overwrite.
@@ -57,7 +65,7 @@ One card per user role. A persona is "Confirmed" once the named person in that r
 - No single view of a customer's history when re-engaging.
 
 ### Key journeys they participate in
-- [`01-onboarding-sales-lead.md`](../user-journeys/01-onboarding-sales-lead.md) (primary)
+- _Link to real journeys once written._
 
 ### Permissions needed
 - Create/edit leads they own
@@ -68,22 +76,4 @@ One card per user role. A persona is "Confirmed" once the named person in that r
 - Office desktop + mobile. Lives in Outlook and Teams.
 
 ### Notes
-- Worked example only. Replace with the real Sales Rep persona from the discovery session.
-
----
-
-## P02 — Project Manager
-
-> Not started. Capture during on-site discovery.
-
----
-
-## P03 — Finance Lead
-
-> Not started. Capture during on-site discovery.
-
----
-
-## P04 — Business Owner
-
-> Not started. Capture during on-site discovery.
+- Illustration only. The real Sales Rep persona must come from an actual Sales Rep in a discovery session.

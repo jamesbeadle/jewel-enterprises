@@ -8,6 +8,18 @@ Once journeys are signed off, these schemas are exported as the basis of:
 - Database table definitions (Azure SQL)
 - Contract tests for the eventual API
 
+> 📁 **`_templates/`** holds reference-only example schemas. Real schemas live in this folder root.
+
+---
+
+## Process for adding a real entity
+
+1. **Identify the entity during a journey.** The journey's "Data structures" section names it.
+2. **Capture the source meeting note** in the schema's `description`.
+3. **Copy the shape** of [`_templates/entity-schema-example.json`](_templates/entity-schema-example.json) — never copy fields verbatim.
+4. **Create** `{entity}.schema.json` in this folder (e.g. `project.schema.json`).
+5. **Update** the entity-relationship diagram (see below) and the root [`README.md`](../../README.md#6-business-entities) entities table.
+
 ---
 
 ## Conventions
@@ -20,14 +32,14 @@ Once journeys are signed off, these schemas are exported as the basis of:
 
 ---
 
+## Entity Relationships
+
+Once at least two real entities are confirmed, create `entity-relationship.md` in this folder with a Mermaid `erDiagram`. Use the shape of [`_templates/entity-relationship-example.md`](_templates/entity-relationship-example.md) — reference only.
+
+---
+
 ## Entity index
 
 | Entity | Schema | Description |
 |---|---|---|
-| Lead | [`lead.schema.json`](lead.schema.json) | A potential customer enquiry before qualification. |
-
----
-
-## Entity Relationships
-
-The ERD lives in [`entity-relationship.md`](entity-relationship.md) as a Mermaid `erDiagram`. Update it whenever a new entity is added.
+| _No real entities yet — added as journeys uncover them._ | | |
