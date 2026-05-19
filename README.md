@@ -37,7 +37,8 @@
     /_templates      Reference-only scaffolding
   /meetings          Session notes + decisions log
     /_templates      Reference-only scaffolding
-/prototypes          Blazor PWA Journey Index + HTML demos
+/prototypes          Blazor PWA Journey Index + HTML demos (scoping only)
+/jpms                JPMS — production Blazor WebAssembly client app (see §11)
 /assets              Screenshots, icons, branding
 ```
 
@@ -196,4 +197,78 @@ Create the meeting note in `/docs/meetings/` from the template **before** the se
 - [Data Models](docs/data-models/README.md)
 - [Meeting Notes](docs/meetings/README.md) · [Latest: domain discovery 2026-05-18](docs/meetings/2026-05-18-domain-discovery.md)
 - [Prototype Journey Index](prototypes/journey-index/README.md)
+- [JPMS — production app](jpms/README.md)
 - [Assets](assets/README.md)
+
+---
+
+## 11. Production — JPMS (Jewel Project Management System)
+
+> Scoping happens in `/docs` and `/prototypes`. The **actual product** is being built in [`/jpms`](jpms/README.md).
+> Read this section before touching anything in that folder.
+
+### 11.1 What JPMS is
+
+**JPMS — Jewel Project Management System** — is the production web app the company and its clients will use day-to-day. It's a multi-tenant Blazor WebAssembly PWA. Each Jewel client (architect firms, QSs, subcontractors, the internal team) signs in with their own work identity and sees only the projects they belong to.
+
+Working name from the scoping repo is *Project Program Scheduler*; the product brand is **JPMS**.
+
+### 11.2 Where it differs from `/prototypes`
+
+| | `/prototypes/journey-index` | `/jpms` |
+|---|---|---|
+| Purpose | Scoping & role-play walkthroughs | The real product |
+| Audience | Internal stakeholders during discovery sessions | Jewel staff + external clients |
+| Lifetime | Disposable | Long-lived |
+| Auth | None | Microsoft + Google sign-in, gated by an internal directory |
+| Data | Hard-coded in `.cs` files | ASP.NET Core API + Azure SQL (to be added) |
+
+The two share a deliberate **visual language** — slate palette, rounded cards, same typography stack — so design learnings from the prototype carry over without rework.
+
+### 11.3 Tech stack
+
+- **Front-end:** Blazor WebAssembly · .NET 8 LTS · Tailwind (CDN today, CLI build before launch)
+- **PWA:** installable on desktop and mobile, theme `#0f172a`
+- **Auth (target):** Microsoft Entra ID (MSAL) + Google Identity Services
+- **Back-end (next):** ASP.NET Core Web API · Azure SQL · Microsoft Graph integrations
+- **Hosting:** Azure Static Web Apps initially, Azure App Service once the API lands
+
+### 11.4 What's built so far
+
+The opening slice — sign-in and approved-user gating — is in place:
+
+- **Landing page** at `/` is the login screen with `Continue with Microsoft` and `Continue with Google` buttons.
+- **Dashboard** at `/dashboard` is shown to users on the internal allow-list.
+- **Request-access** view is shown to users who sign in successfully but aren't on the allow-list.
+- **Mock sign-in:** real OAuth isn't wired yet — the buttons accept any email so we can iterate on the UI first.
+- **Hard-coded allow-list** in `jpms/Services/AllowListUserDirectory.cs` controls who reaches the dashboard. Edit that file to test both flows.
+
+### 11.5 Two seams ready for real wiring
+
+The mock layer was designed so each piece can be swapped in isolation:
+
+1. **OAuth** — `AuthService.SignInAsync(...)` is the one method that becomes real OAuth. Add `Microsoft.Authentication.WebAssembly.Msal` for Microsoft, Google Identity Services for Google, and replace the body. Client IDs go in `wwwroot/appsettings.json`.
+2. **User directory** — `IUserDirectory` is already the right shape for a backend lookup. A new `HttpUserDirectory : IUserDirectory` calls `/api/users/me` on the ASP.NET Core API; one DI line in `Program.cs` swaps it in.
+
+Both can land as small, focused PRs.
+
+### 11.6 Roadmap (rough)
+
+1. Wire real Microsoft + Google sign-in.
+2. Stand up the ASP.NET Core API and Azure SQL schema.
+3. Replace the allow-list with an admin-managed directory.
+4. Build the **Accountant's cashflow-forecast journey** first (the primary pain point — see §1).
+5. Build out the journeys signed off in `/docs/user-journeys/` in priority order.
+6. Move hosting from Static Web Apps to App Service once an API is in place.
+
+### 11.7 Running JPMS locally
+
+See [`jpms/README.md`](jpms/README.md) for the full setup. TL;DR:
+
+```bash
+cd jpms
+dotnet restore
+dotnet run
+```
+
+Then open the URL the console prints. Try one of the emails in `Services/AllowListUserDirectory.cs` to land on the dashboard, or any other email to see the request-access flow.

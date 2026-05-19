@@ -1,0 +1,66 @@
+/* Minimal supplemental CSS — Tailwind (via CDN in index.html) handles most styling. */
+
+html, body {
+    height: 100%;
+    margin: 0;
+}
+
+/* Smooth iOS scrolling and safe-area padding */
+body {
+    -webkit-tap-highlight-color: transparent;
+    text-rendering: optimizeLegibility;
+    padding-left: env(safe-area-inset-left);
+    padding-right: env(safe-area-inset-right);
+}
+
+/* Blazor's <FocusOnNavigate> focuses the h1 on page load for screen readers.
+   Headings aren't keyboard-tabbable, so suppress the visual ring on them — keyboard
+   focus on real interactive elements (links, buttons, inputs) still gets a ring
+   via :focus-visible below. */
+h1:focus,
+h2:focus,
+h3:focus,
+h4:focus,
+h5:focus,
+h6:focus {
+    outline: none !important;
+    box-shadow: none !important;
+}
+
+:focus:not(:focus-visible) {
+    outline: none;
+}
+
+/* Blazor error UI — shown only when something goes wrong */
+#blazor-error-ui {
+    display: none;
+    position: fixed;
+    bottom: 0;
+    left: 0;
+    right: 0;
+    background: #fef2f2;
+    color: #991b1b;
+    border-top: 1px solid #fecaca;
+    padding: 0.75rem 1rem;
+    font-size: 0.875rem;
+    z-index: 50;
+}
+
+#blazor-error-ui .dismiss {
+    cursor: pointer;
+    position: absolute;
+    right: 0.75rem;
+    top: 0.5rem;
+}
+
+.blazor-error-boundary {
+    background: #fef2f2;
+    color: #991b1b;
+    padding: 1rem;
+    border-radius: 0.5rem;
+}
+
+/* Make Blazor's default loading bar invisible — we render our own in index.html */
+.loading-progress, .loading-progress-text {
+    display: none;
+}

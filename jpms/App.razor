@@ -1,0 +1,15 @@
+<Router AppAssembly="@typeof(App).Assembly">
+    <Found Context="routeData">
+        <RouteView RouteData="@routeData" DefaultLayout="@typeof(Layout.MainLayout)" />
+        <FocusOnNavigate RouteData="@routeData" Selector="h1" />
+    </Found>
+    <NotFound>
+        <PageTitle>Not found · JPMS</PageTitle>
+        <LayoutView Layout="@typeof(Layout.MainLayout)">
+            <section class="max-w-3xl mx-auto px-4 py-12">
+                <h1 class="text-2xl font-semibold text-slate-900 mb-2">Page not found</h1>
+                <p class="text-slate-700">There's nothing at this address. <a class="text-slate-900 underline" href="/">Back to sign in</a>.</p>
+            </section>
+        </LayoutView>
+    </NotFound>
+</Router>

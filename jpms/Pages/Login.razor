@@ -1,0 +1,105 @@
+@page "/"
+@inject AuthService Auth
+@inject NavigationManager Nav
+
+<PageTitle>Sign in · JPMS</PageTitle>
+
+<section class="max-w-md mx-auto px-4 py-12 md:py-20">
+
+    <div class="text-center mb-8 md:mb-10">
+        <span class="inline-flex items-center justify-center w-14 h-14 rounded-2xl bg-slate-900 text-white text-lg font-semibold mb-5">JP</span>
+        <p class="text-xs uppercase tracking-wider text-slate-500 font-medium mb-2">Jewel Project Management System</p>
+        <h1 class="text-3xl md:text-4xl font-semibold text-slate-900 leading-tight mb-3">Sign in to JPMS</h1>
+        <p class="text-base text-slate-700 leading-relaxed">
+            Use your work account to continue. We don't store passwords —
+            sign in with Microsoft or Google.
+        </p>
+    </div>
+
+    @if (!showMockPrompt)
+    {
+        <div class="space-y-3">
+            <ProviderButton Provider="AuthProvider.Microsoft" OnClick="() => BeginSignIn(AuthProvider.Microsoft)" />
+            <ProviderButton Provider="AuthProvider.Google"    OnClick="() => BeginSignIn(AuthProvider.Google)" />
+        </div>
+
+        <p class="mt-8 text-center text-xs text-slate-500 leading-relaxed">
+            By signing in you agree to the JPMS acceptable-use policy.<br />
+            New here? Sign in first — you'll be able to request access on the next screen.
+        </p>
+    }
+    else
+    {
+        <div class="rounded-2xl border border-slate-200 bg-white p-6 shadow-sm">
+            <p class="text-[11px] uppercase tracking-wider text-slate-500 font-medium mb-1">
+                Continue with @pendingProvider
+            </p>
+            <h2 class="text-lg font-semibold text-slate-900 mb-3">What email should we sign you in as?</h2>
+            <p class="text-sm text-slate-600 mb-4 leading-relaxed">
+                <span class="font-medium text-slate-700">Mock sign-in:</span>
+                real OAuth isn't wired up yet, so enter the email you'd like to test as.
+                Approved Jewel emails go straight to the dashboard;
+                anything else lands on the request-access screen.
+            </p>
+
+            <form @onsubmit="CompleteSignIn" @onsubmit:preventDefault="true" class="space-y-3">
+                <input type="email"
+                       required
+                       @bind="mockEmail"
+                       @bind:event="oninput"
+                       placeholder="you@jewelgroup.co.uk"
+                       class="w-full rounded-lg border border-slate-300 px-3 py-2.5 text-slate-900 placeholder:text-slate-400 focus:outline-none focus:ring-2 focus:ring-slate-900 focus:border-slate-900" />
+
+                <div class="flex items-center gap-2">
+                    <button type="submit"
+                            disabled="@(string.IsNullOrWhiteSpace(mockEmail))"
+                            class="flex-1 rounded-lg bg-slate-900 text-white font-medium px-4 py-2.5 hover:bg-slate-800 disabled:bg-slate-300 disabled:cursor-not-allowed transition">
+                        Continue
+                    </button>
+                    <button type="button"
+                            @onclick="CancelMockPrompt"
+                            class="rounded-lg border border-slate-200 bg-white text-slate-700 font-medium px-4 py-2.5 hover:border-slate-300 transition">
+                        Cancel
+                    </button>
+                </div>
+            </form>
+        </div>
+    }
+
+</section>
+
+@code {
+    private bool showMockPrompt;
+    private AuthProvider pendingProviderEnum;
+    private string pendingProvider => pendingProviderEnum == AuthProvider.Microsoft ? "Microsoft" : "Google";
+    private string mockEmail = "";
+
+    protected override void OnInitialized()
+    {
+        // If the user is already signed in, skip the login screen.
+        if (Auth.IsSignedIn)
+        {
+            Nav.NavigateTo("/dashboard", replace: true);
+        }
+    }
+
+    private void BeginSignIn(AuthProvider provider)
+    {
+        pendingProviderEnum = provider;
+        mockEmail = "";
+        showMockPrompt = true;
+    }
+
+    private void CancelMockPrompt()
+    {
+        showMockPrompt = false;
+        mockEmail = "";
+    }
+
+    private async Task CompleteSignIn()
+    {
+        if (string.IsNullOrWhiteSpace(mockEmail)) return;
+        await Auth.SignInAsync(pendingProviderEnum, mockEmail);
+        Nav.NavigateTo("/dashboard");
+    }
+}

@@ -1,0 +1,91 @@
+@page "/dashboard"
+@inject AuthService Auth
+@inject IUserDirectory UserDirectory
+@inject NavigationManager Nav
+
+<PageTitle>Dashboard · JPMS</PageTitle>
+
+@if (!Auth.IsSignedIn)
+{
+    <section class="max-w-3xl mx-auto px-4 py-12">
+        <p class="text-slate-700">You need to <a href="/" class="text-slate-900 underline">sign in</a> to continue.</p>
+    </section>
+}
+else if (directoryUser is null)
+{
+    @* Signed in, but not on the company's approved list — show request access. *@
+    <RequestAccessView Email="@Auth.CurrentUser!.Email" DisplayName="@Auth.CurrentUser.DisplayName" />
+}
+else
+{
+    <section class="max-w-3xl mx-auto px-4 py-8 md:py-12">
+
+        <div class="mb-8 md:mb-10">
+            <p class="text-xs uppercase tracking-wider text-slate-500 font-medium mb-2">JPMS</p>
+            <h1 class="text-3xl md:text-4xl font-semibold text-slate-900 leading-tight mb-3">
+                Welcome, @directoryUser.DisplayName.Split(' ')[0].
+            </h1>
+            <p class="text-base md:text-lg text-slate-700 leading-relaxed">
+                You're signed in as <span class="font-medium text-slate-900">@Auth.CurrentUser!.Email</span>
+                via @ProviderName. Your role on the platform is
+                <span class="font-medium text-slate-900">@directoryUser.Role</span>.
+            </p>
+        </div>
+
+        <div class="grid grid-cols-1 sm:grid-cols-3 gap-3 md:gap-4 mb-8">
+            <Stat Label="Role"     Value="@directoryUser.Role" />
+            <Stat Label="Provider" Value="@ProviderName" />
+            <Stat Label="Status"   Value="Approved" />
+        </div>
+
+        <section class="rounded-xl border border-slate-200 bg-white overflow-hidden mb-6">
+            <header class="px-5 py-3 border-b border-slate-200 bg-slate-50">
+                <h2 class="text-sm font-medium text-slate-700">Your home</h2>
+            </header>
+            <div class="p-5 text-sm text-slate-700 leading-relaxed">
+                <p class="mb-3">
+                    This is the JPMS home dashboard. Live tiles for projects, tenders, cash calls and
+                    forecast accuracy will land here as those journeys are signed off in the scoping repo.
+                </p>
+                <p>
+                    For now, the priority is getting sign-in and the approved-user check right —
+                    everything else hangs off these two foundations.
+                </p>
+            </div>
+        </section>
+
+        <section class="rounded-xl border border-slate-200 bg-white overflow-hidden">
+            <header class="px-5 py-3 border-b border-slate-200 bg-slate-50">
+                <h2 class="text-sm font-medium text-slate-700">What's next</h2>
+            </header>
+            <ol class="p-5 space-y-3 text-sm text-slate-700 list-decimal list-inside marker:text-slate-400">
+                <li>Wire real Microsoft Entra ID and Google OAuth in place of the mock sign-in.</li>
+                <li>Replace the hard-coded allow-list with an admin-managed directory in the backend.</li>
+                <li>Build the first journey — the Accountant's cashflow-forecast view.</li>
+                <li>Stand up the ASP.NET Core API and Azure SQL schema behind the dashboard tiles.</li>
+            </ol>
+        </section>
+
+    </section>
+}
+
+@code {
+    private DirectoryUser? directoryUser;
+
+    protected override void OnInitialized()
+    {
+        if (!Auth.IsSignedIn)
+        {
+            Nav.NavigateTo("/", replace: true);
+            return;
+        }
+        directoryUser = UserDirectory.Find(Auth.CurrentUser!.Email);
+    }
+
+    private string ProviderName => Auth.CurrentUser?.Provider switch
+    {
+        AuthProvider.Microsoft => "Microsoft",
+        AuthProvider.Google    => "Google",
+        _ => "—"
+    };
+}
