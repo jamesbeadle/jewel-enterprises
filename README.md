@@ -1,8 +1,7 @@
-# Jewel Enterprises — Business Platform Scoping
+# Jewel Enterprises — Business Platform
 
-> The living scoping dashboard for the Jewel Enterprises master business platform.
-> Everything in this repository is **discovery-phase material**: user journeys, personas, workflows, data models, UI components, and meeting decisions.
-> No production code lives here yet. Once journeys are signed off, this material becomes the acceptance criteria for development.
+> Working repository for **JPMS — Jewel Project Management System**.
+> The `/docs` and `/prototypes` folders hold the scoping material (user journeys, personas, workflows, data models, UI components, decisions). The `/jpms` folder holds the production application — a Blazor WebAssembly PWA being built against this scope.
 
 ---
 
@@ -11,11 +10,11 @@
 | | |
 |---|---|
 | **Vision** | A master operating system for the business, with projects as the central organising concept. |
-| **Working name (initial software)** | **Project Program Scheduler** — manage the program of work for each project from tender through delivery to cash call. |
+| **Product** | Manage the programme of work for each project from tender through delivery to cash call. |
 | **Business context** | Construction. Jewel Enterprises delivers work commissioned by architects. See [`/docs/requirements/glossary.md`](docs/requirements/glossary.md) for domain terms (Tender, RFI, VO, Cash Call, etc.). |
 | **Primary goals** | (1) Smooth project management end-to-end. (2) Robust finance workflows tied to projects — **the Accountant's cashflow forecast accuracy is the primary pain point driving scope.** (3) A "second brain" of domain knowledge usable later as an API endpoint by Claude or similar. |
 | **Platform** | Progressive Web App (PWA), installable as a desktop/mobile app. |
-| **Tech stack** | Blazor (WebAssembly) front-end · ASP.NET Core back-end · Azure hosting · Azure SQL primary database · Microsoft Entra ID for auth · Microsoft Teams / Graph integrations. |
+| **Tech stack** | Blazor (WebAssembly) front-end · ASP.NET Core back-end · Azure hosting · Azure SQL primary database · OAuth sign-in (Google, Microsoft, email/password) — users invited by admins or project managers and pick their sign-in method on first access · Microsoft Teams / Graph integrations. |
 | **Phase** | Discovery & scoping. |
 | **Methodology** | User-journey-driven scoping with on-site role-play validation sessions. |
 
@@ -38,7 +37,7 @@
   /meetings          Session notes + decisions log
     /_templates      Reference-only scaffolding
 /prototypes          Blazor PWA Journey Index + HTML demos (scoping only)
-/jpms                JPMS — production Blazor WebAssembly client app (see §11)
+/jpms                JPMS — production Blazor WebAssembly client app (see Section 11)
 /assets              Screenshots, icons, branding
 ```
 
@@ -50,11 +49,10 @@ Each folder has its own `README.md` explaining its purpose, its `_templates/` re
 
 This repository deliberately separates **reference scaffolding** from **confirmed project content**:
 
-- 📁 **`_templates/`** subfolders in every section hold blank templates and worked examples. They exist so we know *what shape* a journey, persona, schema, or component spec should take. **They are reference only.** Nothing in `_templates/` is ever treated as a decision about Jewel Enterprises and should never be quoted in a stakeholder session as if it were.
-- 📁 **The section root** (e.g. `/docs/user-journeys/`) holds **real content** only — material that came out of a discovery or role-play session with someone who actually does the work.
-- 🔗 **Every real file has a `Sourced from:` line** pointing at the meeting note that captured it. If a file has no source, it's an assumption — not a decision.
+- 📁 **`_templates/`** subfolders in every section hold blank templates and worked examples. They exist so we know *what shape* a journey, persona, schema, or component spec should take. **They are reference only.**
+- 📁 **The section root** (e.g. `/docs/user-journeys/`) holds **real content** — the scope decisions for JPMS.
 
-When a real journey/persona/component is created, it's copied **from** a template, populated **from** a meeting note, and lives **outside** `_templates/`.
+When a real journey/persona/component is created, it's copied **from** a template and lives **outside** `_templates/`.
 
 ---
 
@@ -68,12 +66,11 @@ Tick items off as we go. This is the single source of truth for "how scoped are 
 - [x] Templates and worked examples in place under `_templates/`
 - [x] Kick-off / domain discovery meeting captured ([`2026-05-18-domain-discovery.md`](docs/meetings/2026-05-18-domain-discovery.md))
 - [x] JBB operational workflow audit ingested ([`2026-05-20-jbb-workflow-audit.md`](docs/meetings/2026-05-20-jbb-workflow-audit.md))
-- [x] Working name agreed: **Project Program Scheduler** (production brand: **JPMS**)
-- [ ] Stakeholder list confirmed (names against each role)
+- [x] Product name: **JPMS — Jewel Project Management System**
 - [x] Glossary of business terms started ([`glossary.md`](docs/requirements/glossary.md))
 
 ### 4.2 Current-State Mapping
-- [x] Primary pain point identified — cashflow forecast accuracy (Finance Director — see §11 workflow 11)
+- [x] Primary pain point identified — cashflow forecast accuracy (Finance Director — see Section 11 workflow 11)
 - [x] Existing tools and spreadsheets inventoried — see [`integrations.md`](docs/requirements/integrations.md)
 - [x] Pain points captured per role — see [`personas.md`](docs/requirements/personas.md) (P01–P09) and per-workflow files in [`/docs/workflows/`](docs/workflows/)
 - [x] Manual steps and workarounds documented — current-state section of every workflow file
@@ -83,7 +80,6 @@ Tick items off as we go. This is the single source of truth for "how scoped are 
 ### 4.3 Personas
 - [x] Canonical user roles identified — nine personas (P01–P09): Architect, Subcontractor, Project & Commercial Lead, Office & Compliance Coordinator, Site Team, Brand & Content, Finance Director, Directors / MD, Outsourced IT Helpdesk
 - [x] Persona card drafted for each (nine total — [`personas.md`](docs/requirements/personas.md))
-- [ ] Each persona reviewed by an actual person in that role
 - [x] Adjacent roles checked (site manager, admin staff, subcontractor admin, external collaborators, internal QS) — covered by P01–P09; external QS consultants treated as invited contacts rather than a separate persona
 
 ### 4.4 Business Entities
@@ -123,17 +119,17 @@ Tick items off as we go. This is the single source of truth for "how scoped are 
 
 > Each row links to its card in [`docs/requirements/personas.md`](docs/requirements/personas.md). The Role × Workflow RBAC matrix is in [`permission-matrix.md`](docs/requirements/permission-matrix.md).
 
-| # | Persona | Type | Role summary | Card status | Reviewed by |
-|---|---|---|---|---|---|
-| P01 | [Architect](docs/requirements/personas.md#p01--architect) | External client | Sends tenders with drawings and specs; defines cost codes carried through the system; approves RFIs and variations. | Draft | — |
-| P02 | [Subcontractor](docs/requirements/personas.md#p02--subcontractor) | External delivery | On-site delivery. Returns quotes, updates progress, submits timesheets, raises RFIs, uploads compliance documents. | Draft | — |
-| P03 | [Project & Commercial Lead](docs/requirements/personas.md#p03--project--commercial-lead) | Internal | PM + commercial. Owns the project lifecycle (workflows 02–05, 07) and the internal QS function. | Draft | — |
-| P04 | [Office & Compliance Coordinator](docs/requirements/personas.md#p04--office--compliance-coordinator) | Internal | Owns compliance, comms, materials, fleet, document upkeep. | Draft | — |
-| P05 | [Site Team](docs/requirements/personas.md#p05--site-team) | Internal field | Site managers, foremen, operatives. The capture layer for site reality. | Draft | — |
-| P06 | [Brand & Content](docs/requirements/personas.md#p06--brand--content) | Internal | Marketing and brand custodian across Jewel entities. | Draft | — |
-| P07 | [Finance Director (FD)](docs/requirements/personas.md#p07--finance-director-fd) | Internal executive | Owns finance across BB / PS / PFP. **Drives the primary pain point** (cashflow forecast accuracy). | Draft | — |
-| P08 | [Directors / MD](docs/requirements/personas.md#p08--directors--md) | Internal executive | Executive decisions. Approver on high-value commercial items. | Draft | — |
-| P09 | [Outsourced IT Helpdesk](docs/requirements/personas.md#p09--outsourced-it-helpdesk) | External partner | Tier-1 IT support (target owner of workflow 17 — provider not yet selected). | Draft | — |
+| # | Persona | Type | Role summary | Card status |
+|---|---|---|---|---|
+| P01 | [Architect](docs/requirements/personas.md#p01--architect) | External client | Sends tenders with drawings and specs; defines cost codes carried through the system; approves RFIs and variations. | Draft |
+| P02 | [Subcontractor](docs/requirements/personas.md#p02--subcontractor) | External delivery | On-site delivery. Returns quotes, updates progress, submits timesheets, raises RFIs, uploads compliance documents. | Draft |
+| P03 | [Project & Commercial Lead](docs/requirements/personas.md#p03--project--commercial-lead) | Internal | PM + commercial. Owns the project lifecycle (workflows 02–05, 07) and the internal QS function. | Draft |
+| P04 | [Office & Compliance Coordinator](docs/requirements/personas.md#p04--office--compliance-coordinator) | Internal | Owns compliance, comms, materials, fleet, document upkeep. | Draft |
+| P05 | [Site Team](docs/requirements/personas.md#p05--site-team) | Internal field | Site managers, foremen, operatives. The capture layer for site reality. | Draft |
+| P06 | [Brand & Content](docs/requirements/personas.md#p06--brand--content) | Internal | Marketing and brand custodian across Jewel entities. | Draft |
+| P07 | [Finance Director (FD)](docs/requirements/personas.md#p07--finance-director-fd) | Internal executive | Owns finance across BB / PS / PFP. **Drives the primary pain point** (cashflow forecast accuracy). | Draft |
+| P08 | [Directors / MD](docs/requirements/personas.md#p08--directors--md) | Internal executive | Executive decisions. Approver on high-value commercial items. | Draft |
+| P09 | [Outsourced IT Helpdesk](docs/requirements/personas.md#p09--outsourced-it-helpdesk) | External partner | Tier-1 IT support (target owner of workflow 17 — provider not yet selected). | Draft |
 
 **Status legend:** Draft · In Review · Confirmed
 
@@ -291,9 +287,7 @@ Create the meeting note in `/docs/meetings/` from the template **before** the se
 - **Markdown only** for narrative content. Diagrams in Mermaid where possible (renders natively on GitHub).
 - **JSON Schema (draft 2020-12)** for entity definitions. Schemas live in `/docs/data-models/` and are referenced by journeys.
 - **One PR per journey** during deep-dive sessions, so reviews stay focused.
-- **Confirmation Checklist** at the bottom of every journey file — a journey is not "Confirmed" until that checklist is ticked by the actor.
-- **`Sourced from:`** line on every real artefact, pointing at the meeting note behind it.
-- **`_templates/` is reference only** — never quoted, never linked from real content as a source.
+- **`_templates/` is reference only** — never quoted, never linked from real content.
 
 ---
 
@@ -318,9 +312,7 @@ Create the meeting note in `/docs/meetings/` from the template **before** the se
 
 ### 11.1 What JPMS is
 
-**JPMS — Jewel Project Management System** — is the production web app the company and its clients will use day-to-day. It's a multi-tenant Blazor WebAssembly PWA. Each Jewel client (architect firms, QSs, subcontractors, the internal team) signs in with their own work identity and sees only the projects they belong to.
-
-Working name from the scoping repo is *Project Program Scheduler*; the product brand is **JPMS**.
+**JPMS — Jewel Project Management System** — is the production web app the company and its clients will use day-to-day. It's a multi-tenant Blazor WebAssembly PWA. Each user (architects, subcontractors, internal staff) is invited by an admin or project manager and signs in via their chosen OAuth method — Google, Microsoft, or email/password — seeing only the projects they belong to.
 
 ### 11.2 Where it differs from `/prototypes`
 
@@ -329,7 +321,7 @@ Working name from the scoping repo is *Project Program Scheduler*; the product b
 | Purpose | Scoping & role-play walkthroughs | The real product |
 | Audience | Internal stakeholders during discovery sessions | Jewel staff + external clients |
 | Lifetime | Disposable | Long-lived |
-| Auth | None | Microsoft + Google sign-in, gated by an internal directory |
+| Auth | None | OAuth — Google, Microsoft, or email/password — gated by invitation from an admin or project manager |
 | Data | Hard-coded in `.cs` files | ASP.NET Core API + Azure SQL (to be added) |
 
 The two share a deliberate **visual language** — slate palette, rounded cards, same typography stack — so design learnings from the prototype carry over without rework.
@@ -338,7 +330,7 @@ The two share a deliberate **visual language** — slate palette, rounded cards,
 
 - **Front-end:** Blazor WebAssembly · .NET 8 LTS · Tailwind (CDN today, CLI build before launch)
 - **PWA:** installable on desktop and mobile, theme `#0f172a`
-- **Auth (target):** Microsoft Entra ID (MSAL) + Google Identity Services
+- **Auth (target):** OAuth — Google, Microsoft, and email/password. Users are invited by admins or project managers; an invitation email lands in their inbox and they pick a sign-in method on first access. A user who chose "Sign in with Google" with `alice@example.com` can equally use that same address for the email/password path; the account is identified by email, not by the provider chosen on first sign-in.
 - **Back-end (next):** ASP.NET Core Web API · Azure SQL · Microsoft Graph integrations
 - **Hosting:** Azure Static Web Apps initially, Azure App Service once the API lands
 
@@ -366,7 +358,7 @@ Both can land as small, focused PRs.
 Re-ordered on 2026-05-20 to reflect the [JBB workflow audit](docs/meetings/2026-05-20-jbb-workflow-audit.md) recommended phasing: finance first (largest current-hour cost and clearest ROI), then project lifecycle (the JPMS core), then everything else.
 
 #### Platform foundations
-1. Wire real Microsoft + Google sign-in (Entra ID / MSAL primary).
+1. Wire real OAuth sign-in — Google, Microsoft, and email/password — with invitation-by-admin/PM flow.
 2. Stand up the ASP.NET Core API and Azure SQL schema.
 3. Replace the allow-list with an admin-managed directory.
 4. Move hosting from Static Web Apps to App Service once an API is in place.

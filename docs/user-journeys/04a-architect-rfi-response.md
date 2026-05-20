@@ -8,7 +8,6 @@
 **Success metric:** Median RFI response time falls; zero RFI replies stuck in inboxes.
 **Status:** Draft
 **Last reviewed:** —
-**Sourced from:** [`/docs/meetings/2026-05-20-jbb-workflow-audit.md`](../meetings/2026-05-20-jbb-workflow-audit.md)
 
 ---
 

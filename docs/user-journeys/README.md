@@ -12,7 +12,7 @@ A journey is "done" when the actor in that role has walked through it during an 
 
 1. **Capture the source.** Hold a discovery / role-play session and create a meeting note in `/docs/meetings/` first. Real content has a real origin.
 2. **Copy the template.** Take [`_templates/journey-template.md`](_templates/journey-template.md) and save it here as `NN-short-kebab-name.md`. Use [`_templates/journey-example.md`](_templates/journey-example.md) as a reference for shape (never for content).
-3. **Fill in from the session.** Replace every placeholder with what the actor actually told you. Link `Sourced from:` to the meeting note.
+3. **Fill in.** Replace every placeholder with the actual scope decision.
 4. **Walk it back.** In the next session, have the same actor walk the journey end-to-end and tick the confirmation checklist.
 5. **Update the dashboard.** Add or move the journey's row in the root [`README.md`](../../README.md#5-user-journeys) journey table.
 
@@ -28,7 +28,7 @@ A journey is "done" when the actor in that role has walked through it during an 
 
 Every journey file MUST contain:
 
-1. **Front-matter block** — actors, goal, frequency, success metric, status, `Sourced from:`.
+1. **Front-matter block** — actors, goal, frequency, success metric, status.
 2. **Trigger** — what kicks the journey off.
 3. **Steps** — numbered, each with: UI demo link, screenshot, fields/validation, decision points.
 4. **Edge cases & exceptions** — captured live during role-play.

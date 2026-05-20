@@ -2,7 +2,7 @@
 
 Every working session — kick-off, on-site discovery, role-play validation, sign-off — gets a file here.
 
-Meeting notes are the **single source of truth for the origin of every other artefact**. Every journey, persona, schema, or component spec should have a `Sourced from:` line pointing at the meeting note that captured it. If a piece of content has no meeting note behind it, it's an assumption — not a decision.
+Meeting notes are a working record of scope decisions. They're useful context, but scope decisions stand on their own in the relevant workflow / journey / persona / data-model file — there's no requirement to link back to a meeting note.
 
 > 📁 **`_templates/`** holds the reference-only blank meeting-note template. Real meeting notes live in this folder root.
 
@@ -23,7 +23,7 @@ Examples:
 1. **Before** the session: copy [`_templates/meeting-note-template.md`](_templates/meeting-note-template.md) to a new file with today's date and a short topic slug.
 2. **During** the session: fill in agenda, take notes, capture decisions as they happen.
 3. **At the end**: close out action items with owners and dates.
-4. **After**: create or update the journeys / personas / schemas this meeting produced, and link them back here via their `Sourced from:` headers.
+4. **After**: create or update the journeys / personas / schemas this meeting produced.
 5. **List** every artefact you touched in the "Artefacts updated" section of the note.
 
 ---

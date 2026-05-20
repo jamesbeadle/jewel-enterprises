@@ -1,113 +1,138 @@
-# Integrations Catalogue
+# Integrations & System Landscape
 
-Single source of truth for every external or adjacent system named across the twenty-one workflows. Each workflow file references integrations by name; this catalogue is where direction, owner, and target status are decided.
+Single source of truth for how JPMS relates to every other system named across the 23 workflows. Each system falls into one of three buckets:
 
-**Sourced from:** [`/docs/meetings/2026-05-20-jbb-workflow-audit.md`](../meetings/2026-05-20-jbb-workflow-audit.md)
+- **Kept — core or peripheral.** JPMS integrates with it; it stays after rollout.
+- **Replaced by JPMS.** The system is currently in use, but JPMS takes over its role. May stay as archive only.
+- **Adjacent / context.** Mentioned in workflows for context but JPMS doesn't integrate directly.
 
-**Status:** Draft — target status (keep / replace / archive) confirmed per integration as each workflow is signed off.
+**Status:** Draft — refined per workflow as each one moves Draft → In Review.
 
 ---
 
 ## Legend
 
 - **Direction:** `→ JPMS` (JPMS consumes from it) · `JPMS →` (JPMS writes to it) · `↔` (both).
-- **Target status under JPMS:**
-  - **Keep — core integration:** stays after rollout, JPMS depends on it.
-  - **Keep — peripheral:** stays for specific use; not core.
-  - **Replace:** JPMS replaces this system's role.
-  - **Archive:** kept read-only for historical data.
-  - **TBD:** under review.
 
 ---
 
-## Catalogue
+## 1. Systems JPMS keeps as integrations
 
 ### Finance & accounting
 
-| System | Direction | Workflows | Target status | Notes |
-|---|---|---|---|---|
-| **Xero** | ↔ | 09, 10, 11, 13 | Keep — core integration | Posting for AP; invoice creation for AR; AP/AR balances feeding cashflow. Multi-entity (BB/PS/PFP) handling TBC. |
-| **Dext** | JPMS → (route) · → JPMS (capture) | 09, 13 | Keep — core integration | Invoice OCR capture. Inbox triage routes invoices here automatically. |
-| **Brightpay** | JPMS → | 12 | Keep — core integration | Payroll engine. Fed from JPMS timesheets + starter/leaver. |
-| **Chaser HQ** | JPMS → | 09, 10 | Keep — peripheral | Collections sequence on AR; supplier disputes on AP. |
-| **Online banking** | (manual) | 09 | Keep — peripheral | Payment execution. No JPMS integration planned in phase 1. |
-| **HMRC CIS** | ↔ | 08, 09 | Keep — core integration | CIS verification on subcontractors; status held against record; gates payment. |
+| System | Direction | Workflows | Role under JPMS |
+|---|---|---|---|
+| **Xero** | ↔ | 09, 10, 11, 23 | Core. AP posting, AR invoice creation, AP/AR balances feeding cashflow, final VAT and retention postings at settlement. |
+| **Dext** | → JPMS (capture) · JPMS → (route) | 09, 13 | Core. Invoice OCR capture; inbox triage routes invoices here automatically. |
+| **Brightpay** | JPMS → | 12, 22 | Core. Payroll engine. Fed from JPMS timesheets + starter/leaver events. |
+| **Chaser HQ** | JPMS → | 09, 10 | Peripheral. Collections sequence on AR; supplier disputes on AP. |
+| **HMRC CIS** | ↔ | 08, 09 | Core. CIS verification on subcontractors; status held against record; gates payment. |
+| **Online banking** | (manual) | 09 | Peripheral. Payment execution. No JPMS integration planned in phase one. |
+| **HMRC (non-CIS)** | (manual) | 12, 18 | Peripheral. General HMRC interactions. |
 
-### Project lifecycle tools
+### Identity & IT infrastructure
 
-| System | Direction | Workflows | Target status | Notes |
-|---|---|---|---|---|
-| **Bluebeam** | → JPMS | 01, 02 | Keep — peripheral | Take-off quantities import into BoQ. Drawing mark-up handoff. |
-| **MS Project** | (migration only) | 05 | Replace | Programme module inside JPMS takes over. |
-| **Buildertrend** | (migration only) | 01, 03 | Replace | Drawing distribution and work-order contracts move into JPMS. |
-| **Planyard** | (migration only) | 03 | Replace | Work-order contracting moves into JPMS. |
-| **Onetrace** | → JPMS | 06 | TBD | Where relevant for site capture; keep if it offers something the JPMS site app doesn't. |
-| **Dashpivot** | (migration only) | 06, 08 | Replace | Site capture + attendance + compliance move into JPMS. |
-| **Monday.com** | (migration only) | 03, 08, 19 | Replace | Subcontractor directory + compliance + fleet move into JPMS. |
-| **RAMsApp** | (migration only) | 03, 08 | Replace | RAMS template engine moves into JPMS. |
+| System | Direction | Workflows | Role under JPMS |
+|---|---|---|---|
+| **Google sign-in (OAuth)** | → JPMS | Auth | Core. One of three accepted sign-in methods for invited users. |
+| **Microsoft sign-in (OAuth)** | → JPMS | Auth | Core. One of three accepted sign-in methods for invited users. |
+| **Email + password** | → JPMS | Auth | Core. One of three accepted sign-in methods. JPMS is the identity provider for this path. |
+| **M365 Admin / Entra / Intune** | JPMS → | 16, 17 | Core — for **IT provisioning** (workflow 16): group membership, device enrolment. Not the auth backbone for end-user sign-in (see above). |
+| **Defender** | (peripheral) | 13, 17 | Peripheral. Spam / phishing handled here, not in JPMS classifier. |
+| **1Password** | (peripheral) | 16, 17 | Peripheral. Vault provisioning on starter. |
 
-### Microsoft 365 stack
+### Drawings, mark-up & take-off
 
-| System | Direction | Workflows | Target status | Notes |
-|---|---|---|---|---|
-| **Outlook** | → JPMS (inbox monitor) | 01, 04, 09, 13, 14, 15, 18 | Keep — core integration | Email remains the inbound channel; JPMS monitors specific inboxes. |
-| **SharePoint** | → JPMS (migration) · archive | 01, 03, 08, 14, 18, 19, 21 | Archive | Project folders move into JPMS; SharePoint reduces to archive + corporate documents only. |
-| **OneDrive** | (peripheral) | 21 | Keep — peripheral | Personal / draft work only. |
-| **Teams** | (peripheral) | 16 | Keep — peripheral | Comms only; account provisioning happens via JPMS 16. |
-| **M365 Admin** | JPMS → | 16, 17 | Keep — core integration | Provisioning hooks from workflow 16. |
-| **Entra ID** | JPMS → | 16, 17 | Keep — core integration | Identity + group membership for account provisioning. Likely the auth backbone for internal JPMS users. |
-| **Intune** | JPMS → | 16, 17 | Keep — core integration | Device enrolment on starter. |
-| **Defender** | (peripheral) | 13, 17 | Keep — peripheral | Spam/phishing handled here, not in JPMS classifier. |
+| System | Direction | Workflows | Role under JPMS |
+|---|---|---|---|
+| **Bluebeam** | → JPMS | 01, 02 | Peripheral. Take-off quantities import into BoQ; drawing mark-up handoff. |
+| **Onetrace** | → JPMS | 06 | TBD. Kept only if it offers something the JPMS site app doesn't. |
 
-### External / client portals
+### Email & comms
 
-| System | Direction | Workflows | Target status | Notes |
-|---|---|---|---|---|
-| **Dwellant** | JPMS → | 08, 10 | Keep — peripheral | Client-side portal upload for invoices / RAMS where required. |
-| **Vantify** | JPMS → | 08, 10 | Keep — peripheral | As Dwellant. |
-| **Insurance broker portals** | (manual) | 18, 19 | TBD | Broker-by-broker decision. |
-| **TfL / council portals** | (manual) | 19 | Keep — peripheral | Fine payment / appeals. Manual workflow. |
-| **HMRC portal (non-CIS)** | (manual) | 12, 18 | Keep — peripheral | General HMRC interactions. |
+| System | Direction | Workflows | Role under JPMS |
+|---|---|---|---|
+| **Outlook** | → JPMS (inbox monitor) | 01, 04, 09, 13, 14, 15, 18 | Core. Email remains the inbound channel; JPMS monitors specific inboxes. |
+| **Microsoft Teams** | (peripheral) | 16 | Peripheral. Internal comms only. JPMS does not push notifications into Teams in phase one. |
+| **Phone system** | → JPMS (caller-ID lookup) | 14 | Peripheral. Provider TBC. |
 
-### Office & operational tools
+### External client / supplier portals
 
-| System | Direction | Workflows | Target status | Notes |
-|---|---|---|---|---|
-| **Phone system** | → JPMS (caller-ID lookup) | 14 | Keep — peripheral | Platform TBC. |
-| **WhatsApp** | (legacy) | 06, 15 | Archive | One-way reads to onboard legacy users; eliminated post-rollout. |
-| **Amazon** | (manual) | 15 | Keep — peripheral | Office consumables ordering. |
-| **Paperstone** | (manual) | 15 | Keep — peripheral | Office consumables ordering. |
-| **1Password** | (peripheral) | 16, 17 | Keep — peripheral | Vault provisioning on starter. |
+| System | Direction | Workflows | Role under JPMS |
+|---|---|---|---|
+| **Dwellant** | JPMS → | 08, 10 | Peripheral. Client-side portal upload for invoices / RAMS where required. |
+| **Vantify** | JPMS → | 08, 10 | Peripheral. As Dwellant. |
+| **Insurance broker portals** | (manual) | 18, 19 | TBD. Broker-by-broker decision. |
+| **TfL / council portals** | (manual) | 19 | Peripheral. Fine payment / appeals. Manual workflow. |
+| **Amazon** | (manual) | 15 | Peripheral. Office consumables ordering. |
+| **Paperstone** | (manual) | 15 | Peripheral. Office consumables ordering. |
 
-### Marketing & brand
+### Marketing & brand tooling
 
-| System | Direction | Workflows | Target status | Notes |
-|---|---|---|---|---|
-| **Canva** | (peripheral) | 20 | Keep — peripheral | Design tooling. JPMS surfaces the consent flag and asset-library link only. |
-| **Meta Business** | (peripheral) | 20 | Keep — peripheral | Publishing. |
-| **LinkedIn** | (peripheral) | 20 | Keep — peripheral | Publishing. |
-| **Marketing scheduling tool** | (peripheral) | 20 | TBD | Provider not selected. |
+| System | Direction | Workflows | Role under JPMS |
+|---|---|---|---|
+| **Canva** | (peripheral) | 20 | Peripheral. Design tooling. JPMS surfaces the consent flag and asset-library link only. |
+| **Meta Business** | (peripheral) | 20 | Peripheral. Publishing. |
+| **LinkedIn** | (peripheral) | 20 | Peripheral. Publishing. |
+| **Marketing scheduling tool** | (peripheral) | 20 | TBD. Provider not selected. |
 
 ### Compliance partners (target / new)
 
-| System | Direction | Workflows | Target status | Notes |
-|---|---|---|---|---|
-| **Outsourced IT helpdesk vendor** | ↔ (audit reports + tickets) | 16, 17 | TBD — vendor not selected | Target owner of workflow 17. |
-| **E-signature provider** | JPMS → | 16 | TBD | DocuSign / Adobe Sign / M365 native — decision pending. |
+| System | Direction | Workflows | Role under JPMS |
+|---|---|---|---|
+| **Outsourced IT helpdesk vendor** | ↔ (audit reports + tickets) | 16, 17 | TBD — vendor not selected. Target owner of workflow 17. |
+| **E-signature provider** | JPMS → | 16 | TBD. DocuSign / Adobe Sign / M365 native — decision pending. |
+
+### Archive only
+
+| System | Direction | Workflows | Role under JPMS |
+|---|---|---|---|
+| **SharePoint** | — | 21 | Archive. Project folders move into JPMS; SharePoint reduces to corporate and archived documents only. |
+| **OneDrive** | — | 21 | Archive. Personal / draft work only. |
 
 ---
 
-## Phase-1 integration shortlist
+## 2. Systems JPMS replaces
 
-Driven by the audit's recommended workflow order (finance → project lifecycle). The integrations on this list need to be live for phase 1:
+Each row names a system currently in use and what JPMS does instead. After rollout these systems are either decommissioned or kept read-only for historical data.
 
-1. **Xero** (09, 10, 11)
-2. **Dext** (09, 13)
-3. **Brightpay** (12)
-4. **HMRC CIS** (08, 09)
-5. **Outlook inbox monitoring** (09, 13, 14)
-6. **Entra ID / M365 auth** (across the platform — internal users)
-7. **Chaser HQ** (09, 10)
-8. **Bluebeam** (02 — needed once project-lifecycle phase 2 begins)
+| System (today) | Today's role | Replaced by, in JPMS |
+|---|---|---|
+| **MS Project** | Programme tracking; updated manually by the PM. | The programme module in JPMS (workflow 05) — Gantt-style view tied to BoQ line items, updated automatically from site reporting. |
+| **Buildertrend** | Drawing distribution; work-order contracts. | Workflows 01 (drawing register with revisions and notifications) and 03 (work-order generation on award). |
+| **Planyard** | Work-order contracting. | Workflow 03 — work orders are generated from the comparison-and-award flow inside JPMS. |
+| **Monday.com** | Subcontractor directory, attendance, fleet renewals. | Workflow 08 (subcontractor master record + compliance register), workflow 06 (attendance), workflow 19 (fleet register). |
+| **Dashpivot** | Site capture (photos, attendance, snags). | Workflow 06 — site app captures progress, photos, attendance, and snags against BoQ sections directly into JPMS. |
+| **RAMsApp** | RAMS drafting. | Workflow 08 — RAMS template engine populated from project + subcontractor data and issued from JPMS. |
+| **WhatsApp** (operational use) | Site photos and ad-hoc material requests. | Workflow 06 (site capture) and workflow 15 (procurement requests) — both are first-class capture surfaces in JPMS. |
+| **Excel — BoQ workbook** | Standalone priced BoQ per project. | Workflow 02 — BoQ exists as a JPMS record per project, with hierarchical line items, units, rates, and version history. |
+| **Excel — programme tracker** | Manual programme tracking. | Workflow 05 — programme module in JPMS. |
+| **Excel — valuation sheet** | Monthly valuation per project, built by hand. | Workflow 05 — auto-generated Programme Valuation Report per Claim Period. |
+| **Excel — variations / RFI / NoD logs** | Three separate logs per project. | Workflow 04 — unified project change register. |
+| **Excel — cashflow tracker** | Weekly rebuild in the FD's hands. | Workflow 11 — live cashflow dashboard fed from Xero, Brightpay, and JPMS commitments. |
+| **Excel — subcontractor attendance tracker** | Per-project Excel/calendar. | Workflow 06 — attendance check-in via QR or geofence inside the site app. |
+| **Excel — timesheet allocation tracker** | Manual cost-code allocation per period. | Workflow 22 — cost-code allocation enforced inline at timesheet entry with the budget hard-block rule. |
+| **Excel — settlement / VAT workbook** | Manual at project close. | Workflow 23 — settlement workspace + auto-generated zero-rated VAT analysis with in-system client agreement. |
+| **Word — RAMS template** | Per-project drafted RAMS. | Workflow 08 — RAMS template engine inside JPMS. |
+| **Word — neighbour letter template** | Drafted per address. | Workflow 14 — neighbour letter generator from project address and works data. |
+| **Word — contract drafts** | Drafted from template by hand. | Workflow 16 — contract auto-drafted from role template, sent for e-signature. |
+| **Excel — compliance tracker** | Insurance / certs / accreditation expiry tracking. | Workflow 18 — compliance register with multi-stage reminders. |
+| **Excel — systems / architecture map** | Maintained ad-hoc by the FD. | Replaced by this scoping repo + workflow 17. No JPMS feature needed. |
+
+---
+
+## 3. Phase-1 integration shortlist
+
+Integrations that must be live for the phase-1 finance ROI bucket (workflows 09, 10, 11, 13) and the auth foundation:
+
+1. **OAuth sign-in** — Google, Microsoft, email/password (auth foundation).
+2. **Xero** (workflows 09, 10, 11).
+3. **Dext** (workflows 09, 13).
+4. **Brightpay** (workflow 12).
+5. **HMRC CIS** (workflows 08, 09).
+6. **Outlook inbox monitoring** (workflows 09, 13, 14).
+7. **Chaser HQ** (workflows 09, 10).
+8. **M365 Admin / Entra / Intune** — for IT provisioning hooks from workflow 16.
+9. **Bluebeam** (workflow 02 — needed once project-lifecycle phase 2 begins).
 
 Everything else can land in phase 2 or stay out of scope per the workflow files.

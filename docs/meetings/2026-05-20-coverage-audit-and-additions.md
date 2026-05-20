@@ -72,5 +72,5 @@
 - Updated [`/docs/workflows/README.md`](../workflows/README.md) — index extended to 23 workflows.
 - Updated [`/docs/requirements/permission-matrix.md`](../requirements/permission-matrix.md) — two new rows for workflows 22 and 23.
 - Updated [`/docs/data-models/entity-relationship.md`](../data-models/entity-relationship.md) — new entities (Timesheet Approval, Cost Code Budget, Cost Code Allocation, Claim Period, VAT Analysis, Settlement Record) added to ERD + entity index.
-- Updated root [`README.md`](../../README.md) — §6.1 workflows table extended; §7 entities extended; §11.6 roadmap reflects the new workflows.
+- Updated root [`README.md`](../../README.md) — Section 6.1 workflows table extended; Section 7 entities extended; Section 11.6 roadmap reflects the new workflows.
 - Open questions appended to workflows 08, 17, 18, 20 covering the five partial-coverage backlog items from D6.

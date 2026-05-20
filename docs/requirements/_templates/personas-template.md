@@ -19,8 +19,6 @@ When the real `docs/requirements/personas.md` is created during discovery, it sh
 **Tooling today:** _what they actually use — spreadsheets, emails, named software_
 **Frequency on platform:** _Daily / Weekly / Monthly_
 **Status:** Draft | In Review | Confirmed
-**Reviewed by:** _name, date_
-**Sourced from:** _meeting note file path that captured this content_
 
 ### Goals
 - _what success looks like for them_
@@ -52,7 +50,6 @@ When the real `docs/requirements/personas.md` is created during discovery, it sh
 **Tooling today:** Outlook, Excel pipeline tracker, Word for quotes, phone
 **Frequency on platform:** Daily
 **Status:** Example only
-**Reviewed by:** —
 
 ### Goals
 - Convert leads to won deals quickly.

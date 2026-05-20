@@ -8,7 +8,6 @@
 **Current monthly hours:** _to be confirmed_ — not in the original audit; surfaced 2026-05-20.
 **Status:** Draft
 **Last reviewed:** —
-**Sourced from:** [`/docs/meetings/2026-05-20-coverage-audit-and-additions.md`](../meetings/2026-05-20-coverage-audit-and-additions.md)
 
 ---
 

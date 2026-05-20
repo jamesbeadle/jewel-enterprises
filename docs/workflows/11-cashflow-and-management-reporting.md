@@ -8,7 +8,6 @@
 **Current monthly hours:** ~25 h/month.
 **Status:** Draft
 **Last reviewed:** —
-**Sourced from:** [`/docs/meetings/2026-05-20-jbb-workflow-audit.md`](../meetings/2026-05-20-jbb-workflow-audit.md)
 
 > **Primary pain-point anchor.** This workflow contains the cashflow-forecast journey identified as the platform's primary driver in the [2026-05-18 domain-discovery meeting](../meetings/2026-05-18-domain-discovery.md). Every other workflow that feeds it (09 AP, 10 AR, 12 payroll, 05 valuations) should be reviewed against the question: *does this make the FD's cashflow forecast more accurate?*
 

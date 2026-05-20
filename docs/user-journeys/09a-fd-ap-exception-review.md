@@ -8,7 +8,6 @@
 **Success metric:** ≥90% of invoices auto-coded with no FD touch. Subcontractor invoice errors caught pre-payment, not post.
 **Status:** Draft
 **Last reviewed:** —
-**Sourced from:** [`/docs/meetings/2026-05-20-jbb-workflow-audit.md`](../meetings/2026-05-20-jbb-workflow-audit.md)
 
 ---
 

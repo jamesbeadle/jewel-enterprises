@@ -37,7 +37,7 @@
 
 | # | Decision | Owner | Date |
 |---|---|---|---|
-| D1 | Initial scope = a **Project Program Scheduler** — manage the program of work for each project from tender through delivery to cash call. "Program" = the program of work delivered for the architect. | Business Owner | 2026-05-18 |
+| D1 | Initial scope = a Manage the programme of work for each project from tender through delivery to cash call. "Program" = the program of work delivered for the architect. | Business Owner | 2026-05-18 |
 | D2 | Five primary user roles for the initial system: **Architect, Quantity Surveyor, Subcontractor, Accountant, Managing Director**. | Business Owner | 2026-05-18 |
 | D3 | The Accountant's cashflow forecast accuracy is the **primary pain point** driving the initial software design. Every scoping decision should be tested against: "does this help the Accountant produce an accurate forecast?" | Business Owner | 2026-05-18 |
 | D4 | Browse-by-user is the navigation pattern for the prototype Journey Index — each user gets a dedicated page listing the journeys they participate in. | Nigel | 2026-05-18 |
@@ -73,6 +73,6 @@
 
 - Created `/docs/requirements/personas.md` with 5 personas (P01–P05), all status **Draft**.
 - Created `/docs/requirements/glossary.md` with construction-specific terms.
-- Updated root `README.md` — added personas to the dashboard, surfaced the "Project Program Scheduler" working name, ticked progress boxes for foundation and persona identification.
+- Updated root `README.md` — added personas to the dashboard, surfaced the "JPMS" working name, ticked progress boxes for foundation and persona identification.
 - Updated `/docs/requirements/README.md` — `personas.md` and `glossary.md` removed from "to be created" list.
 - Seeded the Blazor prototype `/prototypes/journey-index/` with the persona data (`Models/Persona.cs`, `Data/Personas.cs`), reworked the home page with a Users grid, and added per-user pages at `/users/{slug}`.

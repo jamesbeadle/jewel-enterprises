@@ -2,7 +2,6 @@
 
 Maps every "Automated Tasks" row in `Jewel Task Analysis (1).xlsx` to the workflow and (where created) user journey that captures it inside JPMS. Confirms the actor's persona exists.
 
-**Sourced from:** [`/docs/meetings/2026-05-20-coverage-audit-and-additions.md`](../meetings/2026-05-20-coverage-audit-and-additions.md)
 
 **Source spreadsheet:** `Jewel Task Analysis (1).xlsx` — *Automated Tasks* tab (rows 4–50). Column A holds Nigel's automation notes; column E names the staff member; column F names the task.
 
@@ -104,10 +103,10 @@ The partial-coverage (🟡) rows above produce these follow-ups inside existing 
 
 Outside the 47 spreadsheet rows, Nigel's notes on 2026-05-20 added scope that warranted **new** workflow files:
 
-| # | New workflow | Why | Sourced from |
-|---|---|---|---|
-| 22 | [Timesheet Management (cost-code-aware)](../workflows/22-timesheet-management.md) | Client-facing timesheet approval with cost-code allocation. Hard rule: cannot allocate to a cost code with no budget unless a work order is raised or allocation moves to a different cost code. | [Note 2026-05-20 additions](../meetings/2026-05-20-coverage-audit-and-additions.md) |
-| 23 | [Project Completion Settlement & VAT Analysis](../workflows/23-project-completion-settlement.md) | On project completion, settle all timesheet / cost-code allocations; perform zero-rated VAT analysis and agree with client. | [Note 2026-05-20 additions](../meetings/2026-05-20-coverage-audit-and-additions.md) |
+| # | New workflow | Why |
+|---|---|---|
+| 22 | [Timesheet Management (cost-code-aware)](../workflows/22-timesheet-management.md) | Client-facing timesheet approval with cost-code allocation. Hard rule: cannot allocate to a cost code with no budget unless a work order is raised or allocation moves to a different cost code. |
+| 23 | [Project Completion Settlement & VAT Analysis](../workflows/23-project-completion-settlement.md) | On project completion, settle all timesheet / cost-code allocations; perform zero-rated VAT analysis and agree with client. |
 
 ---
 

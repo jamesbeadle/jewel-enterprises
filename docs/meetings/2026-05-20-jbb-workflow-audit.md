@@ -51,8 +51,8 @@
 | D3 | The persona register at `/docs/requirements/personas.md` is normalised to nine canonical roles (P01–P09) with no duplication. Internal QS work is owned by P03 Project & Commercial Lead; external QS consultants are treated as invited contacts. The earlier "Accountant" and "MD" working names are superseded by P07 Finance Director and P08 Directors / MD. | Nigel | 2026-05-20 |
 | D4 | A draft Role × Workflow RBAC matrix is created at `/docs/requirements/permission-matrix.md`. The nine personas form the columns; the twenty-one workflows form the rows. Matrix granularity is coarse (`O` = owner, `C` = contributor, `A` = approver, `R` = read, `—` = no access) until each workflow's journey deep-dive refines it. | Nigel | 2026-05-20 |
 | D5 | The integrations catalogue at `/docs/requirements/integrations.md` is the canonical list of adjacent systems for the JPMS programme. Every workflow file references integrations by name only; the catalogue is the single source of truth for direction (read/write), workflows that touch it, and target status (keep / replace / archive). | Nigel | 2026-05-20 |
-| D6 | The JPMS roadmap in root `README.md` §11.6 adopts the audit's recommended order: finance workflows 09, 10, 11, 13 first; project lifecycle 03, 04, 01, 05, 06 second; everything else third. The Accountant's cashflow-forecast journey from the 2026-05-18 discovery sits inside workflow 11 and remains the primary pain-point anchor. | Nigel | 2026-05-20 |
-| D7 | Entities surfaced by the audit are added to root `README.md` §7 (schemas still `to be created`) and to a new `/docs/data-models/entity-relationship.md` Mermaid ERD. Schemas are written workflow-by-workflow as each one moves from Draft → In Review. | Nigel | 2026-05-20 |
+| D6 | The JPMS roadmap in root `README.md` Section 11.6 adopts the audit's recommended order: finance workflows 09, 10, 11, 13 first; project lifecycle 03, 04, 01, 05, 06 second; everything else third. The Accountant's cashflow-forecast journey from the 2026-05-18 discovery sits inside workflow 11 and remains the primary pain-point anchor. | Nigel | 2026-05-20 |
+| D7 | Entities surfaced by the audit are added to root `README.md` Section 7 (schemas still `to be created`) and to a new `/docs/data-models/entity-relationship.md` Mermaid ERD. Schemas are written workflow-by-workflow as each one moves from Draft → In Review. | Nigel | 2026-05-20 |
 
 ---
 
@@ -85,10 +85,10 @@
 - Updated `/docs/workflows/README.md` — replaced placeholder index with the five-group workflow table.
 - Created derived user-journey files under `/docs/user-journeys/` for the actor slices that benefit from a separate walk-through (notably 09a Accountant cashflow forecast, 03a Subcontractor quote return, 06a Site team daily progress capture, 09b FD payment-run approval, 04a Architect RFI response, 08a Subcontractor compliance upload, 16a Starter day-one onboarding).
 - Updated `/docs/user-journeys/README.md` index with the new journey rows.
-- Updated `/docs/requirements/personas.md` — normalised to nine canonical cards (P01 Architect, P02 Subcontractor, P03 Project & Commercial Lead, P04 Office & Compliance Coordinator, P05 Site Team, P06 Brand & Content, P07 Finance Director, P08 Directors / MD, P09 Outsourced IT Helpdesk). All draft status, all sourced from this meeting note where the role originates here.
+- Updated `/docs/requirements/personas.md` — normalised to nine canonical cards (P01 Architect, P02 Subcontractor, P03 Project & Commercial Lead, P04 Office & Compliance Coordinator, P05 Site Team, P06 Brand & Content, P07 Finance Director, P08 Directors / MD, P09 Outsourced IT Helpdesk). All draft status.
 - Created `/docs/requirements/permission-matrix.md` — coarse Role × Workflow RBAC matrix per D4.
 - Created `/docs/requirements/integrations.md` — catalogue of adjacent systems per D5.
 - Created `/docs/data-models/entity-relationship.md` — Mermaid ERD covering the surfaced entities per D7.
-- Updated root `README.md` — populated §6 workflows/journeys table, expanded §7 entities table, ticked §4 progress items now satisfied by the audit, re-ordered §11.6 JPMS roadmap per D6, added quick-links to the new artefacts.
+- Updated root `README.md` — populated Section 6 workflows/journeys table, expanded Section 7 entities table, ticked Section 4 progress items now satisfied by the audit, re-ordered Section 11.6 JPMS roadmap per D6, added quick-links to the new artefacts.
 - Updated `/docs/requirements/README.md` — `permission-matrix.md` and `integrations.md` removed from "to be created" list.
 - Updated `/docs/data-models/README.md` — `entity-relationship.md` removed from "to be created" list; entity index populated with the surfaced entities.

@@ -11,7 +11,6 @@
 **Success metric:** Time-to-close reduced (baseline to be measured during discovery).
 **Status:** Example only — never marked Confirmed.
 **Last reviewed:** —
-**Sourced from:** N/A — this is illustrative scaffolding.
 
 ---
 

@@ -8,7 +8,7 @@ Cross-cutting requirements that are not specific to a single journey.
 
 ## Files
 
-- [`personas.md`](personas.md) — Persona cards for every user role. Nine canonical cards (P01–P09). Each carries a `Sourced from:` link to the meeting that captured it.
+- [`personas.md`](personas.md) — Persona cards for every user role. Nine canonical cards (P01–P09).
 - [`glossary.md`](glossary.md) — Construction and Jewel-Enterprises-specific terms (Tender, RFI, VO, Cash Call, Cost Code, etc.).
 - [`permission-matrix.md`](permission-matrix.md) — Role × Workflow RBAC matrix (coarse). Drafted from the workflow audit; refined per workflow as deep-dives confirm per-step CRUD.
 - [`integrations.md`](integrations.md) — Catalogue of every external/adjacent system named across the twenty-one workflows, with direction, target status (keep/replace/archive), and the phase-1 shortlist.

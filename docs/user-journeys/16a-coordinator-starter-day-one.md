@@ -8,7 +8,6 @@
 **Success metric:** Starter day-one readiness checklist 100% green by 09:00 of the start date.
 **Status:** Draft
 **Last reviewed:** —
-**Sourced from:** [`/docs/meetings/2026-05-20-jbb-workflow-audit.md`](../meetings/2026-05-20-jbb-workflow-audit.md)
 
 ---
 

@@ -8,7 +8,6 @@
 **Success metric:** ≥80% of subcontractor quotes returned through the structured flow (not as a free-text email).
 **Status:** Draft
 **Last reviewed:** —
-**Sourced from:** [`/docs/meetings/2026-05-20-jbb-workflow-audit.md`](../meetings/2026-05-20-jbb-workflow-audit.md)
 
 ---
 

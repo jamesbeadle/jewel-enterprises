@@ -2,7 +2,6 @@
 
 First-cut ERD for the JPMS platform, derived from the entities surfaced by the twenty-one workflows in the JBB audit. Schemas are not yet written — this diagram exists so the workflows and journeys can reference entities by name and so the eventual schemas have a shape to grow into.
 
-**Sourced from:** [`/docs/meetings/2026-05-20-jbb-workflow-audit.md`](../meetings/2026-05-20-jbb-workflow-audit.md), [`/docs/meetings/2026-05-20-coverage-audit-and-additions.md`](../meetings/2026-05-20-coverage-audit-and-additions.md), and [`/docs/meetings/2026-05-18-domain-discovery.md`](../meetings/2026-05-18-domain-discovery.md).
 
 **Status:** Draft — refined as each workflow moves Draft → In Review and each schema gets written.
 
@@ -372,5 +371,5 @@ Sourced workflows shown in brackets. Schemas remain `to be created`.
 
 1. When a workflow moves Draft → In Review, write the JSON Schemas for the entities it touches in `/docs/data-models/{entity}.schema.json`.
 2. Update the ERD here as relationships are confirmed in role-play.
-3. Update root [`README.md`](../../README.md#7-business-entities) §7 entities table to point at the new schema.
-4. When all four sub-diagrams are confirmed, root README §4.4 "Entity-relationship diagram drawn" can be ticked as Confirmed.
+3. Update root [`README.md`](../../README.md#7-business-entities) Section 7 entities table to point at the new schema.
+4. When all four sub-diagrams are confirmed, root README Section 4.4 "Entity-relationship diagram drawn" can be ticked as Confirmed.

@@ -8,7 +8,7 @@ Process maps that complement user journeys. Where a journey describes **what one
 
 ## Where the workflows come from
 
-The current twenty-one workflows were captured from the **JBB workflow audit (May 2026)** — `JBB_Workflow_Maps.docx`, ingested into the repo on 2026-05-20. Every workflow file in this folder is sourced from [`/docs/meetings/2026-05-20-jbb-workflow-audit.md`](../meetings/2026-05-20-jbb-workflow-audit.md). The audit produced acceptance criteria for each workflow; once the named operational owner confirms the file, those criteria become the JPMS test cases for that workflow.
+The current twenty-three workflows were captured from the JBB workflow audit (May 2026, `JBB_Workflow_Maps.docx`) plus follow-on scope added directly during JPMS planning. The audit produced acceptance criteria for each workflow; those become the JPMS test cases for that workflow.
 
 ---
 
@@ -26,7 +26,7 @@ The current twenty-one workflows were captured from the **JBB workflow audit (Ma
 1. A workflow is usually identified during an audit or while reviewing a journey. Capture which meeting it came from.
 2. Look at [`_templates/workflow-example.mmd`](_templates/workflow-example.mmd) for the shape of a Mermaid flowchart — reference only.
 3. Create the new file in this folder using the next number prefix.
-4. Add the row to the index below and to root [`README.md`](../../README.md#6-user-journeys--workflows) §6.
+4. Add the row to the index below and to root [`README.md`](../../README.md#6-user-journeys--workflows) Section 6.
 5. Walk it with the named owner; tick the confirmation checklist when signed off.
 
 ---
@@ -93,4 +93,4 @@ Original phasing from the JBB workflow audit, with the two workflows added on th
 2. **Phase 2 — JPMS project-lifecycle core:** 03, 04, 01, 05, 06. **Workflow 22 (Timesheet Management)** joins phase 2 because it feeds 05 (valuations), 09 (AP for subcontractor day-rate), 11 (cashflow forward commitment) and 12 (payroll).
 3. **Phase 3 — Everything else:** 02, 07, 08, 12, 14, 15, 16, 17, 18, 19, 20, 21. **Workflow 23 (Project Completion Settlement & VAT Analysis)** joins phase 3 because it depends on workflows 03, 05, 09, 22 being in place first.
 
-This phasing is mirrored in root [`README.md`](../../README.md#116-roadmap-rough) §11.6.
+This phasing is mirrored in root [`README.md`](../../README.md#116-roadmap-rough) Section 11.6.

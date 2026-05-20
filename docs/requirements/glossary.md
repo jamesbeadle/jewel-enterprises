@@ -23,7 +23,7 @@ A discrete unit of priced work within a tender (e.g. "install kitchen worktop").
 The business owner — executive decisions across all projects.
 
 **Program / Project Program / Program of Work**
-The scheduled plan of work to be delivered against a tender. The platform's central organising concept. Working name for the initial software: **Project Program Scheduler**.
+The scheduled plan of work to be delivered against a tender. The platform's central organising concept. Working name for the initial software: **JPMS**.
 
 **Project**
 A unit of work delivered for an architect, originating from an accepted tender.

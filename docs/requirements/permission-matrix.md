@@ -2,7 +2,6 @@
 
 Coarse-grained matrix of which role is responsible for what across the twenty-one workflows. This is the at-a-glance reference. Per-step CRUD permissions live in each workflow file (and, once written, in each user-journey file).
 
-**Sourced from:** [`/docs/meetings/2026-05-20-jbb-workflow-audit.md`](../meetings/2026-05-20-jbb-workflow-audit.md)
 
 **Status:** Draft — refined per workflow as the deep-dive sessions happen.
 
@@ -83,4 +82,4 @@ See [`personas.md`](personas.md) for the full card on each.
 1. When a workflow file moves from **Draft** → **In Review**, walk the row above with the named operational owner.
 2. Capture per-step CRUD permissions inside the workflow file (and inside derived user-journey files).
 3. Update the relevant cell in this matrix.
-4. When all rows are confirmed, root [`README.md`](../../README.md) §4.7 "Permission matrix populated" can be ticked.
+4. When all rows are confirmed, root [`README.md`](../../README.md) Section 4.7 "Permission matrix populated" can be ticked.

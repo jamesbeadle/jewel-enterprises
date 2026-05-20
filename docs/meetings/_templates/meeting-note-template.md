@@ -47,4 +47,4 @@
 
 ## Artefacts updated
 
-- _List of files in this repo created or changed as a result of this meeting. Each new journey / persona / entity should reference this file in its `Sourced from:` header._
+- _List of files in this repo created or changed as a result of this meeting._

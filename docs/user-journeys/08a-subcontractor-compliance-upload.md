@@ -8,7 +8,6 @@
 **Success metric:** Zero subcontractors working with expired documents at the point of payment.
 **Status:** Draft
 **Last reviewed:** —
-**Sourced from:** [`/docs/meetings/2026-05-20-jbb-workflow-audit.md`](../meetings/2026-05-20-jbb-workflow-audit.md)
 
 ---
 

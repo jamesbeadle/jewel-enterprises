@@ -8,7 +8,6 @@
 **Current monthly hours:** ~80 h/month — **the single largest workflow in the audit**.
 **Status:** Draft
 **Last reviewed:** —
-**Sourced from:** [`/docs/meetings/2026-05-20-jbb-workflow-audit.md`](../meetings/2026-05-20-jbb-workflow-audit.md)
 
 ---
 

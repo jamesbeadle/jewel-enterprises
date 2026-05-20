@@ -8,7 +8,6 @@
 **Success metric:** FD spends ≥80% of cashflow time on judgement/intervention, ≤20% on data assembly. Forecast accuracy at +1 week and +4 weeks within agreed tolerance.
 **Status:** Draft
 **Last reviewed:** —
-**Sourced from:** [`/docs/meetings/2026-05-20-jbb-workflow-audit.md`](../meetings/2026-05-20-jbb-workflow-audit.md)
 
 ---
 

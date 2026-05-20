@@ -8,7 +8,6 @@
 **Success metric:** ≥85% of inbound finance email auto-classified and auto-actioned (Dext-route, statement queue, etc.). FD reads exceptions, not every email.
 **Status:** Draft
 **Last reviewed:** —
-**Sourced from:** [`/docs/meetings/2026-05-20-jbb-workflow-audit.md`](../meetings/2026-05-20-jbb-workflow-audit.md)
 
 ---
 

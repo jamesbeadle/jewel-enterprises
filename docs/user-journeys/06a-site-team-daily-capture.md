@@ -8,7 +8,6 @@
 **Success metric:** ≥90% of expected daily entries captured by end of shift. Zero photos lost to WhatsApp.
 **Status:** Draft
 **Last reviewed:** —
-**Sourced from:** [`/docs/meetings/2026-05-20-jbb-workflow-audit.md`](../meetings/2026-05-20-jbb-workflow-audit.md)
 
 ---
 
