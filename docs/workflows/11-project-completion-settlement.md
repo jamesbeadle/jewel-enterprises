@@ -1,4 +1,4 @@
-# Workflow 23 — Project Completion Settlement & Zero-Rated VAT Analysis
+# Workflow 11 — Project Completion Settlement & Zero-Rated VAT Analysis
 
 **Group:** Project lifecycle
 **Purpose:** On project completion, close out all open commercial items — cost-code allocations, timesheet approvals, valuation tail, retention release — and perform the zero-rated VAT analysis agreed with the client.
@@ -29,7 +29,7 @@ Workflow 07 handles the **defects** side of close-out (snag register, subcontrac
 ## Target flow (post-automation)
 
 1. **PC trigger** raised on the project. JPMS opens the settlement workspace (alongside the defect register from workflow 07).
-2. **Open-items dashboard** — JPMS lists everything still open at PC: unapproved timesheets (workflow 22), open cost-code allocations against zero budget, subcontractor invoice amendments (workflow 09), outstanding valuation items (workflow 05), unbilled work-order tail (workflow 03).
+2. **Open-items dashboard** — JPMS lists everything still open at PC: unapproved timesheets (workflow 09), open cost-code allocations against zero budget, subcontractor invoice amendments (workflow 09), outstanding valuation items (workflow 05), unbilled work-order tail (workflow 03).
 3. **Settle each item** — the workspace routes the FD through resolutions: approve or reject open timesheets; re-allocate or write off zero-budget items; finalise subcontractor amendments; agree the final valuation.
 4. **Zero-rated VAT analysis** — JPMS produces the draft analysis from contract metadata + the settled cost ledger (which BoQ items / cost codes qualify for zero-rating; which fall under standard rate). FD reviews and adjusts.
 5. **Client agreement** — analysis is issued to the client via the portal or email-with-link. Client confirms agreement (or comments). Disagreements route back to FD for revision.
@@ -84,8 +84,8 @@ See [`/docs/data-models/entity-relationship.md`](../data-models/entity-relations
 |---|---|
 | P01 Architect / Client | **Approver** — agrees the zero-rated VAT analysis |
 | P03 Project & Commercial Lead | Approver — commercial sign-off on open commercial items |
-| P07 Finance Director | **Owner** — runs settlement; produces and adjusts VAT analysis; triggers retention release |
-| P08 Directors / MD | Approver — final sign-off on the VAT outcome with the client |
+| P06 Finance Director | **Owner** — runs settlement; produces and adjusts VAT analysis; triggers retention release |
+| P07 Directors / MD | Approver — final sign-off on the VAT outcome with the client |
 
 See [`/docs/requirements/permission-matrix.md`](../requirements/permission-matrix.md).
 
@@ -95,7 +95,7 @@ See [`/docs/requirements/permission-matrix.md`](../requirements/permission-matri
 
 - [ ] Who triggers Practical Completion → is it the same trigger as workflow 07 defects (single PC event firing both workflows), or a separate explicit "PC declared" event?
 - [ ] VAT analysis sign-off responsibility — who is the named client-side signatory, and what's the SLA for their response?
-- [ ] Retention release — does it wait for **both** workflow 07 (defects signed off) and workflow 23 (settlement closed), or just settlement?
+- [ ] Retention release — does it wait for **both** workflow 07 (defects signed off) and workflow 11 (settlement closed), or just settlement?
 - [ ] Zero-rated VAT analysis — is this always required on every project, or only certain contract types (e.g. new build vs refurb)?
 - [ ] Disputed VAT outcome — how many revision rounds with the client before escalating to Directors?
 - [ ] Are there contract types where settlement happens **without** retention (e.g. fixed-price design-only)? If so, retention-release trigger needs to be optional.

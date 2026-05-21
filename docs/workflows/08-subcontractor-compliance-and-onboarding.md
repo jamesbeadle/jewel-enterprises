@@ -78,8 +78,6 @@
 - [ ] HMRC CIS — API available, or scraping/manual?
 - [ ] Document expiry grace — soft block (warn) or hard block (no work) at expiry?
 - [ ] RAMS approval — client-side approval needed before subcontractor mobilises?
-- [ ] **Toolbox Talks (TBT)** — should a weekly TBT distribution + acknowledgement capture sit here or in workflow 18? Driven by spreadsheet row 41 in [`automation-task-coverage.md`](../requirements/automation-task-coverage.md).
-- [ ] **Broad subcontractor notifications** (uniform / PPE / one-off bulletins) — add a generic "notify all active subcontractors on this project" channel? Driven by spreadsheet row 42 in [`automation-task-coverage.md`](../requirements/automation-task-coverage.md).
 
 ---
 

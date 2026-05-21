@@ -64,7 +64,7 @@ Update the journey row in the root [`README.md`](../../README.md#5-user-journeys
 
 ## Index
 
-Journeys derived from the [JBB workflow audit](../meetings/2026-05-20-jbb-workflow-audit.md). Each journey is a persona slice through a workflow in [`/docs/workflows/`](../workflows/); the journey number takes the workflow number plus a letter (`a`, `b`, …) so the link back to the workflow is unambiguous.
+Five journeys cover the highest-value actor slices through the eleven JPMS workflows. Each journey is a persona slice through a workflow in [`/docs/workflows/`](../workflows/); the journey number takes the workflow number plus a letter (`a`, `b`, …) so the link back to the workflow is unambiguous.
 
 | # | Journey | Persona | Source workflow | Status |
 |---|---|---|---|---|
@@ -72,9 +72,6 @@ Journeys derived from the [JBB workflow audit](../meetings/2026-05-20-jbb-workfl
 | 04a | Architect / CA: respond to an RFI | P01 Architect | [04](../workflows/04-variations-rfis-delays.md) | Draft |
 | 06a | Site Team: daily progress capture on mobile | P05 Site Team | [06](../workflows/06-site-reporting-and-progress.md) | Draft |
 | 08a | Subcontractor: upload renewed compliance document | P02 Subcontractor | [08](../workflows/08-subcontractor-compliance-and-onboarding.md) | Draft |
-| 09a | Finance Director: AP exception review | P07 Finance Director | [09](../workflows/09-accounts-payable.md) | Draft |
-| 11a | Finance Director: morning cashflow review _(primary pain-point anchor)_ | P07 Finance Director | [11](../workflows/11-cashflow-and-management-reporting.md) | Draft |
-| 13a | Finance Director: inbox triage exception review | P07 Finance Director | [13](../workflows/13-accounts-inbox-triage.md) | Draft |
-| 16a | Coordinator: day-one starter onboarding | P04 Office & Compliance Coordinator | [16](../workflows/16-hr-onboarding-and-it-access.md) | Draft |
+| 10a | Finance Director: morning cashflow review _(primary pain-point anchor)_ | P06 Finance Director | [10](../workflows/10-cashflow-and-project-forecasting.md) | Draft |
 
-> Other workflows can grow journey slices as the deep-dives surface non-obvious actor cuts. The above are the journeys where capturing the actor's experience separately is materially more valuable than reading the workflow file directly.
+> Other workflows can grow journey slices as deep-dives surface non-obvious actor cuts. The above are the journeys where capturing the actor's experience separately is materially more valuable than reading the workflow file directly.

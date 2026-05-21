@@ -14,11 +14,10 @@ Once journeys are signed off, these schemas are exported as the basis of:
 
 ## Process for adding a real entity
 
-1. **Identify the entity during a journey.** The journey's "Data structures" section names it.
-2. **Capture the source meeting note** in the schema's `description`.
-3. **Copy the shape** of [`_templates/entity-schema-example.json`](_templates/entity-schema-example.json) — never copy fields verbatim.
-4. **Create** `{entity}.schema.json` in this folder (e.g. `project.schema.json`).
-5. **Update** the entity-relationship diagram (see below) and the root [`README.md`](../../README.md#6-business-entities) entities table.
+1. **Identify the entity during a workflow or journey.** The workflow's "Entities touched" section names it.
+2. **Copy the shape** of [`_templates/entity-schema-example.json`](_templates/entity-schema-example.json) — never copy fields verbatim.
+3. **Create** `{entity}.schema.json` in this folder (e.g. `project.schema.json`).
+4. **Update** the entity-relationship diagram (see below) and the root [`README.md`](../../README.md#7-business-entities) entities table.
 
 ---
 
@@ -34,7 +33,7 @@ Once journeys are signed off, these schemas are exported as the basis of:
 
 ## Entity Relationships
 
-First-cut ERD is in [`entity-relationship.md`](entity-relationship.md), sourced from the [JBB workflow audit](../meetings/2026-05-20-jbb-workflow-audit.md) and the [2026-05-18 domain discovery](../meetings/2026-05-18-domain-discovery.md). The diagram is split into four sub-diagrams (project lifecycle, subcontractor & compliance, finance, people & ops) for legibility. Schemas are written workflow-by-workflow as each workflow moves Draft → In Review.
+First-cut ERD is in [`entity-relationship.md`](entity-relationship.md). The diagram is split into three sub-diagrams (project lifecycle; subcontractor & compliance; timesheets, cashflow & settlement) for legibility. Schemas are written workflow-by-workflow as each workflow moves Draft → In Review.
 
 ---
 

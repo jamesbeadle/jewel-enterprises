@@ -2,7 +2,7 @@
 
 > Persona slice through [Workflow 08 — Subcontractor Compliance & Onboarding](../workflows/08-subcontractor-compliance-and-onboarding.md). The subcontractor self-service side.
 
-**Actors:** P02 Subcontractor (primary, external). Reviewer: P04 Office & Compliance Coordinator. Read: P03 Project & Commercial Lead, P07 Finance Director.
+**Actors:** P02 Subcontractor (primary, external). Reviewer: P04 Office & Compliance Coordinator. Read: P03 Project & Commercial Lead, P06 Finance Director.
 **Goal:** Subcontractor uploads a renewed insurance certificate / RAMS / ticket and the system recognises the expiry update without anyone chasing them.
 **Frequency:** As required — typically tied to renewal cycles.
 **Success metric:** Zero subcontractors working with expired documents at the point of payment.
@@ -66,7 +66,7 @@ JPMS sends the subcontractor an expiry reminder (60/30/7 days before), or the su
 | 1–5 | P02 Subcontractor | Self-service upload of own documents |
 | 4 | P04 Office & Compliance Coordinator | Review and sign-off where required |
 | All | P03 Project & Commercial Lead | Read before award |
-| All | P07 Finance Director | Read at point of payment |
+| All | P06 Finance Director | Read at point of payment |
 
 See [`/docs/requirements/permission-matrix.md`](../requirements/permission-matrix.md).
 
