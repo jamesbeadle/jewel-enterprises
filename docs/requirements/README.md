@@ -8,7 +8,7 @@ Cross-cutting requirements that are not specific to a single journey.
 
 ## Files
 
-- [`personas.md`](personas.md) — Persona cards for the seven JPMS user roles (P01–P07).
+- [`personas.md`](personas.md) — User-role cards for the seven JPMS roles (P01–P07).
 - [`glossary.md`](glossary.md) — Construction and Jewel-Enterprises-specific terms (Tender, RFI, VO, Cash Call, Cost Code, Claim Period, etc.).
 - [`permission-matrix.md`](permission-matrix.md) — Role × Workflow RBAC matrix (coarse) across the 11 in-scope workflows and 7 personas.
 - [`integrations.md`](integrations.md) — JPMS inputs, what JPMS replaces for project management, and downstream consumers (accountancy tooling that draws on JPMS data).

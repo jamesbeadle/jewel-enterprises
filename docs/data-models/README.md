@@ -1,6 +1,6 @@
-# Data Models
+# Data Models — Domain Concepts
 
-JSON Schemas (draft 2020-12) for every major business entity, plus an entity-relationship diagram that ties them together.
+JSON Schemas (draft 2020-12) for every domain concept in JPMS, plus an entity-relationship diagram that ties them together. These are the shared vocabulary the business and the system both use.
 
 Once journeys are signed off, these schemas are exported as the basis of:
 

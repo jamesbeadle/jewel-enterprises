@@ -1,6 +1,6 @@
-# Entity Relationship Diagram
+# Domain Concepts — Entity Relationship Diagram
 
-First-cut ERD for JPMS. Schemas are not yet written — this diagram exists so the workflows and journeys can reference entities by name and so the eventual schemas have a shape to grow into.
+First-cut ERD for JPMS. The shared language between the business and the system — every concept JPMS talks about (Project, Tender, Work Order, Variation, Claim Period, Cashflow Forecast, etc.) and how they relate. JSON Schemas are written workflow-by-workflow against these concepts.
 
 **Status:** Draft — refined as each workflow moves Draft → In Review and each schema gets written.
 

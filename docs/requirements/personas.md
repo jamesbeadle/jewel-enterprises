@@ -1,10 +1,10 @@
-# Personas
+# User Roles
 
-Seven canonical user roles for **JPMS**. Each card stands alone — there is one source of truth per role.
+The seven user roles JPMS is built around. Each card stands alone — there is one source of truth per role.
 
-Each card stays **Draft** until JPMS is far enough along to validate it against real usage. The card template lives in [`_templates/personas-template.md`](_templates/personas-template.md). The Role × Workflow RBAC matrix lives in [`permission-matrix.md`](permission-matrix.md).
+Each card stays **Draft** until JPMS is far enough along to validate it against real usage. The card template lives in [`_templates/personas-template.md`](_templates/personas-template.md). The Role × Workflow responsibility matrix lives in [`permission-matrix.md`](permission-matrix.md).
 
-### Persona register
+### Register
 
 | # | Persona | Type |
 |---|---|---|
