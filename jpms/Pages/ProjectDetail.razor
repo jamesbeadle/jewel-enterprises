@@ -1,0 +1,53 @@
+@page "/projects/{ProjectId}"
+@inject AuthService Auth
+@inject SessionService Session
+@inject IProjectStore ProjectStore
+@inject NavigationManager Nav
+
+<PageTitle>@PageTitleText · JPMS</PageTitle>
+
+@if (!isLoaded)
+{
+    <section class="max-w-5xl mx-auto px-4 py-12 text-slate-500 text-sm">
+        Loading project…
+    </section>
+}
+else if (!Session.IsApproved)
+{
+    <RequestAccessView Email="@Auth.CurrentUser!.Email" DisplayName="@Auth.CurrentUser.DisplayName" />
+}
+else if (project is null)
+{
+    <section class="max-w-3xl mx-auto px-4 py-12">
+        <h1 class="text-2xl font-semibold text-slate-900 mb-2">Project not found</h1>
+        <p class="text-slate-700">
+            No project matches <span class="font-mono text-sm">@ProjectId</span>.
+            <a class="text-slate-900 underline" href="/projects">Back to projects</a>.
+        </p>
+    </section>
+}
+else
+{
+    <ProjectDetailView Project="project" />
+}
+
+@code {
+    [Parameter] public string ProjectId { get; set; } = "";
+
+    private bool isLoaded;
+    private Project? project;
+
+    private string PageTitleText => project?.Name ?? "Project";
+
+    protected override async Task OnInitializedAsync()
+    {
+        await Session.EnsureLoadedAsync();
+        if (!Auth.IsSignedIn)
+        {
+            Nav.NavigateTo("/login", forceLoad: true);
+            return;
+        }
+        project = ProjectStore.Find(ProjectId);
+        isLoaded = true;
+    }
+}

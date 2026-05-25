@@ -135,6 +135,7 @@ Production source: [`/jpms`](jpms/) — see [its README](jpms/README.md) for wha
   /04-user-journeys        Per-role slices through workflows
   /05-data-model           Entities, permissions matrix, status models, approval flows, integrations
   /06-backlog              Must-have-v1, phase-2, consolidated open questions
+  site-map.md              Consolidated Phase 1 site map: every route, every story it serves, the build roadmap
 /jpms                      Production Blazor WebAssembly application
 /assets                    Screenshots, icons, branding
 ```
@@ -152,4 +153,5 @@ Each folder has its own README.
 - **User journeys** — [Index](docs/04-user-journeys/README.md) · 5 journey files in [`/docs/04-user-journeys/`](docs/04-user-journeys/)
 - **Data model** — [Entities + ERD](docs/05-data-model/entities.md) · [Permissions matrix](docs/05-data-model/permissions-matrix.md) · [Status models](docs/05-data-model/status-models.md) · [Approval flows](docs/05-data-model/approval-flows.md) · [Integrations](docs/05-data-model/integrations.md)
 - **Backlog** — [Must-have v1](docs/06-backlog/must-have-v1.md) · [Phase 2](docs/06-backlog/phase-2.md) · [Open questions](docs/06-backlog/open-questions.md)
+- **Site map** — [Phase 1 site map](docs/site-map.md) — every route, every story, build roadmap
 - **Production application** — [`/jpms`](jpms/README.md)

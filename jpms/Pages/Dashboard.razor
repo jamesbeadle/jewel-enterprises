@@ -1,6 +1,5 @@
 @page "/dashboard"
 @inject AuthService Auth
-@inject IUserDirectory UserDirectory
 @inject SessionService Session
 @inject NavigationManager Nav
 @implements IDisposable
@@ -34,21 +33,12 @@ else if (Session.ActiveRole is not null)
 
     protected override async Task OnInitializedAsync()
     {
-        await Auth.EnsureInitialisedAsync();
+        await Session.EnsureLoadedAsync();
         if (!Auth.IsSignedIn)
         {
             Nav.NavigateTo("/login", forceLoad: true);
             return;
         }
-
-        var email = Auth.CurrentUser!.Email;
-        var directoryEntry = UserDirectory.Find(email);
-        var roles = EffectiveRoles.For(email, directoryEntry);
-        var displayName = string.IsNullOrWhiteSpace(directoryEntry?.DisplayName)
-            ? Auth.CurrentUser.DisplayName
-            : directoryEntry!.DisplayName;
-        var sessionUser = Auth.CurrentUser with { DisplayName = displayName };
-        Session.Adopt(sessionUser, roles);
         Session.OnChange += StateHasChanged;
         isLoaded = true;
     }

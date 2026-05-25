@@ -106,10 +106,13 @@ jpms/
 ├── Styles/
 │   └── app.tailwind.css           Tailwind source — compiled to wwwroot/css/app.built.css
 ├── Layout/
-│   └── MainLayout.razor           Header + sign-out + footer
+│   ├── MainLayout.razor           Header + sign-out + footer
+│   └── PrimaryNav.razor           Top-level navigation links
 ├── Pages/
 │   ├── Login.razor                Landing page — Microsoft sign-in
-│   └── Dashboard.razor            Role router
+│   ├── Dashboard.razor            Role router
+│   ├── Projects.razor             /projects — portfolio list
+│   └── ProjectDetail.razor        /projects/{id} — project detail hub
 ├── Components/
 │   ├── AdminHome.razor            Admin homepage composition
 │   ├── AdminStatsRow.razor        Stats grid (approved / pending / roles)
@@ -120,6 +123,10 @@ jpms/
 │   ├── ApprovedUserRow.razor      One approved user — revoke
 │   ├── WhatsNextPanel.razor       Next-up backlog tiles
 │   ├── PlaceholderHome.razor      Non-admin role landing page
+│   ├── ProjectsTable.razor        Project list table with row navigation
+│   ├── ProjectDetailView.razor    Project detail page body
+│   ├── ProjectStageBadge.razor    Coloured project stage chip
+│   ├── RoleSwitcher.razor         Header role dropdown for multi-role users
 │   ├── ProviderButton.razor       OAuth provider sign-in button
 │   ├── RequestAccessView.razor    For signed-in users not yet on the directory
 │   ├── RoleBadge.razor            Small coloured role chip
@@ -131,14 +138,23 @@ jpms/
 │   ├── Role.cs                    Role enum + display / RBAC helpers
 │   ├── User.cs                    AuthProvider, AuthenticatedUser, DirectoryUser records
 │   ├── AccessRequest.cs           Pending-request record
-│   └── ClientPrincipal.cs         Shape of /.auth/me response
+│   ├── ClientPrincipal.cs         Shape of /.auth/me response
+│   ├── JpmsAdministrators.cs      Hardcoded admin email allowlist
+│   ├── Project.cs                 Project record
+│   ├── ProjectStage.cs            Project lifecycle stage enum + display
+│   └── Organisation.cs            Jewel entity enum (JBB / JPS / JPF)
 ├── Services/
 │   ├── AuthService.cs             Fetches /.auth/me, exposes CurrentUser
+│   ├── SessionService.cs          Holds active role + computed effective roles
+│   ├── EffectiveRoles.cs          Merges hardcoded admin + directory roles
 │   ├── IUserDirectory.cs          Directory contract
 │   ├── AllowListUserDirectory.cs  In-memory directory (mutable for the session)
 │   ├── IAccessRequestStore.cs     Access-request queue contract
-│   └── InMemoryAccessRequestStore.cs   Session-scoped queue
+│   ├── InMemoryAccessRequestStore.cs   Session-scoped queue
+│   ├── IProjectStore.cs           Project store contract
+│   └── InMemoryProjectStore.cs    Seeded in-memory project store
 └── wwwroot/                       Everything served to the browser
+    └── staticwebapp.config.json   SWA routes + AAD identity provider
 ```
 
 ## Code style

@@ -4,6 +4,15 @@ namespace Jewel.JPMS.Services;
 
 public sealed class SessionService
 {
+    private readonly AuthService auth;
+    private readonly IUserDirectory directory;
+
+    public SessionService(AuthService auth, IUserDirectory directory)
+    {
+        this.auth = auth;
+        this.directory = directory;
+    }
+
     public AuthenticatedUser? CurrentUser { get; private set; }
 
     public IReadOnlyList<Role> AvailableRoles { get; private set; } = Array.Empty<Role>();
@@ -16,12 +25,21 @@ public sealed class SessionService
 
     public event Action? OnChange;
 
-    public void Adopt(AuthenticatedUser user, IReadOnlyList<Role> roles)
+    public async Task EnsureLoadedAsync()
     {
-        CurrentUser = user;
-        AvailableRoles = roles;
-        ActiveRole = roles.Count == 0 ? null : MostPrivileged(roles);
-        OnChange?.Invoke();
+        if (CurrentUser is not null) return;
+
+        await auth.EnsureInitialisedAsync();
+        if (!auth.IsSignedIn) return;
+
+        var signedInUser = auth.CurrentUser!;
+        var directoryEntry = directory.Find(signedInUser.Email);
+        var roles = EffectiveRoles.For(signedInUser.Email, directoryEntry);
+        var displayName = string.IsNullOrWhiteSpace(directoryEntry?.DisplayName)
+            ? signedInUser.DisplayName
+            : directoryEntry!.DisplayName;
+        var resolvedUser = signedInUser with { DisplayName = displayName };
+        Adopt(resolvedUser, roles);
     }
 
     public void SwitchTo(Role role)
@@ -37,6 +55,14 @@ public sealed class SessionService
         CurrentUser = null;
         AvailableRoles = Array.Empty<Role>();
         ActiveRole = null;
+        OnChange?.Invoke();
+    }
+
+    private void Adopt(AuthenticatedUser user, IReadOnlyList<Role> roles)
+    {
+        CurrentUser = user;
+        AvailableRoles = roles;
+        ActiveRole = roles.Count == 0 ? null : MostPrivileged(roles);
         OnChange?.Invoke();
     }
 

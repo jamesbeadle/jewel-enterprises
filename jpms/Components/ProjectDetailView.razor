@@ -1,0 +1,45 @@
+<section class="max-w-5xl mx-auto px-4 py-8 md:py-12">
+
+    <nav class="mb-6 text-sm">
+        <a href="/projects" class="text-slate-500 hover:text-slate-900 underline underline-offset-4">Projects</a>
+        <span class="text-slate-400 mx-2">/</span>
+        <span class="text-slate-700 font-medium">@Project.Reference</span>
+    </nav>
+
+    <header class="mb-8">
+        <div class="flex flex-wrap items-start justify-between gap-4 mb-4">
+            <div>
+                <p class="text-xs uppercase tracking-wider text-slate-500 font-medium mb-1 font-mono">@Project.Reference</p>
+                <h1 class="text-3xl md:text-4xl font-semibold text-slate-900 leading-tight">@Project.Name</h1>
+                <p class="text-sm text-slate-600 mt-2">@Project.ClientName · @Project.Organisation.DisplayName()</p>
+            </div>
+            <ProjectStageBadge Stage="Project.Stage" />
+        </div>
+    </header>
+
+    <div class="grid grid-cols-1 sm:grid-cols-3 gap-3 md:gap-4 mb-8">
+        <Stat Label="Stage"            Value="@Project.Stage.DisplayName()" />
+        <Stat Label="Entity"           Value="@Project.Organisation.ShortCode()" />
+        <Stat Label="Project Manager"  Value="@Project.ProjectManagerEmail" />
+    </div>
+
+    <section class="rounded-xl border border-slate-200 bg-white overflow-hidden">
+        <header class="px-5 py-3 border-b border-slate-200 bg-slate-50">
+            <h2 class="text-sm font-medium text-slate-700">Project areas</h2>
+        </header>
+        <div class="p-5 text-sm text-slate-700 leading-relaxed">
+            <p class="mb-2">
+                The project hub is the spine; every workflow attaches here as it ships.
+            </p>
+            <p class="text-slate-600">
+                Next to land: drawings, BoQ, procurement, mobilisation, change register, site delivery,
+                valuations/CVR/cashflow, close-out. See <a href="https://github.com/jamesbeadle/jewel-enterprises/blob/main/docs/site-map.md" class="underline underline-offset-4">site map</a>.
+            </p>
+        </div>
+    </section>
+
+</section>
+
+@code {
+    [Parameter, EditorRequired] public Project Project { get; set; } = default!;
+}

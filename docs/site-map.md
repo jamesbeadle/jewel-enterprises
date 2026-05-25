@@ -25,8 +25,13 @@ This is the contract between scoping and Blazor implementation. Every Phase 1 us
   /admin/requests                                    Pending access requests
   /admin/roles                                       Role assignment (per directory user)
 /me                                                [Any signed-in user]
-  /me/notifications                                  Notification inbox
   /me/preferences                                    Email + role-switch defaults
+                                                   (Notifications delivered via PWA push, no dedicated inbox)
+/reports                                           [Owner P02; Read P01,P03,P04]
+                                                   US-07-10, US-07-22, plus any downstream-publish surface
+  /reports/valuations                                Approved valuations CSV export
+  /reports/timesheets                                Approved day-rate hours CSV export
+                                                   (Direct Xero integration is a later phase)
 ```
 
 ### 1.2 Workflow 00 — CRM / Sales / Pre-project
@@ -105,8 +110,9 @@ US-01-06 (current revision on phone) is delivered by the mobile site app, not a 
     /subcontractors/{id}/rams                        US-03-19,20
     /subcontractors/{id}/projects                    Read — which projects this sub is on
 
-/work-orders                                       [Owner P03; Read P01,P02,P04,P07]
+/work-orders                                       [Owner P03; Read P01,P02,P04,P07; FD portfolio view]
                                                    US-03-10 (auto-generated post-award)
+  /work-orders                                       Portfolio-wide WO list with filter (status, value, sub, org)
   /work-orders/{id}                                  Work Order artefact
 ```
 
@@ -457,17 +463,17 @@ Desktop `/projects/{id}/closeout/*`. Portal close-out pack + VAT review. Subcont
 
 ---
 
-## 5. Navigation gaps to confirm
+## 5. Resolved gaps
 
-Per CLAUDE.md: gaps are flagged before building, not after.
-
-1. **US-05-12** (system feeds programme + valuation on VO approval) — server logic, no UI. Confirm it's a service contract.
-2. **US-07-10 / US-07-22** (publish approved valuations / day-rate hours for Xero) — server-side. Confirm publish surface.
-3. **US-09-09** (bid-hit rate per estimator) — currently `/portfolio/estimator`. Could also fit `/sales-analytics`. Confirm one home.
-4. **US-08-15** (architect/client confirms VAT) — both portals. P08 advises P09; one route or both?
-5. **US-07-19** (architect/client view of approved timesheet totals) — placed in both portals. Contract-gate check per portal or shared service?
-6. **US-05-11 Variation Orders list** — workflow file says sibling to PVR. Currently at `/projects/{id}/changes/variations/report`. Add navigation hint from PVR page?
-7. **Submittals** — listed in `must-have-v1.md` and workflow 05 acceptance criteria but no `US-05-NN` story owns the approval UI. Routes inferred. Confirm.
-8. **Director annual H&S review** (P01 approver on workflow 04) — no specific story. Fold into `/hs` exec view or `/portfolio/hs`?
-9. **`/me/notifications`** — every workflow assumes a notification inbox. No US-NN-MM owns it. Foundation gap.
-10. **`/work-orders` top-level** — currently per-project. FD may want portfolio-wide WO list. Confirm.
+| # | Gap | Resolution |
+|---|---|---|
+| 1 | US-05-12 (variation feeds programme + valuation on approval) | Server logic only, no UI. Triggered after the client/architect has approved in their portal. The downstream effect surfaces on the appropriate reports. No route. |
+| 2 | US-07-10 / US-07-22 (publish approved valuations + day-rate hours) | Build a `/reports` section where the data is viewable and downloadable as CSV. Direct Xero integration is later — the platform is contained software for now. |
+| 3 | US-09-09 (bid-hit rate per estimator) | Lives at `/portfolio/estimator` — it is estimator analytics, which is a portfolio-reporting concern. |
+| 4 | US-08-15 (VAT confirmation) | VAT amount is manually entered (matching the Xero figure) at end of project; client confirms on the site. Same VAT route serves both architect (`/portal/architect/.../vat`) and client (`/portal/client/.../vat`); architect view is read-only advisory, client confirms. |
+| 5 | US-07-19 (timesheet totals visible to architect/client) | Same view location; role gates the actions. Architect/client see the same totals; capability differs (e.g. approval powers). One shared component, role-aware controls. |
+| 6 | Drill-down from summary to detailed views | Industry-standard pattern. Tabular summary rows are clickable, navigate to deeper detail. Breadcrumbs trail the hierarchy. Site map remains as drafted. |
+| 7 | Submittals approval UI | No `US-05-NN` story confirms it. The `must-have-v1.md` mention may be stale. Treat the user stories as authoritative — leave `/projects/{id}/changes/submittals` and `/portal/architect/.../submittals` as placeholder routes until a story confirms the workflow. |
+| 8 | Director annual H&S review | Route under `/portfolio/hs` as expected. Leave as a placeholder until a story confirms the exact view. |
+| 9 | `/me/notifications` | Dropped. Notifications use PWA push (no in-app inbox). |
+| 10 | `/work-orders` top-level | Add `/work-orders` portfolio-wide list with filtering (status, value, subcontractor, organisation). FD's view. Per-project list remains under `/projects/{id}/procurement`. |
