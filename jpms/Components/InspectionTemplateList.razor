@@ -1,0 +1,33 @@
+<div class="rounded-xl border border-slate-200 bg-white overflow-hidden">
+    <ul class="divide-y divide-slate-200">
+        @foreach (var template in Templates)
+        {
+            <li class="p-4 text-sm">
+                <div class="flex items-start justify-between gap-3">
+                    <div>
+                        <p class="font-medium text-slate-900">@template.Title</p>
+                        <p class="text-xs text-slate-500 mt-1">@template.Detail</p>
+                    </div>
+                    <span class="inline-flex items-center rounded-full bg-slate-50 border border-slate-200 px-2 py-0.5 text-[11px] font-medium text-slate-700">
+                        v@(template.Version)
+                    </span>
+                </div>
+            </li>
+        }
+    </ul>
+</div>
+
+@code {
+    private record Template(string Title, string Detail, int Version);
+
+    private static readonly Template[] Templates =
+    {
+        new("Weekly site inspection",         "Welfare, edge protection, scaffold, fire exits, signage",     3),
+        new("Working at height permit",       "Method statement, fall arrest, rescue plan",                  2),
+        new("Hot works permit",               "Fire watch, extinguisher, post-work cool-down",               1),
+        new("Confined space entry",           "Gas test, rescue equipment, attendant",                       1),
+        new("Mobilisation site set-up audit", "Hoarding, welfare, F10, induction zone",                      4),
+        new("Toolbox talk — working at height", "Refresher topic with attendance capture",                   2),
+        new("Toolbox talk — manual handling",   "Refresher topic with attendance capture",                   2)
+    };
+}

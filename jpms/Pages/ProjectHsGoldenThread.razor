@@ -1,0 +1,54 @@
+@page "/projects/{ProjectId}/hs/golden-thread"
+@inject AuthService Auth
+@inject SessionService Session
+@inject IHsRegister HsRegister
+@inject IMobilisationStore MobilisationStore
+@inject NavigationManager Nav
+
+<PageTitle>Golden thread · JPMS</PageTitle>
+
+@if (!isLoaded)
+{
+    <section class="max-w-5xl mx-auto px-4 py-12 text-slate-500 text-sm">Loading…</section>
+}
+else if (!Session.IsApproved)
+{
+    <RequestAccessView Email="@Auth.CurrentUser!.Email" DisplayName="@Auth.CurrentUser.DisplayName" />
+}
+else
+{
+    <ProjectPageShell ProjectId="@ProjectId" ActiveTab="hs">
+        <h2 class="text-lg font-semibold text-slate-900 mb-3">Golden thread of H&S evidence</h2>
+        <p class="text-sm text-slate-600 mb-5">
+            Complete record of safety decisions, inspections and corrective actions for Building Safety Act compliance.
+        </p>
+
+        <div class="grid grid-cols-2 md:grid-cols-4 gap-3 md:gap-4 mb-6">
+            <Stat Label="Mobilisation items" Value="@MobItemCount.ToString()" />
+            <Stat Label="Observations"       Value="@ObservationCount.ToString()" />
+            <Stat Label="Incidents"          Value="@IncidentCount.ToString()" />
+            <Stat Label="Corrective actions" Value="@CorrectiveActionCount.ToString()" />
+        </div>
+
+        <HsRecordTable Records="ProjectRecords" />
+    </ProjectPageShell>
+}
+
+@code {
+    [Parameter] public string ProjectId { get; set; } = "";
+
+    private bool isLoaded;
+
+    private IReadOnlyList<HsRecord> ProjectRecords => HsRegister.ForProject(ProjectId);
+    private int MobItemCount => MobilisationStore.For(ProjectId).Items.Count;
+    private int ObservationCount => ProjectRecords.Count(r => r.Kind == HsRecordKind.Observation);
+    private int IncidentCount => ProjectRecords.Count(r => r.Kind == HsRecordKind.Incident);
+    private int CorrectiveActionCount => ProjectRecords.Count(r => r.Kind == HsRecordKind.CorrectiveAction);
+
+    protected override async Task OnInitializedAsync()
+    {
+        await Session.EnsureLoadedAsync();
+        if (!Auth.IsSignedIn) { Nav.NavigateTo("/login", forceLoad: true); return; }
+        isLoaded = true;
+    }
+}

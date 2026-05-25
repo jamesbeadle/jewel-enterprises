@@ -1,0 +1,35 @@
+<div class="rounded-xl border border-slate-200 bg-white overflow-hidden">
+    <ul class="divide-y divide-slate-200">
+        @foreach (var item in Items)
+        {
+            <li class="p-4 flex items-center justify-between gap-3 text-sm">
+                <div>
+                    <p class="font-medium text-slate-900">@item.Label</p>
+                    <p class="text-xs text-slate-500 mt-1">@item.Detail</p>
+                </div>
+                <span class="text-[11px] font-medium @(item.IsReady ? "text-emerald-700" : "text-amber-700")">
+                    @(item.IsReady ? "Ready" : "Pending")
+                </span>
+            </li>
+        }
+    </ul>
+</div>
+
+@code {
+    [Parameter] public int DrawingCount { get; set; }
+    [Parameter] public bool HasSettlement { get; set; }
+    [Parameter] public bool HasVat { get; set; }
+    [Parameter] public bool HasRetention { get; set; }
+
+    private record Item(string Label, string Detail, bool IsReady);
+
+    private IReadOnlyList<Item> Items => new List<Item>
+    {
+        new("As-built drawings",      $"{DrawingCount} drawings on record",      DrawingCount > 0),
+        new("Warranties and O&Ms",    "Compiled from subcontractor work orders", false),
+        new("Settlement record",      "Final account signed by client",          HasSettlement),
+        new("VAT analysis",           "Zero-rated breakdown confirmed",          HasVat),
+        new("Retention release",      "Published downstream to AR",              HasRetention),
+        new("Practical Completion",   "PC certificate issued",                   false)
+    }.AsReadOnly();
+}

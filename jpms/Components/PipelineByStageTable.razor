@@ -1,0 +1,42 @@
+<div class="rounded-xl border border-slate-200 bg-white overflow-hidden">
+    <table class="w-full text-sm">
+        <thead class="bg-slate-50 border-b border-slate-200">
+            <tr class="text-right text-[11px] uppercase tracking-wider text-slate-500 font-semibold">
+                <th class="px-4 py-3 text-left">Stage</th>
+                <th class="px-4 py-3">Leads</th>
+                <th class="px-4 py-3">Total value</th>
+                <th class="px-4 py-3">Avg deal size</th>
+            </tr>
+        </thead>
+        <tbody class="divide-y divide-slate-200 text-right">
+            @foreach (var row in Rows)
+            {
+                <tr>
+                    <td class="px-4 py-3 text-left"><LeadStageBadge Stage="row.Stage" /></td>
+                    <td class="px-4 py-3 text-slate-700">@row.Count</td>
+                    <td class="px-4 py-3 text-slate-900 font-medium">@Money(row.TotalValue)</td>
+                    <td class="px-4 py-3 text-slate-700">@Money(row.AverageValue)</td>
+                </tr>
+            }
+        </tbody>
+    </table>
+</div>
+
+@code {
+    [Parameter, EditorRequired] public IReadOnlyList<Lead> Leads { get; set; } = Array.Empty<Lead>();
+
+    private record StageRow(LeadStage Stage, int Count, decimal TotalValue, decimal AverageValue);
+
+    private IReadOnlyList<StageRow> Rows =>
+        Leads.GroupBy(lead => lead.Stage)
+             .Select(group => new StageRow(
+                 group.Key, group.Count(),
+                 group.Sum(lead => lead.EstimatedValue ?? 0),
+                 group.Count() == 0 ? 0 : group.Sum(lead => lead.EstimatedValue ?? 0) / group.Count()))
+             .OrderBy(row => row.Stage)
+             .ToList()
+             .AsReadOnly();
+
+    private static string Money(decimal value) =>
+        value.ToString("C0", System.Globalization.CultureInfo.GetCultureInfo("en-GB"));
+}

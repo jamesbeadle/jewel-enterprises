@@ -1,0 +1,38 @@
+<div class="rounded-xl border border-slate-200 bg-white overflow-hidden">
+    <table class="w-full text-sm">
+        <thead class="bg-slate-50 border-b border-slate-200">
+            <tr class="text-left text-[11px] uppercase tracking-wider text-slate-500 font-semibold">
+                <th class="px-4 py-3">Subcontractor</th>
+                <th class="px-4 py-3 hidden sm:table-cell">Trade</th>
+                <th class="px-4 py-3 text-right">Work orders</th>
+                <th class="px-4 py-3 text-right">Total value</th>
+                <th class="px-4 py-3 text-right hidden md:table-cell">Share</th>
+            </tr>
+        </thead>
+        <tbody class="divide-y divide-slate-200">
+            @foreach (var row in Rows)
+            {
+                <tr>
+                    <td class="px-4 py-3 text-slate-900 font-medium">@row.CompanyName</td>
+                    <td class="px-4 py-3 text-slate-700 hidden sm:table-cell">@row.Trade</td>
+                    <td class="px-4 py-3 text-right text-slate-700">@row.WorkOrderCount</td>
+                    <td class="px-4 py-3 text-right text-slate-900 font-medium">@Money(row.TotalValue)</td>
+                    <td class="px-4 py-3 text-right text-slate-700 hidden md:table-cell">
+                        @(GrandTotal == 0 ? "—" : $"{100m * row.TotalValue / GrandTotal:0.0}%")
+                    </td>
+                </tr>
+            }
+        </tbody>
+    </table>
+</div>
+
+@code {
+    public record ExposureRow(string CompanyName, string Trade, int WorkOrderCount, decimal TotalValue);
+
+    [Parameter, EditorRequired] public IReadOnlyList<ExposureRow> Rows { get; set; } = Array.Empty<ExposureRow>();
+
+    private decimal GrandTotal => Rows.Sum(row => row.TotalValue);
+
+    private static string Money(decimal value) =>
+        value.ToString("C0", System.Globalization.CultureInfo.GetCultureInfo("en-GB"));
+}

@@ -1,0 +1,83 @@
+@page "/projects/{ProjectId}/boq/sign-off"
+@inject AuthService Auth
+@inject SessionService Session
+@inject IBoqStore BoqStore
+@inject IProjectStore ProjectStore
+@inject NavigationManager Nav
+
+<PageTitle>Tender sign-off · JPMS</PageTitle>
+
+@if (!isLoaded)
+{
+    <section class="max-w-5xl mx-auto px-4 py-12 text-slate-500 text-sm">Loading…</section>
+}
+else if (!Session.IsApproved)
+{
+    <RequestAccessView Email="@Auth.CurrentUser!.Email" DisplayName="@Auth.CurrentUser.DisplayName" />
+}
+else
+{
+    <ProjectPageShell ProjectId="@ProjectId" ActiveTab="boq">
+        <nav class="mb-4 text-sm">
+            <a href="@($"/projects/{ProjectId}/boq")" class="text-slate-500 hover:text-slate-900 underline underline-offset-4">BoQ</a>
+            <span class="text-slate-400 mx-2">/</span>
+            <span class="text-slate-700 font-medium">Director sign-off</span>
+        </nav>
+
+        <h2 class="text-lg font-semibold text-slate-900 mb-3">Tender sign-off</h2>
+        <p class="text-sm text-slate-600 mb-5">
+            High-value tenders require Director approval before issue to the architect.
+        </p>
+
+        <section class="rounded-xl border border-slate-200 bg-white p-5 space-y-3">
+            <div class="grid grid-cols-2 gap-3">
+                <Stat Label="Line items" Value="@LineCount.ToString()" />
+                <Stat Label="Tender total" Value="@Money(Total)" />
+            </div>
+
+            @if (isSignedOff)
+            {
+                <div class="rounded-lg border border-emerald-200 bg-emerald-50 p-4">
+                    <p class="text-sm font-semibold text-emerald-900">Tender signed off</p>
+                    <p class="text-xs text-emerald-800 mt-1">Approved @signedOffAt.LocalDateTime.ToString("d MMM yyyy HH:mm") by @signedOffBy</p>
+                </div>
+            }
+            else
+            {
+                <button type="button" @onclick="HandleSignOff"
+                        class="rounded-lg bg-slate-900 text-white font-medium text-sm px-4 py-2 hover:bg-slate-800 transition">
+                    Sign off tender
+                </button>
+            }
+        </section>
+    </ProjectPageShell>
+}
+
+@code {
+    [Parameter] public string ProjectId { get; set; } = "";
+
+    private bool isLoaded;
+    private bool isSignedOff;
+    private DateTimeOffset signedOffAt;
+    private string signedOffBy = "";
+
+    private int LineCount => BoqStore.LinesFor(ProjectId).Count;
+    private decimal Total => BoqStore.TotalFor(ProjectId);
+
+    private void HandleSignOff()
+    {
+        isSignedOff = true;
+        signedOffAt = DateTimeOffset.UtcNow;
+        signedOffBy = Auth.CurrentUser?.Email ?? "unknown";
+    }
+
+    protected override async Task OnInitializedAsync()
+    {
+        await Session.EnsureLoadedAsync();
+        if (!Auth.IsSignedIn) { Nav.NavigateTo("/login", forceLoad: true); return; }
+        isLoaded = true;
+    }
+
+    private static string Money(decimal value) =>
+        value.ToString("C0", System.Globalization.CultureInfo.GetCultureInfo("en-GB"));
+}

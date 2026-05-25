@@ -1,0 +1,56 @@
+@page "/portfolio/project-health"
+@inject AuthService Auth
+@inject SessionService Session
+@inject IProjectStore ProjectStore
+@inject IChangeRegister ChangeRegister
+@inject ICommercialStore CommercialStore
+@inject NavigationManager Nav
+
+<PageTitle>Project health · JPMS</PageTitle>
+
+@if (!isLoaded)
+{
+    <section class="max-w-5xl mx-auto px-4 py-12 text-slate-500 text-sm">Loading…</section>
+}
+else if (!Session.IsApproved)
+{
+    <RequestAccessView Email="@Auth.CurrentUser!.Email" DisplayName="@Auth.CurrentUser.DisplayName" />
+}
+else
+{
+    <section class="max-w-5xl mx-auto px-4 py-8 md:py-12">
+        <nav class="mb-4 text-sm">
+            <a href="/portfolio" class="text-slate-500 hover:text-slate-900 underline underline-offset-4">Portfolio</a>
+            <span class="text-slate-400 mx-2">/</span>
+            <span class="text-slate-700 font-medium">Project health</span>
+        </nav>
+
+        <header class="mb-6">
+            <h1 class="text-2xl md:text-3xl font-semibold text-slate-900">Project health</h1>
+            <p class="text-sm text-slate-600 mt-1">Overdue RFIs, open variations, unvalued WIP across all projects.</p>
+        </header>
+
+        <ProjectHealthTable Rows="HealthRows" />
+    </section>
+}
+
+@code {
+    private bool isLoaded;
+
+    private record HealthRow(string Reference, string Name, int OverdueRfis, int OpenVariations, int UnissuedValuations);
+
+    private IReadOnlyList<HealthRow> HealthRows =>
+        ProjectStore.All().Select(project => new HealthRow(
+            project.Reference, project.Name,
+            ChangeRegister.ForProject(project.ProjectId, ChangeKind.Rfi).Count(c => c.Status != ChangeStatus.Closed),
+            ChangeRegister.ForProject(project.ProjectId, ChangeKind.Variation).Count(c => c.Status is ChangeStatus.Open or ChangeStatus.AwaitingResponse),
+            CommercialStore.ValuationsFor(project.ProjectId).Count(v => !v.IsIssued)
+        )).ToList().AsReadOnly();
+
+    protected override async Task OnInitializedAsync()
+    {
+        await Session.EnsureLoadedAsync();
+        if (!Auth.IsSignedIn) { Nav.NavigateTo("/login", forceLoad: true); return; }
+        isLoaded = true;
+    }
+}

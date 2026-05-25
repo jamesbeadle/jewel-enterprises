@@ -1,0 +1,77 @@
+@page "/portfolio/pipeline"
+@inject AuthService Auth
+@inject SessionService Session
+@inject ILeadStore LeadStore
+@inject NavigationManager Nav
+
+<PageTitle>Pipeline · JPMS</PageTitle>
+
+@if (!isLoaded)
+{
+    <section class="max-w-5xl mx-auto px-4 py-12 text-slate-500 text-sm">Loading…</section>
+}
+else if (!Session.IsApproved)
+{
+    <RequestAccessView Email="@Auth.CurrentUser!.Email" DisplayName="@Auth.CurrentUser.DisplayName" />
+}
+else
+{
+    <section class="max-w-5xl mx-auto px-4 py-8 md:py-12">
+        <nav class="mb-4 text-sm">
+            <a href="/portfolio" class="text-slate-500 hover:text-slate-900 underline underline-offset-4">Portfolio</a>
+            <span class="text-slate-400 mx-2">/</span>
+            <span class="text-slate-700 font-medium">Pipeline</span>
+        </nav>
+
+        <header class="mb-6">
+            <h1 class="text-2xl md:text-3xl font-semibold text-slate-900">Pipeline value</h1>
+            <p class="text-sm text-slate-600 mt-1">Active leads by stage with weighted probability.</p>
+        </header>
+
+        <div class="grid grid-cols-2 md:grid-cols-3 gap-3 md:gap-4 mb-6">
+            <Stat Label="Active leads"     Value="@ActiveLeads.Count.ToString()" />
+            <Stat Label="Total value"      Value="@Money(TotalValue)" />
+            <Stat Label="Weighted value"   Value="@Money(WeightedValue)" />
+        </div>
+
+        <PipelineByStageTable Leads="ActiveLeads" />
+    </section>
+}
+
+@code {
+    private bool isLoaded;
+
+    private IReadOnlyList<Lead> ActiveLeads =>
+        LeadStore.All().Where(lead => lead.Stage.IsActive()).ToList().AsReadOnly();
+
+    private decimal TotalValue =>
+        ActiveLeads.Sum(lead => lead.EstimatedValue ?? 0);
+
+    private decimal WeightedValue =>
+        ActiveLeads.Sum(lead => (lead.EstimatedValue ?? 0) * StageWeight(lead.Stage));
+
+    private static decimal StageWeight(LeadStage stage) => stage switch
+    {
+        LeadStage.NewLead             => 0.05m,
+        LeadStage.Qualified           => 0.15m,
+        LeadStage.SurveyBooked        => 0.25m,
+        LeadStage.SurveyComplete      => 0.30m,
+        LeadStage.AwaitingInformation => 0.30m,
+        LeadStage.DrawingsReceived    => 0.40m,
+        LeadStage.FeasibilityReview   => 0.45m,
+        LeadStage.Tendering           => 0.55m,
+        LeadStage.ProposalIssued      => 0.70m,
+        LeadStage.Negotiation         => 0.80m,
+        _ => 0m
+    };
+
+    protected override async Task OnInitializedAsync()
+    {
+        await Session.EnsureLoadedAsync();
+        if (!Auth.IsSignedIn) { Nav.NavigateTo("/login", forceLoad: true); return; }
+        isLoaded = true;
+    }
+
+    private static string Money(decimal value) =>
+        value.ToString("C0", System.Globalization.CultureInfo.GetCultureInfo("en-GB"));
+}

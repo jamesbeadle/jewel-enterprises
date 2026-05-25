@@ -1,0 +1,43 @@
+@page "/hs/templates"
+@inject AuthService Auth
+@inject SessionService Session
+@inject NavigationManager Nav
+
+<PageTitle>Inspection templates · JPMS</PageTitle>
+
+@if (!isLoaded)
+{
+    <section class="max-w-5xl mx-auto px-4 py-12 text-slate-500 text-sm">Loading…</section>
+}
+else if (!Session.IsApproved)
+{
+    <RequestAccessView Email="@Auth.CurrentUser!.Email" DisplayName="@Auth.CurrentUser.DisplayName" />
+}
+else
+{
+    <section class="max-w-5xl mx-auto px-4 py-8 md:py-12">
+        <nav class="mb-4 text-sm">
+            <a href="/hs" class="text-slate-500 hover:text-slate-900 underline underline-offset-4">H&S</a>
+            <span class="text-slate-400 mx-2">/</span>
+            <span class="text-slate-700 font-medium">Templates</span>
+        </nav>
+
+        <header class="mb-6">
+            <h1 class="text-2xl md:text-3xl font-semibold text-slate-900">Inspection templates</h1>
+            <p class="text-sm text-slate-600 mt-1">Reusable checklists for site inspections, audits and toolbox talks.</p>
+        </header>
+
+        <InspectionTemplateList />
+    </section>
+}
+
+@code {
+    private bool isLoaded;
+
+    protected override async Task OnInitializedAsync()
+    {
+        await Session.EnsureLoadedAsync();
+        if (!Auth.IsSignedIn) { Nav.NavigateTo("/login", forceLoad: true); return; }
+        isLoaded = true;
+    }
+}

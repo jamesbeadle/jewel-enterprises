@@ -1,0 +1,44 @@
+@page "/portfolio/estimator"
+@inject AuthService Auth
+@inject SessionService Session
+@inject ILeadStore LeadStore
+@inject NavigationManager Nav
+
+<PageTitle>Estimator analytics · JPMS</PageTitle>
+
+@if (!isLoaded)
+{
+    <section class="max-w-5xl mx-auto px-4 py-12 text-slate-500 text-sm">Loading…</section>
+}
+else if (!Session.IsApproved)
+{
+    <RequestAccessView Email="@Auth.CurrentUser!.Email" DisplayName="@Auth.CurrentUser.DisplayName" />
+}
+else
+{
+    <section class="max-w-5xl mx-auto px-4 py-8 md:py-12">
+        <nav class="mb-4 text-sm">
+            <a href="/portfolio" class="text-slate-500 hover:text-slate-900 underline underline-offset-4">Portfolio</a>
+            <span class="text-slate-400 mx-2">/</span>
+            <span class="text-slate-700 font-medium">Estimator analytics</span>
+        </nav>
+
+        <header class="mb-6">
+            <h1 class="text-2xl md:text-3xl font-semibold text-slate-900">Bid-hit rate per estimator</h1>
+            <p class="text-sm text-slate-600 mt-1">Win rate and average deal size by lead owner.</p>
+        </header>
+
+        <EstimatorAnalyticsTable Leads="LeadStore.All()" />
+    </section>
+}
+
+@code {
+    private bool isLoaded;
+
+    protected override async Task OnInitializedAsync()
+    {
+        await Session.EnsureLoadedAsync();
+        if (!Auth.IsSignedIn) { Nav.NavigateTo("/login", forceLoad: true); return; }
+        isLoaded = true;
+    }
+}

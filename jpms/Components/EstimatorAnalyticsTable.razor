@@ -1,0 +1,47 @@
+<div class="rounded-xl border border-slate-200 bg-white overflow-hidden">
+    <table class="w-full text-sm">
+        <thead class="bg-slate-50 border-b border-slate-200">
+            <tr class="text-right text-[11px] uppercase tracking-wider text-slate-500 font-semibold">
+                <th class="px-4 py-3 text-left">Estimator</th>
+                <th class="px-4 py-3">Leads owned</th>
+                <th class="px-4 py-3">Won</th>
+                <th class="px-4 py-3">Win rate</th>
+                <th class="px-4 py-3">Won value</th>
+                <th class="px-4 py-3">Avg deal</th>
+            </tr>
+        </thead>
+        <tbody class="divide-y divide-slate-200 text-right">
+            @foreach (var row in Rows)
+            {
+                <tr>
+                    <td class="px-4 py-3 text-left text-slate-900 font-medium break-all">@row.OwnerEmail</td>
+                    <td class="px-4 py-3 text-slate-700">@row.Count</td>
+                    <td class="px-4 py-3 text-slate-700">@row.WonCount</td>
+                    <td class="px-4 py-3 text-slate-900 font-medium">@row.WinRate</td>
+                    <td class="px-4 py-3 text-slate-700">@Money(row.WonValue)</td>
+                    <td class="px-4 py-3 text-slate-700">@(row.WonCount == 0 ? "—" : Money(row.WonValue / row.WonCount))</td>
+                </tr>
+            }
+        </tbody>
+    </table>
+</div>
+
+@code {
+    [Parameter, EditorRequired] public IReadOnlyList<Lead> Leads { get; set; } = Array.Empty<Lead>();
+
+    private record EstimatorRow(string OwnerEmail, int Count, int WonCount, string WinRate, decimal WonValue);
+
+    private IReadOnlyList<EstimatorRow> Rows =>
+        Leads.GroupBy(lead => lead.OwnerEmail)
+             .Select(group => new EstimatorRow(
+                 group.Key, group.Count(),
+                 group.Count(lead => lead.Stage == LeadStage.Won),
+                 group.Any() ? $"{100.0 * group.Count(lead => lead.Stage == LeadStage.Won) / group.Count():0}%" : "—",
+                 group.Where(lead => lead.Stage == LeadStage.Won).Sum(lead => lead.EstimatedValue ?? 0)))
+             .OrderByDescending(row => row.WonValue)
+             .ToList()
+             .AsReadOnly();
+
+    private static string Money(decimal value) =>
+        value.ToString("C0", System.Globalization.CultureInfo.GetCultureInfo("en-GB"));
+}

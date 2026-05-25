@@ -1,0 +1,65 @@
+@inject ISubcontractorStore SubcontractorStore
+
+<div class="rounded-xl border border-slate-200 bg-white overflow-x-auto">
+    <table class="w-full text-sm">
+        <thead class="bg-slate-50 border-b border-slate-200">
+            <tr class="text-left text-[11px] uppercase tracking-wider text-slate-500 font-semibold">
+                <th class="px-4 py-3">Subcontractor</th>
+                <th class="px-4 py-3 text-right">Value</th>
+                <th class="px-4 py-3 text-right hidden sm:table-cell">vs lowest</th>
+                <th class="px-4 py-3 hidden md:table-cell">Compliance</th>
+                <th class="px-4 py-3">Notes</th>
+                <th class="px-4 py-3 hidden lg:table-cell">Received</th>
+            </tr>
+        </thead>
+        <tbody class="divide-y divide-slate-200">
+            @foreach (var quote in OrderedQuotes)
+            {
+                var sub = SubcontractorStore.Find(quote.SubcontractorId);
+                var compliance = WorstStatus(quote.SubcontractorId);
+                <tr>
+                    <td class="px-4 py-3 text-slate-900 font-medium">@(sub?.CompanyName ?? quote.SubcontractorId)</td>
+                    <td class="px-4 py-3 text-right text-slate-900 font-medium">
+                        @if (quote.IsDeclined) { <text>Declined</text> } else { @Money(quote.Value) }
+                    </td>
+                    <td class="px-4 py-3 text-right hidden sm:table-cell @VarianceColour(quote)">@VarianceText(quote)</td>
+                    <td class="px-4 py-3 hidden md:table-cell"><ComplianceStatusPill Status="compliance" /></td>
+                    <td class="px-4 py-3 text-slate-600">@quote.Notes</td>
+                    <td class="px-4 py-3 text-slate-500 hidden lg:table-cell">@quote.ReceivedAt.LocalDateTime.ToString("d MMM yyyy")</td>
+                </tr>
+            }
+        </tbody>
+    </table>
+</div>
+
+@code {
+    [Parameter, EditorRequired] public IReadOnlyList<Quote> Quotes { get; set; } = Array.Empty<Quote>();
+
+    private IReadOnlyList<Quote> OrderedQuotes =>
+        Quotes.OrderBy(quote => quote.IsDeclined ? decimal.MaxValue : quote.Value).ToList().AsReadOnly();
+
+    private decimal LowestValue =>
+        Quotes.Where(quote => !quote.IsDeclined).DefaultIfEmpty().Min(quote => quote?.Value ?? 0);
+
+    private string VarianceText(Quote quote)
+    {
+        if (quote.IsDeclined || LowestValue == 0) return "—";
+        if (quote.Value == LowestValue) return "Lowest";
+        var delta = quote.Value - LowestValue;
+        var percent = (delta / LowestValue) * 100m;
+        return $"+{Money(delta)} ({percent:0.0}%)";
+    }
+
+    private string VarianceColour(Quote quote) =>
+        !quote.IsDeclined && quote.Value == LowestValue ? "text-emerald-700 font-medium" : "text-slate-700";
+
+    private ComplianceStatus WorstStatus(string subcontractorId)
+    {
+        var documents = SubcontractorStore.ComplianceFor(subcontractorId);
+        if (documents.Count == 0) return ComplianceStatus.Missing;
+        return documents.Select(d => d.Status()).Max();
+    }
+
+    private static string Money(decimal value) =>
+        value.ToString("C0", System.Globalization.CultureInfo.GetCultureInfo("en-GB"));
+}

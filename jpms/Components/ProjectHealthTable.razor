@@ -1,0 +1,34 @@
+<div class="rounded-xl border border-slate-200 bg-white overflow-hidden">
+    <table class="w-full text-sm">
+        <thead class="bg-slate-50 border-b border-slate-200">
+            <tr class="text-right text-[11px] uppercase tracking-wider text-slate-500 font-semibold">
+                <th class="px-4 py-3 text-left">Reference</th>
+                <th class="px-4 py-3 text-left">Name</th>
+                <th class="px-4 py-3">Open RFIs</th>
+                <th class="px-4 py-3">Open VOs</th>
+                <th class="px-4 py-3">Unissued PVRs</th>
+            </tr>
+        </thead>
+        <tbody class="divide-y divide-slate-200 text-right">
+            @foreach (var row in Rows)
+            {
+                <tr>
+                    <td class="px-4 py-3 text-left font-mono text-xs text-slate-700">@row.Reference</td>
+                    <td class="px-4 py-3 text-left text-slate-900 font-medium">@row.Name</td>
+                    <td class="px-4 py-3 @CountColour(row.OverdueRfis)">@row.OverdueRfis</td>
+                    <td class="px-4 py-3 @CountColour(row.OpenVariations)">@row.OpenVariations</td>
+                    <td class="px-4 py-3 @CountColour(row.UnissuedValuations)">@row.UnissuedValuations</td>
+                </tr>
+            }
+        </tbody>
+    </table>
+</div>
+
+@code {
+    public record HealthRow(string Reference, string Name, int OverdueRfis, int OpenVariations, int UnissuedValuations);
+
+    [Parameter, EditorRequired] public IReadOnlyList<HealthRow> Rows { get; set; } = Array.Empty<HealthRow>();
+
+    private static string CountColour(int count) =>
+        count == 0 ? "text-emerald-700 font-medium" : "text-rose-700 font-medium";
+}

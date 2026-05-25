@@ -1,0 +1,37 @@
+@inject ICommercialStore CommercialStore
+
+<div class="rounded-xl border border-slate-200 bg-white overflow-hidden">
+    <table class="w-full text-sm">
+        <thead class="bg-slate-50 border-b border-slate-200">
+            <tr class="text-right text-[11px] uppercase tracking-wider text-slate-500 font-semibold">
+                <th class="px-4 py-3 text-left">Reference</th>
+                <th class="px-4 py-3 text-left">Name</th>
+                <th class="px-4 py-3 hidden md:table-cell">Stage</th>
+                <th class="px-4 py-3">Issued to date</th>
+                <th class="px-4 py-3">Forward income</th>
+            </tr>
+        </thead>
+        <tbody class="divide-y divide-slate-200 text-right">
+            @foreach (var project in Projects)
+            {
+                var valuations = CommercialStore.ValuationsFor(project.ProjectId);
+                var issued = valuations.Where(v => v.IsIssued).Sum(v => v.NetValue);
+                var forward = valuations.Where(v => !v.IsIssued).Sum(v => v.NetValue);
+                <tr>
+                    <td class="px-4 py-3 text-left font-mono text-xs text-slate-700">@project.Reference</td>
+                    <td class="px-4 py-3 text-left text-slate-900 font-medium">@project.Name</td>
+                    <td class="px-4 py-3 text-left hidden md:table-cell"><ProjectStageBadge Stage="project.Stage" /></td>
+                    <td class="px-4 py-3 text-slate-700">@Money(issued)</td>
+                    <td class="px-4 py-3 text-slate-900 font-medium">@Money(forward)</td>
+                </tr>
+            }
+        </tbody>
+    </table>
+</div>
+
+@code {
+    [Parameter, EditorRequired] public IReadOnlyList<Project> Projects { get; set; } = Array.Empty<Project>();
+
+    private static string Money(decimal value) =>
+        value.ToString("C0", System.Globalization.CultureInfo.GetCultureInfo("en-GB"));
+}

@@ -1,0 +1,61 @@
+@page "/portfolio/hs"
+@inject AuthService Auth
+@inject SessionService Session
+@inject IHsRegister HsRegister
+@inject NavigationManager Nav
+@implements IDisposable
+
+<PageTitle>H&S portfolio · JPMS</PageTitle>
+
+@if (!isLoaded)
+{
+    <section class="max-w-5xl mx-auto px-4 py-12 text-slate-500 text-sm">Loading…</section>
+}
+else if (!Session.IsApproved)
+{
+    <RequestAccessView Email="@Auth.CurrentUser!.Email" DisplayName="@Auth.CurrentUser.DisplayName" />
+}
+else
+{
+    <section class="max-w-5xl mx-auto px-4 py-8 md:py-12">
+        <nav class="mb-4 text-sm">
+            <a href="/portfolio" class="text-slate-500 hover:text-slate-900 underline underline-offset-4">Portfolio</a>
+            <span class="text-slate-400 mx-2">/</span>
+            <span class="text-slate-700 font-medium">Health & Safety</span>
+        </nav>
+
+        <header class="mb-6">
+            <h1 class="text-2xl md:text-3xl font-semibold text-slate-900">H&S across the portfolio</h1>
+            <p class="text-sm text-slate-600 mt-1">Director / FD read of the H&S register — for the annual review and exception spotting.</p>
+        </header>
+
+        <div class="grid grid-cols-2 md:grid-cols-4 gap-3 md:gap-4 mb-6">
+            <Stat Label="Open" Value="@OpenCount.ToString()" />
+            <Stat Label="In progress" Value="@InProgressCount.ToString()" />
+            <Stat Label="High severity open" Value="@HighSeverityCount.ToString()" />
+            <Stat Label="Closed (90 days)" Value="@RecentlyClosed.ToString()" />
+        </div>
+
+        <HsRecordTable Records="HsRegister.All()" />
+    </section>
+}
+
+@code {
+    private bool isLoaded;
+
+    private int OpenCount => HsRegister.All().Count(r => r.Status == HsStatus.Open);
+    private int InProgressCount => HsRegister.All().Count(r => r.Status == HsStatus.InProgress);
+    private int HighSeverityCount => HsRegister.All().Count(r => r.Status != HsStatus.Closed && r.Severity >= HsSeverity.High);
+    private int RecentlyClosed => HsRegister.All().Count(r =>
+        r.Status == HsStatus.Closed && r.ClosedAt is not null && r.ClosedAt.Value > DateTimeOffset.UtcNow.AddDays(-90));
+
+    protected override async Task OnInitializedAsync()
+    {
+        await Session.EnsureLoadedAsync();
+        if (!Auth.IsSignedIn) { Nav.NavigateTo("/login", forceLoad: true); return; }
+        HsRegister.OnChange += StateHasChanged;
+        isLoaded = true;
+    }
+
+    public void Dispose() => HsRegister.OnChange -= StateHasChanged;
+}
