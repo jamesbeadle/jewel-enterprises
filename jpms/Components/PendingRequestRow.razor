@@ -1,0 +1,57 @@
+@inject IUserDirectory UserDirectory
+@inject IAccessRequestStore Requests
+
+<li class="p-5">
+    <div class="flex items-start justify-between gap-4 mb-3">
+        <div class="min-w-0">
+            <p class="text-slate-900 font-medium leading-snug">@Request.DisplayName</p>
+            <p class="text-sm text-slate-600 break-all">@Request.Email</p>
+            <p class="text-[11px] uppercase tracking-wider text-slate-500 font-medium mt-1">
+                via @Request.Provider · @RequestedAtDisplay
+            </p>
+        </div>
+        @if (!isApproving)
+        {
+            <div class="flex flex-col sm:flex-row gap-2 shrink-0">
+                <button type="button" @onclick="StartApproving"
+                        class="rounded-lg bg-slate-900 text-white font-medium text-sm px-3 py-1.5 hover:bg-slate-800 transition">
+                    Approve
+                </button>
+                <button type="button" @onclick="Decline"
+                        class="rounded-lg border border-slate-200 bg-white text-slate-700 font-medium text-sm px-3 py-1.5 hover:border-slate-300 transition">
+                    Decline
+                </button>
+            </div>
+        }
+    </div>
+
+    @if (isApproving)
+    {
+        <RoleAssignmentForm
+            InitialRole="Role.Subcontractor"
+            OnConfirm="ConfirmApprove"
+            OnCancel="CancelApproving" />
+    }
+</li>
+
+@code {
+    [Parameter, EditorRequired] public AccessRequest Request { get; set; } = default!;
+
+    private bool isApproving;
+
+    private string RequestedAtDisplay =>
+        Request.RequestedAt.LocalDateTime.ToString("d MMM yyyy HH:mm");
+
+    private void StartApproving() => isApproving = true;
+
+    private void CancelApproving() => isApproving = false;
+
+    private void Decline() => Requests.Remove(Request.Email);
+
+    private void ConfirmApprove(Role assignedRole)
+    {
+        UserDirectory.Upsert(new DirectoryUser(Request.Email, Request.DisplayName, assignedRole));
+        Requests.Remove(Request.Email);
+        isApproving = false;
+    }
+}

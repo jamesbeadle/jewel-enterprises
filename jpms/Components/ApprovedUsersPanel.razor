@@ -1,0 +1,31 @@
+@inject IUserDirectory UserDirectory
+
+<section class="rounded-xl border border-slate-200 bg-white overflow-hidden mb-6">
+    <header class="px-5 py-3 border-b border-slate-200 bg-slate-50 flex items-center justify-between">
+        <h2 class="text-sm font-medium text-slate-700">Users</h2>
+        <div class="flex items-center gap-3">
+            <span class="text-xs text-slate-500">@ApprovedUsers.Count</span>
+            <button type="button" disabled
+                    title="Coming soon — invite a user by email"
+                    class="text-xs font-medium text-slate-400 cursor-not-allowed">
+                + Add user
+            </button>
+        </div>
+    </header>
+
+    <ul class="divide-y divide-slate-200">
+        @foreach (var user in ApprovedUsers)
+        {
+            <ApprovedUserRow User="user" IsCurrentUser="@IsCurrentUser(user.Email)" />
+        }
+    </ul>
+</section>
+
+@code {
+    [Parameter, EditorRequired] public string CurrentUserEmail { get; set; } = "";
+
+    private IReadOnlyList<DirectoryUser> ApprovedUsers => UserDirectory.All();
+
+    private bool IsCurrentUser(string email) =>
+        string.Equals(email, CurrentUserEmail, StringComparison.OrdinalIgnoreCase);
+}

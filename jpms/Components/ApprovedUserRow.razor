@@ -1,0 +1,29 @@
+@inject IUserDirectory UserDirectory
+
+<li class="px-5 py-3 flex items-center justify-between gap-4">
+    <div class="min-w-0">
+        <p class="text-slate-900 font-medium leading-snug truncate">@User.DisplayName</p>
+        <p class="text-sm text-slate-600 break-all">@User.Email</p>
+    </div>
+    <div class="flex items-center gap-3 shrink-0">
+        <RoleBadge Role="User.Role" />
+        @if (IsCurrentUser)
+        {
+            <span class="text-[11px] text-slate-400" title="You can't revoke your own access here.">You</span>
+        }
+        else
+        {
+            <button type="button" @onclick="Revoke"
+                    class="text-xs font-medium text-slate-500 hover:text-rose-700 underline underline-offset-4">
+                Revoke
+            </button>
+        }
+    </div>
+</li>
+
+@code {
+    [Parameter, EditorRequired] public DirectoryUser User { get; set; } = default!;
+    [Parameter] public bool IsCurrentUser { get; set; }
+
+    private void Revoke() => UserDirectory.Remove(User.Email);
+}

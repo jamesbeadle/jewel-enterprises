@@ -1,4 +1,4 @@
-@* Sign-in button for an external identity provider (Microsoft or Google). *@
+@using Jewel.JPMS.Components.Icons
 
 <button type="button"
         @onclick="OnClick"
@@ -6,23 +6,11 @@
     <span class="w-5 h-5 shrink-0 inline-flex items-center justify-center">
         @if (Provider == AuthProvider.Microsoft)
         {
-            @* Microsoft 4-square logo *@
-            <svg viewBox="0 0 21 21" xmlns="http://www.w3.org/2000/svg" aria-hidden="true">
-                <rect x="1"  y="1"  width="9" height="9" fill="#F25022"/>
-                <rect x="11" y="1"  width="9" height="9" fill="#7FBA00"/>
-                <rect x="1"  y="11" width="9" height="9" fill="#00A4EF"/>
-                <rect x="11" y="11" width="9" height="9" fill="#FFB900"/>
-            </svg>
+            <MicrosoftLogoIcon />
         }
         else
         {
-            @* Google "G" mark *@
-            <svg viewBox="0 0 48 48" xmlns="http://www.w3.org/2000/svg" aria-hidden="true">
-                <path fill="#FFC107" d="M43.6 20.5H42V20H24v8h11.3c-1.6 4.7-6 8-11.3 8-6.6 0-12-5.4-12-12s5.4-12 12-12c3 0 5.8 1.1 7.9 3l5.7-5.7C34.5 6.1 29.5 4 24 4 12.9 4 4 12.9 4 24s8.9 20 20 20 20-8.9 20-20c0-1.2-.1-2.3-.4-3.5z"/>
-                <path fill="#FF3D00" d="M6.3 14.7l6.6 4.8c1.8-4.4 6.1-7.5 11.1-7.5 3 0 5.8 1.1 7.9 3l5.7-5.7C34.5 6.1 29.5 4 24 4 16.4 4 9.8 8.4 6.3 14.7z"/>
-                <path fill="#4CAF50" d="M24 44c5.4 0 10.3-2.1 14-5.4l-6.5-5.5C29.6 34.6 26.9 36 24 36c-5.3 0-9.7-3.3-11.3-8l-6.5 5C9.8 39.6 16.4 44 24 44z"/>
-                <path fill="#1976D2" d="M43.6 20.5H42V20H24v8h11.3c-.8 2.3-2.2 4.3-4.1 5.7l6.5 5.5C40.7 36.4 44 30.7 44 24c0-1.2-.1-2.3-.4-3.5z"/>
-            </svg>
+            <GoogleLogoIcon />
         }
     </span>
     <span>Continue with @ProviderName</span>

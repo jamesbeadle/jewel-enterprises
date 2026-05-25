@@ -1,6 +1,3 @@
-@* Generic post-sign-in home for non-admin roles. Will be replaced by role-specific
-   homepages as the corresponding journeys are signed off in /docs/user-journeys/. *@
-
 <section class="max-w-3xl mx-auto px-4 py-8 md:py-12">
 
     <div class="mb-8 md:mb-10">
@@ -42,9 +39,8 @@
     [Parameter, EditorRequired] public DirectoryUser User { get; set; } = default!;
     [Parameter, EditorRequired] public AuthProvider Provider { get; set; }
 
-    private string FirstName => string.IsNullOrWhiteSpace(User.DisplayName)
-        ? User.Role.DisplayName()
-        : User.DisplayName.Split(' ', StringSplitOptions.RemoveEmptyEntries).FirstOrDefault() ?? User.DisplayName;
+    private string FirstName =>
+        FirstWordOf(User.DisplayName) ?? User.Role.DisplayName();
 
     private string ProviderName => Provider switch
     {
@@ -52,4 +48,10 @@
         AuthProvider.Google    => "Google",
         _ => "—"
     };
+
+    private static string? FirstWordOf(string fullName)
+    {
+        if (string.IsNullOrWhiteSpace(fullName)) return null;
+        return fullName.Split(' ', StringSplitOptions.RemoveEmptyEntries).FirstOrDefault();
+    }
 }

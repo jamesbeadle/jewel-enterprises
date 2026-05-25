@@ -1,197 +1,173 @@
 # JPMS — Jewel Project Management System (Blazor WebAssembly PWA)
 
-The production web app Jewel Enterprises and its clients will use day-to-day. This is **not** the scoping prototype — that lives in `/prototypes/journey-index/`. This folder is the start of the real product.
+The production web app for Jewel Enterprises and its clients. Blazor WebAssembly + Tailwind, hosted on Azure Static Web Apps with Microsoft Entra ID authentication and Azure SQL Serverless for persistence.
 
-- **Tech:** Blazor WebAssembly · .NET 8 LTS · PWA · Tailwind (via CDN for now)
-- **Hosts on:** Azure Static Web Apps (will move to App Service once an ASP.NET Core API is added)
-- **Auth (current):** mocked Microsoft + Google sign-in with an in-memory directory + RBAC
-- **Auth (target):** Microsoft Entra ID + Google Identity Services, with an admin-managed user directory in the JPMS backend
+## Stack
 
----
+| Layer | Tech | Where it runs |
+|---|---|---|
+| Front-end | Blazor WebAssembly · .NET 8 LTS · PWA | Azure Static Web Apps (Free tier, West Europe) |
+| Styling | Tailwind v3 CLI build | compiled at `dotnet publish` time |
+| Authentication | Microsoft Entra ID via SWA managed auth (`/.auth/login/aad`) | Static Web Apps |
+| Database (next) | Azure SQL Database GP_S_Gen5 Serverless, Free-Limit if available | UK South |
 
-## What's built in this first cut
+## What's built today
 
 | Route | Page | Behaviour |
 |---|---|---|
-| `/` | `Pages/Login.razor` | Landing page. Two buttons: **Continue with Microsoft** and **Continue with Google**. The buttons currently open a mock prompt asking which email to sign in as. |
-| `/dashboard` | `Pages/Dashboard.razor` | Role router. Looks the user up in the internal directory, then renders the right home view for their role. |
+| `/` | `Pages/Login.razor` | Landing page with a single **Continue with Microsoft** button. Redirects authenticated users straight to `/dashboard`. |
+| `/dashboard` | `Pages/Dashboard.razor` | Reads `/.auth/me`, then routes to the admin home, the placeholder role home, or the request-access view. |
+| `/login` | (config) | Redirects to `/.auth/login/aad?post_login_redirect_uri=/dashboard`. |
+| `/logout` | (config) | Redirects to `/.auth/logout?post_logout_redirect_uri=/`. |
 
-The `/dashboard` route resolves to one of three states:
+The dashboard resolves to one of three states:
 
 | State | When | Renders |
 |---|---|---|
-| **Admin home** | Signed-in email is in the directory with `Role.Admin` | `Components/AdminHome.razor` — users panel, pending requests, stats |
-| **Role-specific home** | Signed-in email is in the directory with any other role | `Components/PlaceholderHome.razor` (one placeholder per non-admin role until each journey is signed off) |
-| **Request access** | Signed-in email isn't in the directory | `Components/RequestAccessView.razor` — submits a request to the admin queue |
+| Admin home | Signed-in email is in the directory with `Role.Admin` | `AdminHome` (stats row + pending requests + users + what's-next) |
+| Role placeholder | Signed-in email is in the directory with any other role | `PlaceholderHome` |
+| Request access | Signed-in email isn't in the directory | `RequestAccessView` — submits a request into the admin queue |
 
-### Sign-in + RBAC flow
+## Authentication flow
 
 ```
-Login screen ──► Pick provider ──► Enter email (mock) ──► /dashboard
-                                                            │
-                                                            ├─ in directory, Role.Admin   ──► AdminHome
-                                                            ├─ in directory, other role   ──► PlaceholderHome
-                                                            └─ not in directory           ──► RequestAccessView ──► admin queue
+/ ──► Continue with Microsoft ──► /login (redirect) ──► /.auth/login/aad ──► Entra ID
+                                                                                │
+/dashboard ◄── set auth cookies ◄── /.auth/login/aad/callback ◄─────────────────┘
+       │
+       ├─ fetch /.auth/me
+       ├─ AuthService.CurrentUser = email + provider
+       ├─ UserDirectory.Find(email)
+       │     ├─ Admin    ──► AdminHome
+       │     ├─ Other    ──► PlaceholderHome
+       │     └─ Missing  ──► RequestAccessView
 ```
 
-When real OAuth is wired up, the *"Enter email (mock)"* step disappears — the provider returns the email itself; everything downstream stays the same.
+When the user clicks **Sign out**, the app navigates to `/logout`, which the SWA configuration rewrites to `/.auth/logout?post_logout_redirect_uri=/`.
 
----
-
-## RBAC
-
-One role per user for now (`Models/Role.cs`). The current roles map directly to the scoping personas:
-
-| Role | Persona | Notes |
-|---|---|---|
-| `Admin` | — | Manages users + platform configuration. The only role that sees `AdminHome`. |
-| `ManagingDirector` | P05 | Top-level executive view (to be built). |
-| `Accountant` | P04 | Cashflow forecast, cash calls (to be built first per scoping priorities). |
-| `QuantitySurveyor` | P02 | Pricing + measurement workflows. |
-| `Architect` | P01 | External client view. |
-| `Subcontractor` | P03 | Mobile-first site workflows. |
-
-The `Role` enum lives in `Models/Role.cs` together with display-name, code, accent-colour and `IsAdministrative()` helpers, so UI components never `switch` on the enum directly.
-
-When SQL lands the model becomes many-to-many with no UI changes — `directoryUser.Role` becomes `directoryUser.Roles`, the access checks already go through helper methods.
-
-### Seeded users (edit `Services/AllowListUserDirectory.cs`)
-
-| Email | Role |
-|---|---|
-| `jamesbeadle1989@gmail.com` | Admin |
-| `admin@jewelgroup.co.uk` | Admin |
-| `nigel.reilly@jewelgroup.co.uk` | Managing Director |
-| `accountant@jewelgroup.co.uk` | Accountant |
-| `qs@jewelgroup.co.uk` | Quantity Surveyor |
-
-The list is mutable in-memory — when an Admin approves a pending access request, the new user is added live and shows up in the **Users** panel without a reload.
-
----
-
-## Run locally on Mac
-
-### 1. Install the .NET 8 SDK
+## Run locally on macOS
 
 ```bash
-brew install --cask dotnet-sdk
-```
-
-Or download the macOS .NET 8 SDK from <https://dotnet.microsoft.com/en-us/download/dotnet/8.0> (Arm64 for Apple Silicon, x64 for Intel).
-
-Verify:
-
-```bash
-dotnet --version
-# expect 8.0.x
-```
-
-### 2. Restore + run
-
-From the repo root:
-
-```bash
+brew install --cask dotnet-sdk node
 cd jpms
+npm install
 dotnet restore
 dotnet run
 ```
 
-Then open the URL the console prints (typically `https://localhost:5001`). The PWA install button shows up in Chrome/Edge after a moment.
-
-> **Hot reload:** use `dotnet watch` instead of `dotnet run` to auto-rebuild on file save.
-
-### 3. Try the flows
-
-- Sign in with **`jamesbeadle1989@gmail.com`** → lands on the admin homepage.
-- Sign in with **`accountant@jewelgroup.co.uk`** → lands on the role placeholder home.
-- Sign in with any other email (e.g. `someone@example.com`) → lands on **Request access**. Click **Request access**, sign out, sign back in as the admin and you'll see the request in the queue. Approve it with a role and the new user appears in the Users panel.
-
-### 4. Build a production bundle
+Open the URL printed in the console. Locally there is no SWA emulator and no real `/.auth/me` endpoint, so the AuthService returns `null` and the dashboard redirects to `/login` (which 404s locally). To exercise the full sign-in flow, install the SWA CLI:
 
 ```bash
-dotnet publish -c Release -o publish
+npm install -g @azure/static-web-apps-cli
+swa start http://localhost:5000 --run "dotnet run --project jpms"
 ```
 
-The deployable static site is at `publish/wwwroot/`.
+Hot reload:
 
----
+```bash
+dotnet watch --project jpms
+```
+
+CSS-only watch:
+
+```bash
+cd jpms && npm run watch:css
+```
+
+## Deploy to Azure
+
+Two steps. After step 1 you can re-deploy as often as you like with no further setup.
+
+### 1. Provision the Azure resources (one-off)
+
+```bash
+az login
+az account set --subscription 08c5510c-bb27-4da8-b826-a8e76fb270ec
+../infra/azure-setup.sh
+```
+
+The script creates the resource group, SQL Server + Serverless DB, Static Web App, and Entra ID app registration; it writes connection details to `infra/.azure-output.env` (gitignored). Copy `SWA_DEPLOYMENT_TOKEN` from that file into a GitHub repository secret named `AZURE_STATIC_WEB_APPS_API_TOKEN`.
+
+### 2. Push to `main`
+
+The workflow in `.github/workflows/jpms-swa.yml` installs Node + .NET, runs `npm install` and `dotnet publish` (which triggers the Tailwind build), then deploys `publish/wwwroot` to Static Web Apps.
 
 ## Project layout
 
 ```
 jpms/
-├── Jewel.JPMS.csproj            Project file — targets net8.0
-├── Program.cs                   App entry point. Registers Auth + directory + access-request services.
-├── App.razor                    Top-level router
-├── _Imports.razor               Razor using directives (every .razor sees these)
+├── Jewel.JPMS.csproj              Blazor WASM project + Tailwind MSBuild target
+├── Program.cs                     App entry point — registers HttpClient + RBAC services
+├── App.razor                      Top-level router
+├── _Imports.razor                 Razor using directives
+├── staticwebapp.config.json       SWA routes + AAD identity provider
+├── package.json                   Tailwind CSS toolchain
+├── tailwind.config.js             Tailwind theme + content paths
+├── Styles/
+│   └── app.tailwind.css           Tailwind source — compiled to wwwroot/css/app.built.css
 ├── Layout/
-│   └── MainLayout.razor         Header (with sign-in/out) + footer
+│   └── MainLayout.razor           Header + sign-out + footer
 ├── Pages/
-│   ├── Login.razor              Landing page — provider buttons
-│   └── Dashboard.razor          Slim role router → AdminHome / PlaceholderHome / RequestAccessView
+│   ├── Login.razor                Landing page — Microsoft sign-in
+│   └── Dashboard.razor            Role router
 ├── Components/
-│   ├── ProviderButton.razor     Microsoft / Google sign-in button with its logo
-│   ├── RequestAccessView.razor  Shown when a signed-in user isn't in the directory
-│   ├── AdminHome.razor          Admin homepage — users panel, pending requests, stats
-│   ├── PlaceholderHome.razor    Generic post-sign-in home for non-admin roles (until each is built)
-│   ├── RoleBadge.razor          Small coloured role chip
-│   └── Stat.razor               Small labelled stat card
+│   ├── AdminHome.razor            Admin homepage composition
+│   ├── AdminStatsRow.razor        Stats grid (approved / pending / roles)
+│   ├── PendingRequestsPanel.razor List of pending access requests
+│   ├── PendingRequestRow.razor    One request — approve/decline/role-pick
+│   ├── RoleAssignmentForm.razor   Role dropdown + confirm/cancel
+│   ├── ApprovedUsersPanel.razor   List of approved directory users
+│   ├── ApprovedUserRow.razor      One approved user — revoke
+│   ├── WhatsNextPanel.razor       Next-up backlog tiles
+│   ├── PlaceholderHome.razor      Non-admin role landing page
+│   ├── ProviderButton.razor       OAuth provider sign-in button
+│   ├── RequestAccessView.razor    For signed-in users not yet on the directory
+│   ├── RoleBadge.razor            Small coloured role chip
+│   ├── Stat.razor                 Small labelled stat card
+│   └── Icons/
+│       ├── MicrosoftLogoIcon.razor
+│       └── GoogleLogoIcon.razor
 ├── Models/
-│   ├── Role.cs                  Role enum + display / RBAC helpers
-│   ├── User.cs                  AuthProvider, AuthenticatedUser, DirectoryUser records
-│   └── AccessRequest.cs         Pending-request record
+│   ├── Role.cs                    Role enum + display / RBAC helpers
+│   ├── User.cs                    AuthProvider, AuthenticatedUser, DirectoryUser records
+│   ├── AccessRequest.cs           Pending-request record
+│   └── ClientPrincipal.cs         Shape of /.auth/me response
 ├── Services/
-│   ├── AuthService.cs           Holds the current user + notifies subscribers on sign-in/out
-│   ├── IUserDirectory.cs        Backend-shaped contract for the approved-user directory
-│   ├── AllowListUserDirectory.cs   In-memory directory; seeded + mutable for the session
-│   ├── IAccessRequestStore.cs   Queue contract for pending access requests
+│   ├── AuthService.cs             Fetches /.auth/me, exposes CurrentUser
+│   ├── IUserDirectory.cs          Directory contract
+│   ├── AllowListUserDirectory.cs  In-memory directory (mutable for the session)
+│   ├── IAccessRequestStore.cs     Access-request queue contract
 │   └── InMemoryAccessRequestStore.cs   Session-scoped queue
-└── wwwroot/                     Everything served to the browser (HTML, CSS, icons, SW)
+└── wwwroot/                       Everything served to the browser
 ```
 
-The style language matches the scoping prototype on purpose — same Tailwind palette (slate + accent dots), same rounded cards, same typography stack — so design learnings from the prototype carry over.
+## Code style
 
----
+This codebase follows the style rules in the repository-root `CLAUDE.md`:
 
-## Replacing the mocks
+- Hard limit of 100 lines per file.
+- No comments that explain *what* the code does — the names carry it.
+- Booleans use `is`/`has`/`should`/`can` prefixes.
+- No abbreviations in identifiers.
+- Magic colours and strings live in Tailwind tokens or named constants.
 
-There are three seams to wire up when we go live:
+When adding new code, run mentally through CLAUDE.md's pre-commit checklist before merging.
 
-### 1. Real OAuth in `AuthService.SignInAsync(...)`
+## What lands next
 
-- Add Microsoft Entra ID via `Microsoft.Authentication.WebAssembly.Msal` and register a SPA app in Entra.
-- Add Google sign-in via Google Identity Services. Register the client ID in Google Cloud Console.
-- Replace the body of `SignInAsync` so it consumes the OAuth callback rather than accepting any email.
-- Configure both client IDs in `wwwroot/appsettings.json` (added at that time — not committed today).
+1. **Azure SQL persistence.** Replace `AllowListUserDirectory` and `InMemoryAccessRequestStore` with implementations that call a new API (running on Static Web Apps managed Functions).
+2. **Invite-by-email.** Admin can pre-approve a user; the SWA AAD role assignment then surfaces them as a `DirectoryUser` on first sign-in.
+3. **Google + email/password.** Add the Google identity provider to `staticwebapp.config.json`; the UI already renders a Google logo button.
+4. **First domain screen.** The Programme Valuation Report is the highest-value module — that's the first screen wired to real entities.
 
-### 2. Real directory in `IUserDirectory`
+Source of truth for what to build next is the user-story register in `/docs/03-workflows/`.
 
-- Stand up an `/api/users` set of endpoints on the ASP.NET Core backend (get me, list all, upsert, remove).
-- Add a `HttpUserDirectory : IUserDirectory` implementation that calls those endpoints.
-- Swap the DI registration in `Program.cs` — every page already talks to the interface, nothing else changes.
+## Cost expectation (testing)
 
-### 3. Real access-request store in `IAccessRequestStore`
+| Resource | Idle | Active |
+|---|---|---|
+| Static Web App (Free tier) | £0 | £0 up to 250GB/month bandwidth |
+| Azure SQL Serverless (with Free-Limit) | £0 (paused) | £0 up to 100k vCore-sec + 32GB/month |
+| Entra ID app registration | £0 | £0 |
 
-- Add `/api/access-requests` endpoints (submit, list pending, remove).
-- Add an `HttpAccessRequestStore : IAccessRequestStore` implementation.
-- Swap the DI registration — UI is already wired to the interface.
-
-All three swaps are isolated so they can each land as a small focused PR.
-
----
-
-## Deploy to Azure Static Web Apps
-
-Identical to the prototype's flow — same Blazor preset, just point at `/jpms` instead of `/prototypes/journey-index`. Once the backend lands, this app moves behind a proper ASP.NET Core API and that deploy plan will get its own section here.
-
----
-
-## Known limitations (today)
-
-- **Mock sign-in.** Any email you type is accepted. Wire OAuth before any real users see this.
-- **In-memory directory.** Lives in `Services/AllowListUserDirectory.cs`. Approvals during a session are real but vanish on refresh.
-- **In-memory access requests.** Same story — pending queue resets on refresh.
-- **One role per user.** Will become many-to-many once SQL lands.
-- **No backend.** AdminHome's "what's next" tiles are placeholders.
-- **Tailwind via CDN.** Convenient for dev, swap for the Tailwind CLI build before going live.
-- **No persisted session.** Refreshing the browser signs the user out. A real OAuth token cache fixes this.
+If the Free-Limit flag isn't accepted on the subscription, the SQL falls back to standard Serverless: ~£3-5/month idle (storage only), pennies per active hour.

@@ -7,7 +7,6 @@
     <title>JPMS · Jewel Project Management System</title>
     <base href="/" />
 
-    <!-- PWA -->
     <link rel="manifest" href="manifest.webmanifest" />
     <meta name="theme-color" content="#0f172a" />
     <link rel="icon" type="image/svg+xml" href="favicon.svg" />
@@ -17,21 +16,7 @@
     <meta name="apple-mobile-web-app-title" content="JPMS" />
     <meta name="mobile-web-app-capable" content="yes" />
 
-    <!-- Tailwind via CDN (initial build — replace with built CSS before going live) -->
-    <script src="https://cdn.tailwindcss.com"></script>
-    <script>
-        tailwind.config = {
-            theme: {
-                extend: {
-                    fontFamily: {
-                        sans: ['-apple-system', 'BlinkMacSystemFont', 'Segoe UI', 'system-ui', 'sans-serif'],
-                    },
-                },
-            },
-        };
-    </script>
-
-    <link href="css/app.css" rel="stylesheet" />
+    <link href="css/app.built.css" rel="stylesheet" />
 </head>
 
 <body>

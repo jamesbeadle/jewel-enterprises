@@ -1,0 +1,34 @@
+<div class="rounded-lg border border-slate-200 bg-slate-50 p-4 mt-2">
+    <p class="text-xs uppercase tracking-wider text-slate-500 font-medium mb-2">Assign a role</p>
+    <div class="flex flex-wrap items-center gap-2">
+        <select @bind="selectedRole"
+                class="rounded-lg border border-slate-300 bg-white px-3 py-2 text-sm text-slate-900 focus:outline-none focus:ring-2 focus:ring-slate-900 focus:border-slate-900">
+            @foreach (var role in AllRoles)
+            {
+                <option value="@role">@role.DisplayName()</option>
+            }
+        </select>
+        <button type="button" @onclick="Confirm"
+                class="rounded-lg bg-slate-900 text-white font-medium text-sm px-3 py-2 hover:bg-slate-800 transition">
+            Confirm
+        </button>
+        <button type="button" @onclick="OnCancel"
+                class="rounded-lg border border-slate-200 bg-white text-slate-700 font-medium text-sm px-3 py-2 hover:border-slate-300 transition">
+            Cancel
+        </button>
+    </div>
+</div>
+
+@code {
+    [Parameter] public Role InitialRole { get; set; } = Role.Subcontractor;
+    [Parameter] public EventCallback<Role> OnConfirm { get; set; }
+    [Parameter] public EventCallback OnCancel { get; set; }
+
+    private Role selectedRole;
+
+    private static readonly Role[] AllRoles = Enum.GetValues<Role>();
+
+    protected override void OnInitialized() => selectedRole = InitialRole;
+
+    private Task Confirm() => OnConfirm.InvokeAsync(selectedRole);
+}

@@ -18,4 +18,20 @@
     <ServiceWorker Include="wwwroot\service-worker.js" PublishedContent="wwwroot\service-worker.published.js" />
   </ItemGroup>
 
+  <ItemGroup>
+    <Content Remove="package.json;tailwind.config.js;Styles\**;node_modules\**;wwwroot\css\app.css" />
+    <None Include="package.json;tailwind.config.js;Styles\**" />
+  </ItemGroup>
+
+  <Target Name="EnsureTailwindDependencies" BeforeTargets="TailwindBuild" Condition="!Exists('node_modules')">
+    <Exec Command="npm install --no-audit --no-fund" WorkingDirectory="$(MSBuildProjectDirectory)" />
+  </Target>
+
+  <Target Name="TailwindBuild"
+          BeforeTargets="BeforeBuild"
+          Inputs="package.json;tailwind.config.js;Styles/app.tailwind.css;@(Content);@(Compile)"
+          Outputs="wwwroot/css/app.built.css">
+    <Exec Command="npm run build:css" WorkingDirectory="$(MSBuildProjectDirectory)" />
+  </Target>
+
 </Project>

@@ -5,40 +5,38 @@
 
 <PageTitle>Dashboard · JPMS</PageTitle>
 
-@if (!Auth.IsSignedIn)
+@if (!isLoaded)
 {
-    @* Bounce back to the login screen — handled in OnInitialized as well. *@
-    <section class="max-w-3xl mx-auto px-4 py-12">
-        <p class="text-slate-700">You need to <a href="/" class="text-slate-900 underline">sign in</a> to continue.</p>
+    <section class="max-w-3xl mx-auto px-4 py-12 text-slate-500 text-sm">
+        Loading your dashboard…
     </section>
 }
 else if (directoryUser is null)
 {
-    @* Signed in, but not on the company's approved list — request access. *@
     <RequestAccessView Email="@Auth.CurrentUser!.Email" DisplayName="@Auth.CurrentUser.DisplayName" />
 }
 else if (directoryUser.Role.IsAdministrative())
 {
-    @* Role-routed home: administrators get the admin homepage. *@
     <AdminHome CurrentUser="Auth.CurrentUser!" />
 }
 else
 {
-    @* Every other approved role lands on the placeholder home until their
-       role-specific homepage is built out. *@
     <PlaceholderHome User="directoryUser" Provider="Auth.CurrentUser!.Provider" />
 }
 
 @code {
+    private bool isLoaded;
     private DirectoryUser? directoryUser;
 
-    protected override void OnInitialized()
+    protected override async Task OnInitializedAsync()
     {
+        await Auth.EnsureInitialisedAsync();
         if (!Auth.IsSignedIn)
         {
-            Nav.NavigateTo("/", replace: true);
+            Nav.NavigateTo("/login", forceLoad: true);
             return;
         }
         directoryUser = UserDirectory.Find(Auth.CurrentUser!.Email);
+        isLoaded = true;
     }
 }

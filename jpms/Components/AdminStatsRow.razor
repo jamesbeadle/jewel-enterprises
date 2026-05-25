@@ -1,0 +1,17 @@
+@inject IUserDirectory UserDirectory
+@inject IAccessRequestStore Requests
+
+<div class="grid grid-cols-3 gap-3 md:gap-4 mb-8">
+    <Stat Label="Approved users"   Value="@ApprovedUserCount" />
+    <Stat Label="Pending requests" Value="@PendingRequestCount" />
+    <Stat Label="Roles in use"     Value="@DistinctRoleCount" />
+</div>
+
+@code {
+    private string ApprovedUserCount => UserDirectory.All().Count.ToString();
+
+    private string PendingRequestCount => Requests.Pending().Count.ToString();
+
+    private string DistinctRoleCount =>
+        UserDirectory.All().Select(user => user.Role).Distinct().Count().ToString();
+}

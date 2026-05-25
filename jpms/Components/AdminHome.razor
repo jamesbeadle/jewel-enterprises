@@ -1,9 +1,3 @@
-@* Administrator homepage. Two main panels:
-     1. Pending access requests — review queue from people who hit "Request access".
-     2. Users — everyone currently on the approved directory.
-   Plus a small stats row at the top.
-   All wired to in-memory services for now; the API swap is one line per service. *@
-
 @inject IUserDirectory UserDirectory
 @inject IAccessRequestStore Requests
 @implements IDisposable
@@ -15,197 +9,25 @@
         <p class="text-[10px] text-slate-400 break-all leading-snug">You are signed in as @CurrentUser.Email</p>
     </header>
 
-    <div class="grid grid-cols-3 gap-3 md:gap-4 mb-8">
-        <Stat Label="Approved users"   Value="@UserDirectory.All().Count.ToString()" />
-        <Stat Label="Pending requests" Value="@Requests.Pending().Count.ToString()" />
-        <Stat Label="Roles in use"     Value="@DistinctRoleCount.ToString()" />
-    </div>
-
-    @* === Pending access requests === *@
-    <section class="rounded-xl border border-slate-200 bg-white overflow-hidden mb-6">
-        <header class="px-5 py-3 border-b border-slate-200 bg-slate-50 flex items-center justify-between">
-            <h2 class="text-sm font-medium text-slate-700">Pending access requests</h2>
-            <span class="text-xs text-slate-500">@Requests.Pending().Count</span>
-        </header>
-
-        @if (Requests.Pending().Count == 0)
-        {
-            <div class="p-5">
-                <p class="text-slate-500 italic text-sm">No pending requests. New requests appear here when a signed-in user clicks <em>Request access</em>.</p>
-            </div>
-        }
-        else
-        {
-            <ul class="divide-y divide-slate-200">
-                @foreach (var req in Requests.Pending())
-                {
-                    <li class="p-5">
-                        <div class="flex items-start justify-between gap-4 mb-3">
-                            <div class="min-w-0">
-                                <p class="text-slate-900 font-medium leading-snug">@req.DisplayName</p>
-                                <p class="text-sm text-slate-600 break-all">@req.Email</p>
-                                <p class="text-[11px] uppercase tracking-wider text-slate-500 font-medium mt-1">
-                                    via @req.Provider · @req.RequestedAt.LocalDateTime.ToString("d MMM yyyy HH:mm")
-                                </p>
-                            </div>
-                            @if (approving != req.Email)
-                            {
-                                <div class="flex flex-col sm:flex-row gap-2 shrink-0">
-                                    <button type="button"
-                                            @onclick="() => BeginApprove(req.Email)"
-                                            class="rounded-lg bg-slate-900 text-white font-medium text-sm px-3 py-1.5 hover:bg-slate-800 transition">
-                                        Approve
-                                    </button>
-                                    <button type="button"
-                                            @onclick="() => Decline(req.Email)"
-                                            class="rounded-lg border border-slate-200 bg-white text-slate-700 font-medium text-sm px-3 py-1.5 hover:border-slate-300 transition">
-                                        Decline
-                                    </button>
-                                </div>
-                            }
-                        </div>
-
-                        @if (approving == req.Email)
-                        {
-                            <div class="rounded-lg border border-slate-200 bg-slate-50 p-4 mt-2">
-                                <p class="text-xs uppercase tracking-wider text-slate-500 font-medium mb-2">Assign a role</p>
-                                <div class="flex flex-wrap items-center gap-2">
-                                    <select @bind="selectedRole"
-                                            class="rounded-lg border border-slate-300 bg-white px-3 py-2 text-sm text-slate-900 focus:outline-none focus:ring-2 focus:ring-slate-900 focus:border-slate-900">
-                                        @foreach (var role in AllRoles)
-                                        {
-                                            <option value="@role">@role.DisplayName()</option>
-                                        }
-                                    </select>
-                                    <button type="button"
-                                            @onclick="() => ConfirmApprove(req)"
-                                            class="rounded-lg bg-slate-900 text-white font-medium text-sm px-3 py-2 hover:bg-slate-800 transition">
-                                        Confirm
-                                    </button>
-                                    <button type="button"
-                                            @onclick="CancelApprove"
-                                            class="rounded-lg border border-slate-200 bg-white text-slate-700 font-medium text-sm px-3 py-2 hover:border-slate-300 transition">
-                                        Cancel
-                                    </button>
-                                </div>
-                            </div>
-                        }
-                    </li>
-                }
-            </ul>
-        }
-    </section>
-
-    @* === Approved users === *@
-    <section class="rounded-xl border border-slate-200 bg-white overflow-hidden mb-6">
-        <header class="px-5 py-3 border-b border-slate-200 bg-slate-50 flex items-center justify-between">
-            <h2 class="text-sm font-medium text-slate-700">Users</h2>
-            <div class="flex items-center gap-3">
-                <span class="text-xs text-slate-500">@UserDirectory.All().Count</span>
-                <button type="button"
-                        disabled
-                        title="Coming soon — invite a user by email"
-                        class="text-xs font-medium text-slate-400 cursor-not-allowed">
-                    + Add user
-                </button>
-            </div>
-        </header>
-
-        <ul class="divide-y divide-slate-200">
-            @foreach (var user in UserDirectory.All())
-            {
-                <li class="px-5 py-3 flex items-center justify-between gap-4">
-                    <div class="min-w-0">
-                        <p class="text-slate-900 font-medium leading-snug truncate">@user.DisplayName</p>
-                        <p class="text-sm text-slate-600 break-all">@user.Email</p>
-                    </div>
-                    <div class="flex items-center gap-3 shrink-0">
-                        <RoleBadge Role="user.Role" />
-                        @if (CanRevoke(user))
-                        {
-                            <button type="button"
-                                    @onclick="() => Revoke(user.Email)"
-                                    class="text-xs font-medium text-slate-500 hover:text-rose-700 underline underline-offset-4">
-                                Revoke
-                            </button>
-                        }
-                        else
-                        {
-                            <span class="text-[11px] text-slate-400" title="You can't revoke your own access here.">You</span>
-                        }
-                    </div>
-                </li>
-            }
-        </ul>
-    </section>
-
-    @* === Placeholder admin tiles === *@
-    <section class="rounded-xl border border-slate-200 bg-white overflow-hidden">
-        <header class="px-5 py-3 border-b border-slate-200 bg-slate-50">
-            <h2 class="text-sm font-medium text-slate-700">What's next</h2>
-        </header>
-        <ol class="p-5 space-y-3 text-sm text-slate-700 list-decimal list-inside marker:text-slate-400">
-            <li>Wire real Microsoft + Google OAuth in place of the mock sign-in.</li>
-            <li>Persist the directory and access requests in the JPMS backend (Azure SQL).</li>
-            <li>Add invite-by-email so admins can pre-approve users without a request.</li>
-            <li>Audit log of every admin action (approve, decline, role change, revoke).</li>
-        </ol>
-    </section>
+    <AdminStatsRow />
+    <PendingRequestsPanel />
+    <ApprovedUsersPanel CurrentUserEmail="@CurrentUser.Email" />
+    <WhatsNextPanel />
 
 </section>
 
 @code {
     [Parameter, EditorRequired] public AuthenticatedUser CurrentUser { get; set; } = default!;
 
-    private string? approving;             // email of the request currently in "pick a role" mode
-    private Role selectedRole = Role.Subcontractor;
-
-    private static readonly Role[] AllRoles = Enum.GetValues<Role>();
-
-    private int DistinctRoleCount =>
-        UserDirectory.All().Select(u => u.Role).Distinct().Count();
-
     protected override void OnInitialized()
     {
         UserDirectory.OnChange += StateHasChanged;
-        Requests.OnChange       += StateHasChanged;
-    }
-
-    private void BeginApprove(string email)
-    {
-        approving = email;
-        selectedRole = Role.Subcontractor;
-    }
-
-    private void CancelApprove()
-    {
-        approving = null;
-    }
-
-    private void ConfirmApprove(AccessRequest req)
-    {
-        UserDirectory.Upsert(new DirectoryUser(req.Email, req.DisplayName, selectedRole));
-        Requests.Remove(req.Email);
-        approving = null;
-    }
-
-    private void Decline(string email)
-    {
-        Requests.Remove(email);
-        if (approving == email) approving = null;
-    }
-
-    private bool CanRevoke(DirectoryUser user) =>
-        !string.Equals(user.Email, CurrentUser.Email, StringComparison.OrdinalIgnoreCase);
-
-    private void Revoke(string email)
-    {
-        UserDirectory.Remove(email);
+        Requests.OnChange += StateHasChanged;
     }
 
     public void Dispose()
     {
         UserDirectory.OnChange -= StateHasChanged;
-        Requests.OnChange       -= StateHasChanged;
+        Requests.OnChange -= StateHasChanged;
     }
 }

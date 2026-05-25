@@ -1,4 +1,3 @@
-@* Shown when a user has signed in successfully but isn't on the approved internal directory. *@
 @inject AuthService Auth
 @inject IAccessRequestStore Requests
 @inject NavigationManager Nav
@@ -15,7 +14,20 @@
         </p>
     </div>
 
-    @if (!submitted)
+    @if (isSubmitted)
+    {
+        <div class="rounded-2xl border border-emerald-200 bg-emerald-50 p-6 text-center">
+            <p class="text-sm font-medium text-emerald-800 mb-1">Request submitted</p>
+            <p class="text-sm text-emerald-900 leading-relaxed">
+                Thanks. An administrator will be in touch once your account has been approved.
+            </p>
+            <button type="button" @onclick="SignOut"
+                    class="w-full mt-5 rounded-lg border border-emerald-200 bg-white text-emerald-800 font-medium px-4 py-2.5 hover:border-emerald-300 transition">
+                Sign out
+            </button>
+        </div>
+    }
+    else
     {
         <div class="rounded-2xl border border-slate-200 bg-white p-6">
             <dl class="grid grid-cols-1 gap-3 mb-5 text-sm">
@@ -33,29 +45,13 @@
                 </div>
             </dl>
 
-            <button type="button"
-                    @onclick="SubmitRequest"
+            <button type="button" @onclick="SubmitRequest"
                     class="w-full rounded-lg bg-slate-900 text-white font-medium px-4 py-2.5 hover:bg-slate-800 transition">
                 Request access
             </button>
 
-            <button type="button"
-                    @onclick="HandleSignOut"
+            <button type="button" @onclick="SignOut"
                     class="w-full mt-2 rounded-lg border border-slate-200 bg-white text-slate-700 font-medium px-4 py-2.5 hover:border-slate-300 transition">
-                Sign out
-            </button>
-        </div>
-    }
-    else
-    {
-        <div class="rounded-2xl border border-emerald-200 bg-emerald-50 p-6 text-center">
-            <p class="text-sm font-medium text-emerald-800 mb-1">Request submitted</p>
-            <p class="text-sm text-emerald-900 leading-relaxed">
-                Thanks. An administrator will be in touch once your account has been approved.
-            </p>
-            <button type="button"
-                    @onclick="HandleSignOut"
-                    class="w-full mt-5 rounded-lg border border-emerald-200 bg-white text-emerald-800 font-medium px-4 py-2.5 hover:border-emerald-300 transition">
                 Sign out
             </button>
         </div>
@@ -66,7 +62,7 @@
     [Parameter, EditorRequired] public string Email       { get; set; } = "";
     [Parameter, EditorRequired] public string DisplayName { get; set; } = "";
 
-    private bool submitted;
+    private bool isSubmitted;
 
     private string ProviderName => Auth.CurrentUser?.Provider switch
     {
@@ -79,12 +75,8 @@
     {
         if (Auth.CurrentUser is null) return;
         Requests.Submit(Auth.CurrentUser);
-        submitted = true;
+        isSubmitted = true;
     }
 
-    private async Task HandleSignOut()
-    {
-        await Auth.SignOutAsync();
-        Nav.NavigateTo("/");
-    }
+    private void SignOut() => Nav.NavigateTo("/logout", forceLoad: true);
 }

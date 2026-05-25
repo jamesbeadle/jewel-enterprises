@@ -1,0 +1,72 @@
+name: Deploy JPMS to Azure Static Web Apps
+
+on:
+  push:
+    branches:
+      - main
+    paths:
+      - 'jpms/**'
+      - '.github/workflows/jpms-swa.yml'
+  pull_request:
+    types: [opened, synchronize, reopened, closed]
+    branches:
+      - main
+    paths:
+      - 'jpms/**'
+
+jobs:
+  build_and_deploy:
+    if: github.event_name == 'push' || (github.event_name == 'pull_request' && github.event.action != 'closed')
+    runs-on: ubuntu-latest
+    name: Build and deploy
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+        with:
+          submodules: true
+          lfs: false
+
+      - name: Set up .NET 8
+        uses: actions/setup-dotnet@v4
+        with:
+          dotnet-version: '8.0.x'
+
+      - name: Set up Node 20
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+
+      - name: Install Tailwind dependencies
+        working-directory: jpms
+        run: npm install --no-audit --no-fund
+
+      - name: Restore .NET dependencies
+        run: dotnet restore jpms/Jewel.JPMS.csproj
+
+      - name: Publish Blazor WASM bundle
+        run: dotnet publish jpms/Jewel.JPMS.csproj -c Release -o publish --no-restore
+
+      - name: Deploy to Static Web Apps
+        id: deploy
+        uses: Azure/static-web-apps-deploy@v1
+        with:
+          azure_static_web_apps_api_token: ${{ secrets.AZURE_STATIC_WEB_APPS_API_TOKEN }}
+          repo_token: ${{ secrets.GITHUB_TOKEN }}
+          action: upload
+          app_location: publish/wwwroot
+          api_location: ''
+          output_location: ''
+          skip_app_build: true
+
+  close_pull_request:
+    if: github.event_name == 'pull_request' && github.event.action == 'closed'
+    runs-on: ubuntu-latest
+    name: Close pull-request preview
+
+    steps:
+      - name: Close preview environment
+        uses: Azure/static-web-apps-deploy@v1
+        with:
+          azure_static_web_apps_api_token: ${{ secrets.AZURE_STATIC_WEB_APPS_API_TOKEN }}
+          action: close

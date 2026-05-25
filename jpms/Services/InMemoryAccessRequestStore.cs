@@ -2,49 +2,44 @@ using Jewel.JPMS.Models;
 
 namespace Jewel.JPMS.Services;
 
-/// <summary>
-/// In-memory queue of access requests. Lasts for the lifetime of the browser
-/// session. Replace with an API-backed implementation once the backend lands.
-/// </summary>
 public sealed class InMemoryAccessRequestStore : IAccessRequestStore
 {
-    private readonly List<AccessRequest> _requests = new();
+    private readonly List<AccessRequest> requests = new();
 
     public event Action? OnChange;
 
     public IReadOnlyList<AccessRequest> Pending() =>
-        _requests
-            .OrderByDescending(r => r.RequestedAt)
+        requests
+            .OrderByDescending(request => request.RequestedAt)
             .ToList()
             .AsReadOnly();
 
     public AccessRequest Submit(AuthenticatedUser user)
     {
-        var existing = _requests.FirstOrDefault(r =>
-            string.Equals(r.Email, user.Email, StringComparison.OrdinalIgnoreCase));
-        if (existing is not null)
-        {
-            _requests.Remove(existing);
-        }
+        var existing = FindByEmail(user.Email);
+        if (existing is not null) requests.Remove(existing);
 
         var request = new AccessRequest(
-            Email: user.Email,
-            DisplayName: user.DisplayName,
-            Provider: user.Provider,
-            RequestedAt: DateTimeOffset.UtcNow);
+            user.Email,
+            user.DisplayName,
+            user.Provider,
+            DateTimeOffset.UtcNow);
 
-        _requests.Add(request);
+        requests.Add(request);
         OnChange?.Invoke();
         return request;
     }
 
     public bool Remove(string email)
     {
-        var existing = _requests.FirstOrDefault(r =>
-            string.Equals(r.Email, email, StringComparison.OrdinalIgnoreCase));
+        var existing = FindByEmail(email);
         if (existing is null) return false;
-        _requests.Remove(existing);
+        requests.Remove(existing);
         OnChange?.Invoke();
         return true;
     }
+
+    private AccessRequest? FindByEmail(string email) =>
+        requests.FirstOrDefault(request =>
+            string.Equals(request.Email, email, StringComparison.OrdinalIgnoreCase));
 }
