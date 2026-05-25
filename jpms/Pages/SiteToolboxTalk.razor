@@ -1,0 +1,62 @@
+@page "/site/projects/{ProjectId}/toolbox-talk"
+@layout SiteLayout
+@inject IHsRegister HsRegister
+@inject AuthService Auth
+@inject NavigationManager Nav
+
+<PageTitle>Toolbox talk · JPMS</PageTitle>
+
+<SiteHeader Eyebrow="H&S" Title="Run a toolbox talk" BackHref="@($"/site/projects/{ProjectId}")" />
+
+<section class="max-w-md mx-auto px-4 py-6">
+    @if (isSaved)
+    {
+        <div class="rounded-2xl border border-emerald-200 bg-emerald-50 p-5 text-center">
+            <p class="text-sm font-semibold text-emerald-900">Toolbox talk recorded</p>
+            <a href="@($"/site/projects/{ProjectId}")"
+               class="inline-block mt-3 rounded-xl bg-slate-900 text-white text-sm font-medium px-4 py-2">
+                Back to project
+            </a>
+        </div>
+    }
+    else
+    {
+        <form @onsubmit="HandleSave" @onsubmit:preventDefault="true" class="space-y-3">
+            <div>
+                <label class="block text-xs uppercase tracking-wider text-slate-500 font-semibold mb-1">Topic</label>
+                <input type="text" @bind="topic" required placeholder="Working at height refresher"
+                       class="w-full rounded-xl border border-slate-300 px-4 py-3 text-base" />
+            </div>
+            <div>
+                <label class="block text-xs uppercase tracking-wider text-slate-500 font-semibold mb-1">Attendee count</label>
+                <input type="number" min="1" max="50" @bind="attendees" required
+                       class="w-full rounded-xl border border-slate-300 px-4 py-3 text-base" />
+            </div>
+            <button type="submit"
+                    class="w-full rounded-xl bg-slate-900 text-white font-semibold text-base px-4 py-4 active:bg-slate-800"
+                    disabled="@(string.IsNullOrWhiteSpace(topic) || attendees < 1)">
+                Record talk
+            </button>
+        </form>
+    }
+</section>
+
+@code {
+    [Parameter] public string ProjectId { get; set; } = "";
+
+    private string topic = "";
+    private int attendees = 1;
+    private bool isSaved;
+
+    private void HandleSave()
+    {
+        var summary = $"{topic} ({attendees} attendees)";
+        var record = new HsRecord(
+            $"HS-{Guid.NewGuid().ToString("N")[..8].ToUpperInvariant()}",
+            ProjectId, HsRecordKind.ToolboxTalk, summary, HsSeverity.Low, HsStatus.Closed,
+            Auth.CurrentUser?.Email ?? "site.manager@jewelenterprises.co.uk",
+            DateTimeOffset.UtcNow, null, DateTimeOffset.UtcNow);
+        HsRegister.Upsert(record);
+        isSaved = true;
+    }
+}

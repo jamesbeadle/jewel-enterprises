@@ -1,0 +1,65 @@
+@page "/site/projects/{ProjectId}/raise-snag"
+@layout SiteLayout
+@inject ICloseoutStore CloseoutStore
+@inject AuthService Auth
+@inject NavigationManager Nav
+
+<PageTitle>Raise snag · JPMS</PageTitle>
+
+<SiteHeader Eyebrow="Capture" Title="Raise a snag" BackHref="@($"/site/projects/{ProjectId}")" />
+
+<section class="max-w-md mx-auto px-4 py-6">
+    @if (isSaved)
+    {
+        <div class="rounded-2xl border border-emerald-200 bg-emerald-50 p-5 text-center">
+            <p class="text-sm font-semibold text-emerald-900">Snag saved</p>
+            <a href="@($"/site/projects/{ProjectId}")"
+               class="inline-block mt-3 rounded-xl bg-slate-900 text-white text-sm font-medium px-4 py-2">
+                Back to project
+            </a>
+        </div>
+    }
+    else
+    {
+        <form @onsubmit="HandleSave" @onsubmit:preventDefault="true" class="space-y-3">
+            <div>
+                <label class="block text-xs uppercase tracking-wider text-slate-500 font-semibold mb-1">Location</label>
+                <input type="text" @bind="location" required placeholder="Room or area"
+                       class="w-full rounded-xl border border-slate-300 px-4 py-3 text-base" />
+            </div>
+            <div>
+                <label class="block text-xs uppercase tracking-wider text-slate-500 font-semibold mb-1">Description</label>
+                <textarea @bind="description" required rows="4"
+                          placeholder="What needs fixing?"
+                          class="w-full rounded-xl border border-slate-300 px-4 py-3 text-base"></textarea>
+            </div>
+            <button type="submit"
+                    class="w-full rounded-xl bg-slate-900 text-white font-semibold text-base px-4 py-4 active:bg-slate-800"
+                    disabled="@(!CanSubmit)">
+                Save snag
+            </button>
+        </form>
+    }
+</section>
+
+@code {
+    [Parameter] public string ProjectId { get; set; } = "";
+
+    private string description = "";
+    private string location = "";
+    private bool isSaved;
+
+    private bool CanSubmit =>
+        !string.IsNullOrWhiteSpace(description) && !string.IsNullOrWhiteSpace(location);
+
+    private void HandleSave()
+    {
+        var defect = new Defect(
+            $"DF-{Guid.NewGuid().ToString("N")[..8].ToUpperInvariant()}",
+            ProjectId, description, location,
+            Auth.CurrentUser?.Email ?? "site.manager@jewelenterprises.co.uk",
+            DefectStatus.Open, DateTimeOffset.UtcNow, null);
+        CloseoutStore.SaveDefect(defect);
+        isSaved = true;
+    }
+}

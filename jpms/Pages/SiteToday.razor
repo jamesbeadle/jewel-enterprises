@@ -1,0 +1,66 @@
+@page "/site/today"
+@page "/site"
+@layout SiteLayout
+@inject AuthService Auth
+@inject SessionService Session
+@inject IProjectStore ProjectStore
+@inject NavigationManager Nav
+@implements IDisposable
+
+<PageTitle>Site · Today · JPMS</PageTitle>
+
+@if (!isLoaded)
+{
+    <section class="max-w-md mx-auto px-4 py-12 text-slate-500 text-sm">Loading…</section>
+}
+else if (!Session.IsApproved)
+{
+    <RequestAccessView Email="@Auth.CurrentUser!.Email" DisplayName="@Auth.CurrentUser.DisplayName" />
+}
+else
+{
+    <SiteHeader Eyebrow="Field app" Title="Today" />
+
+    <section class="max-w-md mx-auto px-4 py-6 space-y-3">
+        @if (LiveProjects.Count == 0)
+        {
+            <p class="text-sm text-slate-500 italic">No live projects today.</p>
+        }
+        else
+        {
+            @foreach (var project in LiveProjects)
+            {
+                <a href="@($"/site/projects/{project.ProjectId}")"
+                   class="block rounded-2xl border border-slate-200 bg-white p-5 active:bg-slate-100 transition">
+                    <p class="font-mono text-[10px] text-slate-500">@project.Reference</p>
+                    <p class="text-base font-semibold text-slate-900 mt-1">@project.Name</p>
+                    <div class="flex items-center justify-between mt-2">
+                        <p class="text-xs text-slate-500">@project.ClientName</p>
+                        <ProjectStageBadge Stage="project.Stage" />
+                    </div>
+                </a>
+            }
+        }
+    </section>
+}
+
+@code {
+    private bool isLoaded;
+
+    private IReadOnlyList<Project> LiveProjects =>
+        ProjectStore.All()
+            .Where(p => p.Stage is ProjectStage.Mobilisation or ProjectStage.LiveDelivery)
+            .OrderByDescending(p => p.CreatedAt)
+            .ToList()
+            .AsReadOnly();
+
+    protected override async Task OnInitializedAsync()
+    {
+        await Session.EnsureLoadedAsync();
+        if (!Auth.IsSignedIn) { Nav.NavigateTo("/login", forceLoad: true); return; }
+        ProjectStore.OnChange += StateHasChanged;
+        isLoaded = true;
+    }
+
+    public void Dispose() => ProjectStore.OnChange -= StateHasChanged;
+}

@@ -1,0 +1,74 @@
+@page "/site/projects/{ProjectId}/observation"
+@layout SiteLayout
+@inject IHsRegister HsRegister
+@inject AuthService Auth
+@inject NavigationManager Nav
+
+<PageTitle>Observation · JPMS</PageTitle>
+
+<SiteHeader Eyebrow="H&S" Title="Record observation" BackHref="@($"/site/projects/{ProjectId}")" />
+
+<section class="max-w-md mx-auto px-4 py-6">
+    @if (isSaved)
+    {
+        <div class="rounded-2xl border border-emerald-200 bg-emerald-50 p-5 text-center">
+            <p class="text-sm font-semibold text-emerald-900">Observation logged</p>
+            <a href="@($"/site/projects/{ProjectId}")"
+               class="inline-block mt-3 rounded-xl bg-slate-900 text-white text-sm font-medium px-4 py-2">
+                Back to project
+            </a>
+        </div>
+    }
+    else
+    {
+        <form @onsubmit="HandleSave" @onsubmit:preventDefault="true" class="space-y-3">
+            <div>
+                <label class="block text-xs uppercase tracking-wider text-slate-500 font-semibold mb-1">Type</label>
+                <select @bind="kind" class="w-full rounded-xl border border-slate-300 px-4 py-3 text-base">
+                    <option value="@HsRecordKind.Observation">Observation</option>
+                    <option value="@HsRecordKind.NearMiss">Near miss</option>
+                    <option value="@HsRecordKind.Incident">Incident</option>
+                </select>
+            </div>
+            <div>
+                <label class="block text-xs uppercase tracking-wider text-slate-500 font-semibold mb-1">What happened?</label>
+                <textarea @bind="summary" required rows="4"
+                          class="w-full rounded-xl border border-slate-300 px-4 py-3 text-base"></textarea>
+            </div>
+            <div>
+                <label class="block text-xs uppercase tracking-wider text-slate-500 font-semibold mb-1">Severity</label>
+                <select @bind="severity" class="w-full rounded-xl border border-slate-300 px-4 py-3 text-base">
+                    @foreach (var option in Enum.GetValues<HsSeverity>())
+                    {
+                        <option value="@option">@option</option>
+                    }
+                </select>
+            </div>
+            <button type="submit"
+                    class="w-full rounded-xl bg-slate-900 text-white font-semibold text-base px-4 py-4 active:bg-slate-800"
+                    disabled="@string.IsNullOrWhiteSpace(summary)">
+                Submit
+            </button>
+        </form>
+    }
+</section>
+
+@code {
+    [Parameter] public string ProjectId { get; set; } = "";
+
+    private HsRecordKind kind = HsRecordKind.Observation;
+    private HsSeverity severity = HsSeverity.Low;
+    private string summary = "";
+    private bool isSaved;
+
+    private void HandleSave()
+    {
+        var record = new HsRecord(
+            $"HS-{Guid.NewGuid().ToString("N")[..8].ToUpperInvariant()}",
+            ProjectId, kind, summary, severity, HsStatus.Open,
+            Auth.CurrentUser?.Email ?? "site.manager@jewelenterprises.co.uk",
+            DateTimeOffset.UtcNow, null, null);
+        HsRegister.Upsert(record);
+        isSaved = true;
+    }
+}

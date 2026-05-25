@@ -1,0 +1,75 @@
+@inject IBoqStore BoqStore
+
+<section class="rounded-xl border border-slate-200 bg-white p-5">
+    <h2 class="text-sm font-medium text-slate-700 mb-2">Bulk import BoQ from CSV</h2>
+    <p class="text-sm text-slate-600 mb-3">
+        Paste CSV with columns: <span class="font-mono text-xs">description, unit, quantity, rate, costCode, discipline</span>.
+        Header row required.
+    </p>
+
+    <form @onsubmit="HandleImport" @onsubmit:preventDefault="true" class="space-y-3">
+        <textarea @bind="csvText" rows="8"
+                  placeholder="description,unit,quantity,rate,costCode,discipline
+Strip foundations,m³,60,185,GW-100,Structural
+…"
+                  class="w-full rounded-lg border border-slate-300 px-3 py-2 text-sm font-mono"></textarea>
+
+        @if (!string.IsNullOrEmpty(message))
+        {
+            <p class="text-sm @(isError ? "text-rose-700" : "text-emerald-700")">@message</p>
+        }
+
+        <button type="submit"
+                class="rounded-lg bg-slate-900 text-white font-medium text-sm px-4 py-2 hover:bg-slate-800 transition"
+                disabled="@string.IsNullOrWhiteSpace(csvText)">
+            Import lines
+        </button>
+    </form>
+</section>
+
+@code {
+    [Parameter, EditorRequired] public string ProjectId { get; set; } = "";
+    [Parameter] public EventCallback OnImported { get; set; }
+
+    private string csvText = "";
+    private string message = "";
+    private bool isError;
+
+    private async Task HandleImport()
+    {
+        try
+        {
+            var importedCount = ImportLines();
+            message = $"Imported {importedCount} line items.";
+            isError = false;
+            await OnImported.InvokeAsync();
+        }
+        catch (Exception failure)
+        {
+            message = $"Import failed: {failure.Message}";
+            isError = true;
+        }
+    }
+
+    private int ImportLines()
+    {
+        var lines = csvText.Split('\n', StringSplitOptions.RemoveEmptyEntries);
+        if (lines.Length < 2) throw new InvalidOperationException("Need at least a header row and one data row.");
+
+        var imported = 0;
+        foreach (var line in lines.Skip(1))
+        {
+            var cells = line.Split(',');
+            if (cells.Length < 6) continue;
+            var quantity = decimal.Parse(cells[2], System.Globalization.CultureInfo.InvariantCulture);
+            var rate = decimal.Parse(cells[3], System.Globalization.CultureInfo.InvariantCulture);
+            var discipline = Enum.Parse<Discipline>(cells[5].Trim(), ignoreCase: true);
+            BoqStore.Upsert(new BoqLineItem(
+                $"BL-{Guid.NewGuid().ToString("N")[..8].ToUpperInvariant()}",
+                ProjectId, cells[0].Trim(), cells[1].Trim(),
+                quantity, rate, cells[4].Trim(), discipline));
+            imported++;
+        }
+        return imported;
+    }
+}

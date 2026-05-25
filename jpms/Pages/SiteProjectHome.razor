@@ -1,0 +1,34 @@
+@page "/site/projects/{ProjectId}"
+@layout SiteLayout
+@inject IProjectStore ProjectStore
+@inject NavigationManager Nav
+
+<PageTitle>Site · Project · JPMS</PageTitle>
+
+@if (project is null)
+{
+    <section class="max-w-md mx-auto px-4 py-12 text-slate-500 text-sm">Project not found.</section>
+}
+else
+{
+    <SiteHeader Eyebrow="@project.Reference" Title="@project.Name" BackHref="/site/today" />
+
+    <section class="max-w-md mx-auto px-4 py-6 space-y-3">
+        <SiteActionTile Glyph="📊" Label="Capture progress"      Href="@($"/site/projects/{ProjectId}/capture-progress")" Detail="Update % per BoQ section" />
+        <SiteActionTile Glyph="📷" Label="Capture photo"         Href="@($"/site/projects/{ProjectId}/capture-photo")"    Detail="Auto-tagged to today" />
+        <SiteActionTile Glyph="⚠️"  Label="Raise a snag"          Href="@($"/site/projects/{ProjectId}/raise-snag")"       Detail="Two-tap snag entry" />
+        <SiteActionTile Glyph="📋" Label="Drawings (current)"    Href="@($"/site/projects/{ProjectId}/drawings")"         Detail="Latest revisions on phone" />
+        <SiteActionTile Glyph="👁"  Label="Record an observation" Href="@($"/site/projects/{ProjectId}/observation")"      Detail="Observation or near-miss" />
+        <SiteActionTile Glyph="🛠"  Label="Run a toolbox talk"    Href="@($"/site/projects/{ProjectId}/toolbox-talk")"     Detail="With signature capture" />
+        <SiteActionTile Glyph="⏱"  Label="Submit timesheet"      Href="@($"/site/projects/{ProjectId}/timesheet")"        Detail="Today's hours + cost code" />
+        <SiteActionTile Glyph="🔁" Label="Sync"                  Href="/site/sync"                                        Detail="View offline queue" />
+    </section>
+}
+
+@code {
+    [Parameter] public string ProjectId { get; set; } = "";
+
+    private Project? project;
+
+    protected override void OnParametersSet() => project = ProjectStore.Find(ProjectId);
+}

@@ -1,0 +1,18 @@
+@page "/site/sync"
+@layout SiteLayout
+
+<PageTitle>Sync · JPMS</PageTitle>
+
+<SiteHeader Eyebrow="Field app" Title="Sync status" BackHref="/site/today" />
+
+<section class="max-w-md mx-auto px-4 py-6 space-y-4">
+    <div class="rounded-2xl border border-emerald-200 bg-emerald-50 p-5 text-center">
+        <p class="text-3xl mb-2" aria-hidden="true">✓</p>
+        <p class="text-sm font-semibold text-emerald-900">All up to date</p>
+        <p class="text-xs text-emerald-800 mt-1">No items waiting to sync.</p>
+    </div>
+
+    <p class="text-xs text-slate-500 text-center">
+        Offline capture queues here when the site has no signal. Items flush automatically when you reconnect.
+    </p>
+</section>

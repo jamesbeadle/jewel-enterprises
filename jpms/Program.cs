@@ -15,6 +15,8 @@ builder.Services.AddScoped(serviceProvider => new HttpClient
 
 builder.Services.AddScoped<IUserDirectory, AllowListUserDirectory>();
 builder.Services.AddScoped<IAccessRequestStore, InMemoryAccessRequestStore>();
+// Swap InMemoryProjectStore -> HttpProjectStore when the SQL API is deployed.
+// HttpProjectStore reads/writes via /api/projects (Azure SQL via EF Core).
 builder.Services.AddScoped<IProjectStore, InMemoryProjectStore>();
 builder.Services.AddScoped<ILeadStore, InMemoryLeadStore>();
 builder.Services.AddScoped<IRateLibrary, InMemoryRateLibrary>();

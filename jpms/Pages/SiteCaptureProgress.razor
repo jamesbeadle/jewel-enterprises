@@ -1,0 +1,42 @@
+@page "/site/projects/{ProjectId}/capture-progress"
+@layout SiteLayout
+@inject ISiteStore SiteStore
+@inject NavigationManager Nav
+
+<PageTitle>Capture progress · JPMS</PageTitle>
+
+<SiteHeader Eyebrow="Capture" Title="Progress per section" BackHref="@($"/site/projects/{ProjectId}")" />
+
+<section class="max-w-md mx-auto px-4 py-6 space-y-3">
+    @foreach (var task in Tasks)
+    {
+        <div class="rounded-2xl border border-slate-200 bg-white p-5">
+            <p class="text-sm font-semibold text-slate-900">@task.Title</p>
+            <p class="text-xs text-slate-500 mt-1">Currently @task.ProgressPercent.ToString("0")%</p>
+            <div class="flex items-center gap-2 mt-3">
+                <button type="button" @onclick="() => Bump(task, -5)"
+                        class="w-12 h-12 rounded-full bg-slate-100 text-slate-700 text-xl font-medium active:bg-slate-200">−</button>
+                <div class="flex-1 h-2 bg-slate-100 rounded-full overflow-hidden">
+                    <div class="h-full bg-emerald-500" style="width: @((int)task.ProgressPercent)%"></div>
+                </div>
+                <button type="button" @onclick="() => Bump(task, +5)"
+                        class="w-12 h-12 rounded-full bg-slate-900 text-white text-xl font-medium active:bg-slate-800">+</button>
+            </div>
+        </div>
+    }
+</section>
+
+@code {
+    [Parameter] public string ProjectId { get; set; } = "";
+
+    private IReadOnlyList<ProgrammeTask> Tasks => SiteStore.ProgrammeFor(ProjectId);
+
+    private void Bump(ProgrammeTask task, int delta)
+    {
+        var next = Math.Clamp(task.ProgressPercent + delta, 0m, 100m);
+        StateHasChanged();
+        // Persistence path lives behind SiteStore; the in-memory store treats programme as read-only for now.
+        // When SQL lands, replace with SiteStore.UpdateProgress(task.ProgrammeTaskId, next).
+        _ = next;
+    }
+}

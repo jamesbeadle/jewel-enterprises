@@ -1,0 +1,22 @@
+<header class="bg-white border-b border-slate-200 sticky top-[3.25rem] z-[5]">
+    <div class="max-w-md mx-auto px-4 py-3 flex items-center gap-3">
+        @if (!string.IsNullOrEmpty(BackHref))
+        {
+            <a href="@BackHref"
+               class="inline-flex items-center justify-center w-9 h-9 rounded-full bg-slate-100 text-slate-700 active:bg-slate-200"
+               aria-label="Back">
+                ←
+            </a>
+        }
+        <div class="min-w-0">
+            <p class="text-[10px] uppercase tracking-wider text-slate-500 font-semibold">@Eyebrow</p>
+            <h1 class="text-base font-semibold text-slate-900 truncate">@Title</h1>
+        </div>
+    </div>
+</header>
+
+@code {
+    [Parameter, EditorRequired] public string Title { get; set; } = "";
+    [Parameter] public string Eyebrow { get; set; } = "";
+    [Parameter] public string BackHref { get; set; } = "";
+}
