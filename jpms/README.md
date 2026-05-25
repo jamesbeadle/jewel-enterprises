@@ -137,8 +137,10 @@ jpms/
 ├── Styles/
 │   └── app.tailwind.css           Tailwind source — compiled to wwwroot/css/app.built.css
 ├── Layout/
-│   ├── MainLayout.razor           Header + sign-out + footer
-│   └── PrimaryNav.razor           Top-level navigation links
+│   ├── MainLayout.razor           Top bar + side nav shell + footer
+│   ├── SideNav.razor              Vertical nav (persistent desktop, drawer on mobile)
+│   ├── PortalLayout.razor         External portal shell (subcontractor/architect/client)
+│   └── SiteLayout.razor           Mobile site-PWA shell
 ├── Pages/
 │   ├── Login.razor                Landing page — Microsoft sign-in
 │   ├── Dashboard.razor            Role router
