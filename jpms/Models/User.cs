@@ -14,4 +14,4 @@ public sealed record AuthenticatedUser(
 public sealed record DirectoryUser(
     string Email,
     string DisplayName,
-    Role Role);
+    IReadOnlyList<Role> Roles);

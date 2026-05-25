@@ -6,15 +6,15 @@
             Welcome, @FirstName.
         </h1>
         <p class="text-base md:text-lg text-slate-700 leading-relaxed">
-            You're signed in as <span class="font-medium text-slate-900">@User.Email</span>.
-            Your role on the platform is <RoleBadge Role="User.Role" />.
+            You're signed in as <span class="font-medium text-slate-900">@Email</span>.
+            You're viewing as <RoleBadge Role="Role" />.
         </p>
     </div>
 
     <div class="grid grid-cols-1 sm:grid-cols-3 gap-3 md:gap-4 mb-8">
-        <Stat Label="Role"     Value="@User.Role.DisplayName()" />
-        <Stat Label="Provider" Value="@ProviderName" />
-        <Stat Label="Status"   Value="Approved" />
+        <Stat Label="Active role" Value="@Role.DisplayName()" />
+        <Stat Label="Provider"    Value="Microsoft" />
+        <Stat Label="Status"      Value="Approved" />
     </div>
 
     <section class="rounded-xl border border-slate-200 bg-white overflow-hidden mb-6">
@@ -23,11 +23,11 @@
         </header>
         <div class="p-5 text-sm text-slate-700 leading-relaxed">
             <p class="mb-3">
-                The @User.Role.DisplayName() homepage will land here once that journey is signed off
+                The @Role.DisplayName() homepage will land here once that journey is signed off
                 in the scoping repo.
             </p>
             <p>
-                Until then this is a placeholder so the sign-in and RBAC plumbing can be
+                Until then this is a placeholder so the sign-in and role-routing plumbing can be
                 exercised end-to-end.
             </p>
         </div>
@@ -36,18 +36,12 @@
 </section>
 
 @code {
-    [Parameter, EditorRequired] public DirectoryUser User { get; set; } = default!;
-    [Parameter, EditorRequired] public AuthProvider Provider { get; set; }
+    [Parameter, EditorRequired] public Role Role { get; set; }
+    [Parameter, EditorRequired] public string DisplayName { get; set; } = "";
+    [Parameter, EditorRequired] public string Email { get; set; } = "";
 
     private string FirstName =>
-        FirstWordOf(User.DisplayName) ?? User.Role.DisplayName();
-
-    private string ProviderName => Provider switch
-    {
-        AuthProvider.Microsoft => "Microsoft",
-        AuthProvider.Google    => "Google",
-        _ => "—"
-    };
+        FirstWordOf(DisplayName) ?? Role.DisplayName();
 
     private static string? FirstWordOf(string fullName)
     {

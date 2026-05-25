@@ -16,5 +16,6 @@ builder.Services.AddScoped(serviceProvider => new HttpClient
 builder.Services.AddScoped<IUserDirectory, AllowListUserDirectory>();
 builder.Services.AddScoped<IAccessRequestStore, InMemoryAccessRequestStore>();
 builder.Services.AddScoped<AuthService>();
+builder.Services.AddScoped<SessionService>();
 
 await builder.Build().RunAsync();

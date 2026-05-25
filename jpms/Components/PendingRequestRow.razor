@@ -50,7 +50,11 @@
 
     private void ConfirmApprove(Role assignedRole)
     {
-        UserDirectory.Upsert(new DirectoryUser(Request.Email, Request.DisplayName, assignedRole));
+        var approvedUser = new DirectoryUser(
+            Request.Email,
+            Request.DisplayName,
+            new[] { assignedRole });
+        UserDirectory.Upsert(approvedUser);
         Requests.Remove(Request.Email);
         isApproving = false;
     }

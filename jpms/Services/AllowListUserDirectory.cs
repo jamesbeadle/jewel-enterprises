@@ -6,11 +6,10 @@ public sealed class AllowListUserDirectory : IUserDirectory
 {
     private readonly List<DirectoryUser> users = new()
     {
-        new DirectoryUser("jamesbeadle1989@gmail.com",     "James Beadle",      Role.Admin),
-        new DirectoryUser("admin@jewelgroup.co.uk",        "Jewel Admin",       Role.Admin),
-        new DirectoryUser("nigel.reilly@jewelgroup.co.uk", "Nigel Reilly",      Role.ManagingDirector),
-        new DirectoryUser("accountant@jewelgroup.co.uk",   "Jewel Accountant",  Role.Accountant),
-        new DirectoryUser("qs@jewelgroup.co.uk",           "Jewel QS",          Role.QuantitySurveyor),
+        new DirectoryUser(
+            "Nigel.Reilly@jewelenterprises.co.uk",
+            "Nigel Reilly",
+            new[] { Role.ManagingDirector })
     };
 
     public event Action? OnChange;

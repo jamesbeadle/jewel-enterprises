@@ -1,7 +1,9 @@
 @page "/dashboard"
 @inject AuthService Auth
 @inject IUserDirectory UserDirectory
+@inject SessionService Session
 @inject NavigationManager Nav
+@implements IDisposable
 
 <PageTitle>Dashboard · JPMS</PageTitle>
 
@@ -11,22 +13,24 @@
         Loading your dashboard…
     </section>
 }
-else if (directoryUser is null)
+else if (!Session.IsApproved)
 {
     <RequestAccessView Email="@Auth.CurrentUser!.Email" DisplayName="@Auth.CurrentUser.DisplayName" />
 }
-else if (directoryUser.Role.IsAdministrative())
+else if (Session.ActiveRole == Role.Admin)
 {
     <AdminHome CurrentUser="Auth.CurrentUser!" />
 }
-else
+else if (Session.ActiveRole is not null)
 {
-    <PlaceholderHome User="directoryUser" Provider="Auth.CurrentUser!.Provider" />
+    <PlaceholderHome
+        Role="Session.ActiveRole.Value"
+        DisplayName="@Auth.CurrentUser!.DisplayName"
+        Email="@Auth.CurrentUser.Email" />
 }
 
 @code {
     private bool isLoaded;
-    private DirectoryUser? directoryUser;
 
     protected override async Task OnInitializedAsync()
     {
@@ -36,7 +40,18 @@ else
             Nav.NavigateTo("/login", forceLoad: true);
             return;
         }
-        directoryUser = UserDirectory.Find(Auth.CurrentUser!.Email);
+
+        var email = Auth.CurrentUser!.Email;
+        var directoryEntry = UserDirectory.Find(email);
+        var roles = EffectiveRoles.For(email, directoryEntry);
+        var displayName = string.IsNullOrWhiteSpace(directoryEntry?.DisplayName)
+            ? Auth.CurrentUser.DisplayName
+            : directoryEntry!.DisplayName;
+        var sessionUser = Auth.CurrentUser with { DisplayName = displayName };
+        Session.Adopt(sessionUser, roles);
+        Session.OnChange += StateHasChanged;
         isLoaded = true;
     }
+
+    public void Dispose() => Session.OnChange -= StateHasChanged;
 }

@@ -13,5 +13,5 @@
     private string PendingRequestCount => Requests.Pending().Count.ToString();
 
     private string DistinctRoleCount =>
-        UserDirectory.All().Select(user => user.Role).Distinct().Count().ToString();
+        UserDirectory.All().SelectMany(user => user.Roles).Distinct().Count().ToString();
 }
