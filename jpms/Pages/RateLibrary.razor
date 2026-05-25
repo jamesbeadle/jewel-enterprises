@@ -1,7 +1,7 @@
 @page "/rate-library"
 @inject AuthService Auth
 @inject SessionService Session
-@inject IRateLibrary RateLibrary
+@inject IRateLibrary Rates
 @inject NavigationManager Nav
 @implements IDisposable
 
@@ -22,7 +22,7 @@ else
             <div>
                 <p class="text-xs uppercase tracking-wider text-slate-500 font-medium mb-1">JPMS · QS</p>
                 <h1 class="text-2xl md:text-3xl font-semibold text-slate-900 leading-tight">Rate library</h1>
-                <p class="text-sm text-slate-600 mt-2">@RateLibrary.All().Count rates · @StaleCount stale.</p>
+                <p class="text-sm text-slate-600 mt-2">@Rates.All().Count rates · @StaleCount stale.</p>
             </div>
             <a href="/rate-library/stale"
                class="text-sm font-medium text-slate-700 hover:text-slate-900 underline underline-offset-4">
@@ -30,7 +30,7 @@ else
             </a>
         </header>
 
-        <RateTable Rates="RateLibrary.All()" />
+        <RateTable Rates="Rates.All()" />
     </section>
 }
 
@@ -38,15 +38,15 @@ else
     private const int StaleDayThreshold = 60;
     private bool isLoaded;
 
-    private int StaleCount => RateLibrary.Stale(StaleDayThreshold).Count;
+    private int StaleCount => Rates.Stale(StaleDayThreshold).Count;
 
     protected override async Task OnInitializedAsync()
     {
         await Session.EnsureLoadedAsync();
         if (!Auth.IsSignedIn) { Nav.NavigateTo("/login", forceLoad: true); return; }
-        RateLibrary.OnChange += StateHasChanged;
+        Rates.OnChange += StateHasChanged;
         isLoaded = true;
     }
 
-    public void Dispose() => RateLibrary.OnChange -= StateHasChanged;
+    public void Dispose() => Rates.OnChange -= StateHasChanged;
 }

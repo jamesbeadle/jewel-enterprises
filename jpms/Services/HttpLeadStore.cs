@@ -3,11 +3,11 @@ using Jewel.JPMS.Models;
 
 namespace Jewel.JPMS.Services;
 
-public sealed class HttpLeadStore : ILeadStore
+public sealed partial class HttpLeadStore : ILeadStore
 {
     private readonly HttpClient httpClient;
     private IReadOnlyList<Lead> cachedLeads = Array.Empty<Lead>();
-    private bool hasLoaded;
+    private bool hasLoadedLeads;
 
     public HttpLeadStore(HttpClient httpClient) { this.httpClient = httpClient; }
 
@@ -15,7 +15,7 @@ public sealed class HttpLeadStore : ILeadStore
 
     public IReadOnlyList<Lead> All()
     {
-        if (!hasLoaded) _ = LoadLeadsAsync();
+        if (!hasLoadedLeads) _ = LoadLeadsAsync();
         return cachedLeads;
     }
 
@@ -25,69 +25,58 @@ public sealed class HttpLeadStore : ILeadStore
 
     public Lead Upsert(Lead lead)
     {
-        _ = PostAsync("/api/leads", lead, refresh: true);
+        _ = PostAndRefreshLeadsAsync("/api/leads", lead);
         return lead;
     }
 
-    public QualificationAssessment? GetQualification(string leadId) =>
-        FetchSync<QualificationAssessment>($"/api/leads/{leadId}/qualification");
-
-    public void SaveQualification(QualificationAssessment assessment) =>
-        _ = PostAsync("/api/leads/qualifications", assessment, refresh: false);
-
-    public IReadOnlyList<SiteVisit> SiteVisitsFor(string leadId) =>
-        FetchSync<List<SiteVisit>>($"/api/leads/{leadId}/site-visits")?.AsReadOnly() ?? (IReadOnlyList<SiteVisit>)Array.Empty<SiteVisit>();
-
-    public void SaveSiteVisit(SiteVisit visit) =>
-        _ = PostAsync("/api/leads/site-visits", visit, refresh: false);
-
-    public IReadOnlyList<InfoChaseItem> InfoChaseFor(string leadId) =>
-        FetchSync<List<InfoChaseItem>>($"/api/leads/{leadId}/info-chase")?.AsReadOnly() ?? (IReadOnlyList<InfoChaseItem>)Array.Empty<InfoChaseItem>();
-
-    public void SaveInfoChaseItem(InfoChaseItem item) =>
-        _ = PostAsync("/api/leads/info-chase", item, refresh: false);
-
-    public BidDecision? GetBidDecision(string leadId) =>
-        FetchSync<BidDecision>($"/api/leads/{leadId}/bid-decision");
-
-    public void SaveBidDecision(BidDecision decision) =>
-        _ = PostAsync("/api/leads/bid-decisions", decision, refresh: false);
-
-    public Proposal? GetProposal(string leadId) =>
-        FetchSync<Proposal>($"/api/leads/{leadId}/proposal");
-
-    public void SaveProposal(Proposal proposal) =>
-        _ = PostAsync("/api/leads/proposals", proposal, refresh: false);
-
-    public LeadOutcome? GetOutcome(string leadId) =>
-        FetchSync<LeadOutcome>($"/api/leads/{leadId}/outcome");
-
-    public void SaveOutcome(LeadOutcome outcome) =>
-        _ = PostAsync("/api/leads/outcomes", outcome, refresh: false);
-
     private async Task LoadLeadsAsync()
     {
-        hasLoaded = true;
-        try
-        {
-            var response = await httpClient.GetFromJsonAsync<List<Lead>>("/api/leads");
-            cachedLeads = response?.AsReadOnly() ?? (IReadOnlyList<Lead>)Array.Empty<Lead>();
-            OnChange?.Invoke();
-        }
+        hasLoadedLeads = true;
+        try { cachedLeads = (await httpClient.GetFromJsonAsync<List<Lead>>("/api/leads"))?.AsReadOnly() ?? (IReadOnlyList<Lead>)Array.Empty<Lead>(); OnChange?.Invoke(); }
         catch { cachedLeads = Array.Empty<Lead>(); }
     }
 
-    private async Task PostAsync<T>(string url, T body, bool refresh)
+    private async Task PostAndRefreshLeadsAsync<T>(string url, T body)
     {
-        try { await httpClient.PostAsJsonAsync(url, body); }
-        catch { return; }
-        if (refresh) await LoadLeadsAsync();
-        else OnChange?.Invoke();
+        try { await httpClient.PostAsJsonAsync(url, body); } catch { return; }
+        await LoadLeadsAsync();
     }
 
-    private T? FetchSync<T>(string url)
+    private T? CachedScalar<T>(Dictionary<string, T?> cache, string key, string url) where T : class
     {
-        try { return httpClient.GetFromJsonAsync<T>(url).GetAwaiter().GetResult(); }
-        catch { return default; }
+        if (!cache.ContainsKey(key)) _ = LoadScalarAsync(cache, key, url);
+        return cache.TryGetValue(key, out var value) ? value : null;
+    }
+
+    private IReadOnlyList<T> CachedList<T>(Dictionary<string, IReadOnlyList<T>> cache, string key, string url)
+    {
+        if (!cache.ContainsKey(key)) _ = LoadListAsync(cache, key, url);
+        return cache.TryGetValue(key, out var list) ? list : Array.Empty<T>();
+    }
+
+    private async Task LoadScalarAsync<T>(Dictionary<string, T?> cache, string key, string url) where T : class
+    {
+        try { cache[key] = await httpClient.GetFromJsonAsync<T?>(url); OnChange?.Invoke(); }
+        catch { cache[key] = null; }
+    }
+
+    private async Task LoadListAsync<T>(Dictionary<string, IReadOnlyList<T>> cache, string key, string url)
+    {
+        try { cache[key] = (await httpClient.GetFromJsonAsync<List<T>>(url))?.AsReadOnly() ?? (IReadOnlyList<T>)Array.Empty<T>(); OnChange?.Invoke(); }
+        catch { cache[key] = Array.Empty<T>(); }
+    }
+
+    private async Task PostScalarAsync<T>(string url, T body, string key, Dictionary<string, T?> cache, string refreshUrl) where T : class
+    {
+        try { await httpClient.PostAsJsonAsync(url, body); } catch { return; }
+        cache.Remove(key);
+        await LoadScalarAsync(cache, key, refreshUrl);
+    }
+
+    private async Task PostListAsync<T>(string url, T body, string key, Dictionary<string, IReadOnlyList<T>> cache, string refreshUrl)
+    {
+        try { await httpClient.PostAsJsonAsync(url, body); } catch { return; }
+        cache.Remove(key);
+        await LoadListAsync(cache, key, refreshUrl);
     }
 }
