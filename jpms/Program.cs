@@ -33,6 +33,7 @@ builder.Services.AddScoped<ICloseoutStore, HttpCloseoutStore>();
 
 builder.Services.AddScoped<PortalContext>();
 builder.Services.AddScoped<AuthService>();
+builder.Services.AddScoped<ActiveRoleStorage>();
 builder.Services.AddScoped<SessionService>();
 
 await builder.Build().RunAsync();

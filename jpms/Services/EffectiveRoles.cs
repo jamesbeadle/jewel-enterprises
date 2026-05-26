@@ -4,20 +4,12 @@ namespace Jewel.JPMS.Services;
 
 public static class EffectiveRoles
 {
+    private static readonly IReadOnlyList<Role> AllRoles = Enum.GetValues<Role>();
+
     public static IReadOnlyList<Role> For(string email, DirectoryUser? directoryEntry)
     {
-        var roles = new List<Role>();
-
-        if (directoryEntry is not null)
-        {
-            roles.AddRange(directoryEntry.Roles);
-        }
-
-        if (JpmsAdministrators.Contains(email) && !roles.Contains(Role.Admin))
-        {
-            roles.Insert(0, Role.Admin);
-        }
-
-        return roles.AsReadOnly();
+        if (JpmsAdministrators.Contains(email)) return AllRoles;
+        if (directoryEntry is null) return Array.Empty<Role>();
+        return directoryEntry.Roles;
     }
 }

@@ -6,11 +6,13 @@ public sealed class SessionService
 {
     private readonly AuthService auth;
     private readonly IUserDirectory directory;
+    private readonly ActiveRoleStorage roleStorage;
 
-    public SessionService(AuthService auth, IUserDirectory directory)
+    public SessionService(AuthService auth, IUserDirectory directory, ActiveRoleStorage roleStorage)
     {
         this.auth = auth;
         this.directory = directory;
+        this.roleStorage = roleStorage;
     }
 
     public AuthenticatedUser? CurrentUser { get; private set; }
@@ -39,7 +41,8 @@ public sealed class SessionService
             ? signedInUser.DisplayName
             : directoryEntry!.DisplayName;
         var resolvedUser = signedInUser with { DisplayName = displayName };
-        Adopt(resolvedUser, roles);
+        var persistedRole = await roleStorage.ReadAsync(resolvedUser.Email);
+        Adopt(resolvedUser, roles, persistedRole);
     }
 
     public void SwitchTo(Role role)
@@ -47,6 +50,7 @@ public sealed class SessionService
         if (!AvailableRoles.Contains(role)) return;
         if (ActiveRole == role) return;
         ActiveRole = role;
+        _ = PersistActiveRole();
         OnChange?.Invoke();
     }
 
@@ -58,12 +62,25 @@ public sealed class SessionService
         OnChange?.Invoke();
     }
 
-    private void Adopt(AuthenticatedUser user, IReadOnlyList<Role> roles)
+    private void Adopt(AuthenticatedUser user, IReadOnlyList<Role> roles, Role? persistedRole)
     {
         CurrentUser = user;
         AvailableRoles = roles;
-        ActiveRole = roles.Count == 0 ? null : MostPrivileged(roles);
+        ActiveRole = ChooseInitialRole(roles, persistedRole);
         OnChange?.Invoke();
+    }
+
+    private static Role? ChooseInitialRole(IReadOnlyList<Role> roles, Role? persistedRole)
+    {
+        if (roles.Count == 0) return null;
+        if (persistedRole is not null && roles.Contains(persistedRole.Value)) return persistedRole;
+        return MostPrivileged(roles);
+    }
+
+    private async Task PersistActiveRole()
+    {
+        if (CurrentUser is null || ActiveRole is null) return;
+        await roleStorage.WriteAsync(CurrentUser.Email, ActiveRole.Value);
     }
 
     private static Role MostPrivileged(IReadOnlyList<Role> roles)
