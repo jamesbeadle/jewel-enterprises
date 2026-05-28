@@ -78,29 +78,13 @@ public sealed class SessionService
     {
         CurrentUser = user;
         AvailableRoles = roles;
-        ActiveRole = ChooseInitialRole(roles, persistedRole);
+        ActiveRole = InitialRoleSelection.From(roles, persistedRole);
         OnChange?.Invoke();
-    }
-
-    private static Role? ChooseInitialRole(IReadOnlyList<Role> roles, Role? persistedRole)
-    {
-        if (roles.Count == 0) return null;
-        if (persistedRole is not null && roles.Contains(persistedRole.Value)) return persistedRole;
-        return MostPrivileged(roles);
     }
 
     private async Task PersistActiveRole()
     {
         if (CurrentUser is null || ActiveRole is null) return;
         await roleStorage.WriteAsync(CurrentUser.Email, ActiveRole.Value);
-    }
-
-    private static Role MostPrivileged(IReadOnlyList<Role> roles)
-    {
-        foreach (var role in Enum.GetValues<Role>())
-        {
-            if (roles.Contains(role)) return role;
-        }
-        return roles[0];
     }
 }

@@ -17,21 +17,12 @@ public sealed class RecordCvrPackageRowHandler : ICommandHandler<RecordCvrPackag
     {
         var entity = await context.CvrPackageRows.FirstOrDefaultAsync(
             row => row.ProjectId == command.ProjectId && row.PackageName == command.PackageName, cancellationToken);
-        var newCombinedValue = command.OrderValue + command.VariationValue;
-        if (entity is null)
-        {
-            entity = new CvrPackageRowEntity
-            {
-                CvrPackageRowId = CvrIdentifierFactory.NextPackageRowId(),
-                ProjectId = command.ProjectId,
-                PackageName = command.PackageName
-            };
-            context.CvrPackageRows.Add(entity);
-        }
-        else
-        {
-            entity.MovementSinceLastSnapshot = newCombinedValue - (entity.OrderValue + entity.VariationValue);
-        }
+        var priorCombinedValue = entity is null
+            ? command.OrderValue + command.VariationValue
+            : entity.OrderValue + entity.VariationValue;
+
+        entity ??= AddNewPackageRow(command);
+        entity.MovementSinceLastSnapshot = command.OrderValue + command.VariationValue - priorCombinedValue;
         entity.OrderCost = command.OrderCost;
         entity.OrderValue = command.OrderValue;
         entity.VariationCost = command.VariationCost;
@@ -39,5 +30,17 @@ public sealed class RecordCvrPackageRowHandler : ICommandHandler<RecordCvrPackag
 
         await context.SaveChangesAsync(cancellationToken);
         return entity.ToModel();
+    }
+
+    private CvrPackageRowEntity AddNewPackageRow(RecordCvrPackageRow command)
+    {
+        var entity = new CvrPackageRowEntity
+        {
+            CvrPackageRowId = CvrIdentifierFactory.NextPackageRowId(),
+            ProjectId = command.ProjectId,
+            PackageName = command.PackageName
+        };
+        context.CvrPackageRows.Add(entity);
+        return entity;
     }
 }
