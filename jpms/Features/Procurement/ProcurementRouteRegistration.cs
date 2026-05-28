@@ -20,6 +20,10 @@ public static class ProcurementRouteRegistration
             new QueryRoute("/api/projects/{projectId}/bid-packages",
                 query => $"/api/projects/{((ListBidPackagesForProject)query).ProjectId}/bid-packages"));
 
+        queries.Register<GetBidPackageById, BidPackage?>(
+            new QueryRoute("/api/bid-packages/{bidPackageId}",
+                query => $"/api/bid-packages/{((GetBidPackageById)query).BidPackageId}"));
+
         queries.Register<ListQuotesForBidPackage, IReadOnlyList<Quote>>(
             new QueryRoute("/api/bid-packages/{bidPackageId}/quotes",
                 query => $"/api/bid-packages/{((ListQuotesForBidPackage)query).BidPackageId}/quotes"));

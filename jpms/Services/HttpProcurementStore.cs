@@ -30,7 +30,8 @@ public sealed class HttpProcurementStore : IProcurementStore
         return packagesReadModel.Current(projectId);
     }
 
-    public BidPackage? FindPackage(string bidPackageId) => null;
+    public BidPackage? FindPackage(string bidPackageId) =>
+        queries.AskAsync(new GetBidPackageById(bidPackageId), CancellationToken.None).GetAwaiter().GetResult();
 
     public BidPackage Upsert(BidPackage package)
     {
