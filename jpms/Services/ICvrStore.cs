@@ -6,6 +6,7 @@ public interface ICvrStore
 {
     IReadOnlyList<CvrSnapshot> SnapshotsFor(string projectId);
     CvrSnapshot? LatestSnapshot(string projectId);
+    CvrSnapshot CaptureSnapshot(CvrSnapshot snapshot);
 
     IReadOnlyList<CvrPackageRow> PackagesFor(string projectId);
     IReadOnlyList<ForecastComponent> ForecastComponentsFor(string projectId);

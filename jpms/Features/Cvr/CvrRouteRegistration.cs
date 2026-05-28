@@ -39,6 +39,10 @@ public static class CvrRouteRegistration
             new QueryRoute("/api/projects/{projectId}/eots",
                 query => $"/api/projects/{((ListEotsForProject)query).ProjectId}/eots"));
 
+        commands.Register<CaptureCvrSnapshot, CvrSnapshot>(
+            new CommandRoute("POST", "/api/projects/{projectId}/cvr-snapshots",
+                command => $"/api/projects/{((CaptureCvrSnapshot)command).ProjectId}/cvr-snapshots"));
+
         commands.Register<RecordQsAccrual, QsAccrual>(
             new CommandRoute("POST", "/api/projects/{projectId}/qs-accruals",
                 command => $"/api/projects/{((RecordQsAccrual)command).ProjectId}/qs-accruals"));

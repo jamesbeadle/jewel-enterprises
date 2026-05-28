@@ -18,6 +18,10 @@ public static class CvrFeatureRegistration
         services.AddScoped<IQueryHandler<ListPrelimEntriesForItem, IReadOnlyList<PrelimForecastEntry>>, ListPrelimEntriesForItemHandler>();
         services.AddScoped<IQueryHandler<ListEotsForProject, IReadOnlyList<Eot>>, ListEotsForProjectHandler>();
 
+        services.AddScoped<ICommandHandler<CaptureCvrSnapshot, CvrSnapshot>, CaptureCvrSnapshotHandler>();
+        services.AddScoped<CaptureCvrSnapshotAuthorisation>();
+        services.AddScoped<CaptureCvrSnapshotValidation>();
+
         services.AddScoped<ICommandHandler<RecordQsAccrual, QsAccrual>, RecordQsAccrualHandler>();
         services.AddScoped<RecordQsAccrualAuthorisation>();
         services.AddScoped<RecordQsAccrualValidation>();

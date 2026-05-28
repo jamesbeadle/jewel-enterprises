@@ -30,6 +30,20 @@ public sealed class HttpCvrStore : ICvrStore
     public CvrSnapshot? LatestSnapshot(string projectId) =>
         SnapshotsFor(projectId).FirstOrDefault();
 
+    public CvrSnapshot CaptureSnapshot(CvrSnapshot snapshot)
+    {
+        _ = CaptureSnapshotAsync(snapshot);
+        return snapshot;
+    }
+
+    private async Task CaptureSnapshotAsync(CvrSnapshot snapshot)
+    {
+        await commands.SendAsync(
+            new CaptureCvrSnapshot(snapshot.ProjectId, snapshot.TenderValue, snapshot.ForecastFinalCost, snapshot.ForecastFinalValue, snapshot.WeeksAheadOrBehind),
+            CancellationToken.None);
+        await snapshotsReadModel.RefreshAsync(snapshot.ProjectId, CancellationToken.None);
+    }
+
     public IReadOnlyList<CvrPackageRow> PackagesFor(string projectId) => Array.Empty<CvrPackageRow>();
 
     public IReadOnlyList<ForecastComponent> ForecastComponentsFor(string projectId) =>
