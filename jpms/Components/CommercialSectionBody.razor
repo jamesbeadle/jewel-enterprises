@@ -1,5 +1,6 @@
 @inject ICommercialStore CommercialStore
 @inject ICvrStore CvrStore
+@inject ICommercialInputsStore InputsStore
 
 @switch (Section)
 {
@@ -32,6 +33,25 @@
     case "timesheets":
         <h2 class="text-lg font-semibold text-slate-900 mb-3">Timesheets — weekly approval</h2>
         <TimesheetApprovalGrid Timesheets="CommercialStore.TimesheetsFor(ProjectId)" />
+        break;
+    case "inputs":
+        <div class="space-y-8">
+            <section>
+                <h2 class="text-lg font-semibold text-slate-900 mb-3">Dayworks</h2>
+                <DayworkForm ProjectId="@ProjectId" />
+                <DayworkTable Dayworks="InputsStore.DayworksFor(ProjectId)" />
+            </section>
+            <section>
+                <h2 class="text-lg font-semibold text-slate-900 mb-3">Contra charges</h2>
+                <ContraChargeForm ProjectId="@ProjectId" />
+                <ContraChargeTable ContraCharges="InputsStore.ContraChargesFor(ProjectId)" />
+            </section>
+            <section>
+                <h2 class="text-lg font-semibold text-slate-900 mb-3">Subcontractor retention</h2>
+                <RetentionForm ProjectId="@ProjectId" />
+                <RetentionTable Retentions="InputsStore.RetentionsFor(ProjectId)" />
+            </section>
+        </div>
         break;
     default:
         <CommercialSummary ProjectId="@ProjectId" />
