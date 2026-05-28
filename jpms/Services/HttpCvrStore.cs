@@ -44,7 +44,16 @@ public sealed class HttpCvrStore : ICvrStore
         await snapshotsReadModel.RefreshAsync(snapshot.ProjectId, CancellationToken.None);
     }
 
-    public IReadOnlyList<CvrPackageRow> PackagesFor(string projectId) => Array.Empty<CvrPackageRow>();
+    public IReadOnlyList<CvrPackageRow> PackagesFor(string projectId) =>
+        queries.AskAsync(new ListCvrPackagesForProject(projectId), CancellationToken.None).GetAwaiter().GetResult();
+
+    public CvrPackageRow SavePackageRow(CvrPackageRow row)
+    {
+        _ = commands.SendAsync(
+            new RecordCvrPackageRow(row.ProjectId, row.PackageName, row.OrderCost, row.OrderValue, row.VariationCost, row.VariationValue),
+            CancellationToken.None);
+        return row;
+    }
 
     public IReadOnlyList<ForecastComponent> ForecastComponentsFor(string projectId) =>
         queries.AskAsync(new ListForecastComponentsForProject(projectId), CancellationToken.None).GetAwaiter().GetResult();

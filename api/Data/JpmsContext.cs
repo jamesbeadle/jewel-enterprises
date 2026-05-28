@@ -49,6 +49,7 @@ public sealed class JpmsContext : DbContext
     public DbSet<ClaimPeriodEntity> ClaimPeriods => Set<ClaimPeriodEntity>();
     public DbSet<ValuationEntity> Valuations => Set<ValuationEntity>();
     public DbSet<CvrSnapshotEntity> CvrSnapshots => Set<CvrSnapshotEntity>();
+    public DbSet<CvrPackageRowEntity> CvrPackageRows => Set<CvrPackageRowEntity>();
     public DbSet<ForecastComponentEntity> ForecastComponents => Set<ForecastComponentEntity>();
     public DbSet<QsAccrualEntity> QsAccruals => Set<QsAccrualEntity>();
     public DbSet<PrelimItemEntity> PrelimItems => Set<PrelimItemEntity>();

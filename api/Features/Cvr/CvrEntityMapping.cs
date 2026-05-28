@@ -22,4 +22,7 @@ internal static class CvrEntityMapping
 
     public static Eot ToModel(this EotEntity entity) =>
         new(entity.EotId, entity.ProjectId, entity.Reason, entity.DaysGranted, entity.CommercialRecovery, entity.GrantedAt);
+
+    public static CvrPackageRow ToModel(this CvrPackageRowEntity entity) =>
+        new(entity.ProjectId, entity.PackageName, entity.OrderCost, entity.OrderValue, entity.VariationCost, entity.VariationValue, entity.MovementSinceLastSnapshot);
 }

@@ -9,6 +9,7 @@ public interface ICvrStore
     CvrSnapshot CaptureSnapshot(CvrSnapshot snapshot);
 
     IReadOnlyList<CvrPackageRow> PackagesFor(string projectId);
+    CvrPackageRow SavePackageRow(CvrPackageRow row);
     IReadOnlyList<ForecastComponent> ForecastComponentsFor(string projectId);
 
     IReadOnlyList<QsAccrual> AccrualsFor(string projectId);
