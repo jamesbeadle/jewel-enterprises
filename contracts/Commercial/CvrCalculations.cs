@@ -8,7 +8,10 @@ public static class CvrCalculations
     private const decimal DaysPerWeek = 7m;
     public const decimal DefaultSiteReportWeight = 0.5m;
 
-    public static decimal ProfitMarginPercent(decimal profit, decimal value) =>
+    public static decimal ProfitOnCostPercent(decimal profit, decimal cost) =>
+        cost == 0 ? 0 : profit / cost * WholePercent;
+
+    public static decimal ProfitOnValuePercent(decimal profit, decimal value) =>
         value == 0 ? 0 : profit / value * WholePercent;
 
     public static decimal CostToComplete(decimal tenderedPackageCost, decimal completionPercent) =>

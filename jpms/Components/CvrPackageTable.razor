@@ -33,7 +33,7 @@
                     <td class="px-3 py-2 text-slate-900 font-medium">@Money(row.VariationProfit)</td>
                     <td class="px-3 py-2 text-slate-700 border-l border-slate-100">@Money(row.CombinedCost)</td>
                     <td class="px-3 py-2 text-slate-700">@Money(row.CombinedValue)</td>
-                    <td class="px-3 py-2 text-slate-900 font-medium">@row.CombinedMarginPercent.ToString("0.0")%</td>
+                    <td class="px-3 py-2 text-slate-900 font-medium">@row.CombinedProfitOnCostPercent.ToString("0.0")%</td>
                     <td class="px-3 py-2 font-medium border-l border-slate-100 @MovementColour(row.MovementSinceLastSnapshot)">
                         @MovementText(row.MovementSinceLastSnapshot)
                     </td>

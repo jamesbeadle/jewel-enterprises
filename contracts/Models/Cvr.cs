@@ -14,8 +14,11 @@ public sealed record CvrPackageRow(
     public decimal CombinedCost => OrderCost + VariationCost;
     public decimal CombinedValue => OrderValue + VariationValue;
     public decimal CombinedProfit => CombinedValue - CombinedCost;
-    public decimal CombinedMarginPercent =>
-        CombinedValue == 0 ? 0 : (CombinedProfit / CombinedValue) * 100m;
+
+    public decimal OrderProfitOnCostPercent => Commercial.CvrCalculations.ProfitOnCostPercent(OrderProfit, OrderCost);
+    public decimal VariationProfitOnCostPercent => Commercial.CvrCalculations.ProfitOnCostPercent(VariationProfit, VariationCost);
+    public decimal CombinedProfitOnCostPercent => Commercial.CvrCalculations.ProfitOnCostPercent(CombinedProfit, CombinedCost);
+    public decimal CombinedProfitOnValuePercent => Commercial.CvrCalculations.ProfitOnValuePercent(CombinedProfit, CombinedValue);
 }
 
 public sealed record ForecastComponent(
