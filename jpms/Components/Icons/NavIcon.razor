@@ -1,0 +1,27 @@
+@namespace Jewel.JPMS.Components.Icons
+
+<svg class="@Class" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+     stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+    @((MarkupString)PathFor(Route))
+</svg>
+
+@code {
+    [Parameter, EditorRequired] public string Route { get; set; } = "";
+    [Parameter] public string Class { get; set; } = "w-5 h-5";
+
+    private static string PathFor(string route) => route switch
+    {
+        "/dashboard"      => "<rect x='3' y='3' width='7' height='9' rx='1'/><rect x='14' y='3' width='7' height='5' rx='1'/><rect x='14' y='12' width='7' height='9' rx='1'/><rect x='3' y='16' width='7' height='5' rx='1'/>",
+        "/leads"          => "<path d='M3 11l18-7-7 18-2.5-7.5L4 11z'/>",
+        "/projects"       => "<path d='M3 7h6l2 2h10v9a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z'/>",
+        "/subcontractors" => "<circle cx='9' cy='8' r='3'/><path d='M3 20a6 6 0 0 1 12 0'/><path d='M16 11a3 3 0 0 0 0-6'/><path d='M19 20a5 5 0 0 0-3-4.6'/>",
+        "/work-orders"    => "<path d='M9 4h6l1 3h3v13H5V7h3z'/><path d='M9 12l2 2 4-4'/>",
+        "/hs"             => "<path d='M12 3l8 3v6c0 5-3.5 8-8 9-4.5-1-8-4-8-9V6z'/><path d='M9 12l2 2 4-4'/>",
+        "/cashflow"       => "<path d='M3 17l5-5 4 3 8-8'/><path d='M21 7v5h-5'/>",
+        "/portfolio"      => "<circle cx='12' cy='12' r='9'/><path d='M12 3v9l6 3'/>",
+        "/reports"        => "<rect x='5' y='3' width='14' height='18' rx='2'/><path d='M9 8h6M9 12h6M9 16h4'/>",
+        "/rate-library"   => "<path d='M5 4h11l3 3v13H5z'/><path d='M9 9h6M9 13h6M9 17h4'/>",
+        "/site/today"     => "<rect x='4' y='3' width='16' height='18' rx='2'/><path d='M9 7h6M9 11h6M9 15h3'/>",
+        _                 => "<circle cx='12' cy='12' r='8'/>"
+    };
+}

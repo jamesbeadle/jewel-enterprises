@@ -3,24 +3,33 @@
 @inject NavigationManager Nav
 @implements IDisposable
 
-<div class="h-full flex flex-col bg-white">
+<div class="h-full flex flex-col bg-surface">
 
-    <div class="px-5 py-4 border-b border-slate-200">
+    <div class="h-14 px-3 flex items-center justify-between border-b border-line">
         <a href="@HomeHref" @onclick="HandleNavigate" @onclick:preventDefault="false"
-           class="flex items-center gap-2 font-semibold text-slate-900">
-            <span class="inline-flex items-center justify-center w-7 h-7 rounded-md bg-slate-900 text-white text-xs">JP</span>
-            <span>JPMS</span>
+           class="flex items-center gap-2.5 font-semibold text-content overflow-hidden">
+            <JewelIcon Class="w-7 h-7 text-accent shrink-0" />
+            <span class="@LabelClass">JPMS</span>
         </a>
+        <button type="button" @onclick="OnToggleExpand"
+                class="hidden md:inline-flex items-center justify-center w-8 h-8 rounded-md text-content-subtle hover:text-content hover:bg-surface-raised"
+                aria-label="Collapse navigation">
+            <svg class="w-4 h-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
+                 stroke-linecap="round" stroke-linejoin="round">
+                <path d="@(IsExpanded ? "M15 6l-6 6 6 6" : "M9 6l6 6-6 6")" />
+            </svg>
+        </button>
     </div>
 
-    <nav class="flex-1 px-3 py-4 overflow-y-auto">
-        <ul class="space-y-1 text-sm">
+    <nav class="flex-1 px-2 py-3 overflow-y-auto">
+        <ul class="space-y-1">
             @foreach (var item in VisibleItems)
             {
                 <li>
                     <a href="@item.Href" @onclick="HandleNavigate" @onclick:preventDefault="false"
-                       class="@LinkClassFor(item.Href)">
-                        @item.Label
+                       class="@LinkClassFor(item.Href)" title="@item.Label">
+                        <NavIcon Route="@item.Href" Class="w-5 h-5 shrink-0" />
+                        <span class="@LabelClass">@item.Label</span>
                     </a>
                 </li>
             }
@@ -29,13 +38,16 @@
 
     @if (Auth.IsSignedIn)
     {
-        <div class="border-t border-slate-200 px-5 py-4 text-sm">
-            <p class="text-xs uppercase tracking-wider text-slate-500 font-semibold mb-1">Signed in as</p>
-            <p class="text-slate-900 font-medium truncate" title="@Auth.CurrentUser!.Email">@Auth.CurrentUser.DisplayName</p>
-            <p class="text-xs text-slate-500 truncate mb-3" title="@Auth.CurrentUser.Email">@Auth.CurrentUser.Email</p>
-            <button type="button" @onclick="SignOut"
-                    class="w-full rounded-lg border border-slate-200 bg-white text-slate-700 font-medium text-sm px-3 py-2 hover:border-slate-300 hover:text-slate-900 transition">
-                Sign out
+        <div class="border-t border-line px-3 py-3">
+            <div class="@(IsExpanded ? "block" : "hidden") mb-3">
+                <p class="eyebrow mb-1">Signed in as</p>
+                <p class="text-content text-sm font-medium truncate" title="@Auth.CurrentUser!.Email">@Auth.CurrentUser.DisplayName</p>
+                <p class="text-xs text-content-subtle truncate" title="@Auth.CurrentUser.Email">@Auth.CurrentUser.Email</p>
+            </div>
+            <button type="button" @onclick="SignOut" class="btn-secondary w-full" title="Sign out">
+                <svg class="w-4 h-4 shrink-0" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"
+                     stroke-linecap="round" stroke-linejoin="round"><path d="M15 12H3m0 0l4-4m-4 4l4 4M11 4h6a2 2 0 0 1 2 2v12a2 2 0 0 1-2 2h-6" /></svg>
+                <span class="@LabelClass">Sign out</span>
             </button>
         </div>
     }
@@ -43,6 +55,10 @@
 
 @code {
     [Parameter] public EventCallback OnNavigate { get; set; }
+    [Parameter] public bool IsExpanded { get; set; } = true;
+    [Parameter] public EventCallback OnToggleExpand { get; set; }
+
+    private string LabelClass => IsExpanded ? "hidden md:inline truncate" : "hidden";
 
     private IReadOnlyList<NavigationItem> VisibleItems =>
         Session.ActiveRole is null
@@ -58,8 +74,10 @@
     {
         var current = new Uri(Nav.Uri).AbsolutePath;
         var isActive = current == href || current.StartsWith(href + "/");
-        if (isActive) return "block px-3 py-2 rounded-md bg-slate-900 text-white font-medium transition";
-        return "block px-3 py-2 rounded-md text-slate-600 hover:text-slate-900 hover:bg-slate-100 transition";
+        var layout = IsExpanded ? "md:justify-start" : "";
+        var baseClass = $"flex items-center gap-3 justify-center {layout} px-3 py-2 rounded-lg text-sm font-medium transition";
+        if (isActive) return $"{baseClass} bg-accent text-accent-ink";
+        return $"{baseClass} text-content-muted hover:text-content hover:bg-surface-raised";
     }
 
     private Task HandleNavigate() => OnNavigate.InvokeAsync();

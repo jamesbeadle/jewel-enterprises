@@ -1,6 +1,7 @@
 <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64">
-  <rect width="64" height="64" rx="14" fill="#0f172a"/>
-  <text x="50%" y="54%" text-anchor="middle" dominant-baseline="middle"
-        font-family="-apple-system, BlinkMacSystemFont, Segoe UI, system-ui, sans-serif"
-        font-size="26" font-weight="600" fill="#ffffff">JP</text>
+  <rect width="64" height="64" rx="14" fill="#0B0B0C"/>
+  <g transform="translate(20 16)" fill="#57E08A">
+    <path fill-rule="evenodd" clip-rule="evenodd"
+          d="M7.46 11.61L12 13.88l4.54-2.27L12 4.8 7.46 11.61ZM15.08 14.58 12 16.12l-3.08-1.54L12 19.2l3.08-4.62ZM12 1.2 19.2 12 12 22.8 4.8 12 12 1.2Z"/>
+  </g>
 </svg>

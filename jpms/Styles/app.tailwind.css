@@ -10,6 +10,8 @@
 
     body {
         font-family: theme('fontFamily.sans');
+        background-color: theme('colors.canvas');
+        color: theme('colors.content.DEFAULT');
         -webkit-tap-highlight-color: transparent;
         text-rendering: optimizeLegibility;
         padding-left: env(safe-area-inset-left);
@@ -24,6 +26,86 @@
     :focus:not(:focus-visible) {
         outline: none;
     }
+
+    *::-webkit-scrollbar {
+        width: 10px;
+        height: 10px;
+    }
+
+    *::-webkit-scrollbar-thumb {
+        background-color: theme('colors.surface.field');
+        border-radius: 9999px;
+    }
+}
+
+@layer components {
+    .eyebrow {
+        @apply text-[11px] uppercase tracking-wider text-content-subtle font-semibold;
+    }
+
+    .panel {
+        @apply rounded-xl border border-line bg-surface;
+    }
+
+    .panel-header {
+        @apply px-5 py-3 border-b border-line;
+    }
+
+    .field {
+        @apply w-full rounded-lg border border-line bg-surface-field px-3 py-2 text-sm text-content placeholder:text-content-faint focus:border-line-strong focus:outline-none;
+    }
+
+    .btn {
+        @apply inline-flex items-center justify-center gap-2 rounded-lg px-3.5 py-2 text-sm font-medium transition;
+    }
+
+    .btn-primary {
+        @apply btn bg-accent text-accent-ink hover:bg-accent-hover;
+    }
+
+    .btn-secondary {
+        @apply btn bg-surface-raised text-content border border-line hover:border-line-strong;
+    }
+
+    .btn-ghost {
+        @apply btn text-content-muted hover:text-content hover:bg-surface-raised;
+    }
+
+    .data-table {
+        @apply w-full text-sm text-left;
+    }
+
+    .data-table thead tr {
+        @apply text-content-subtle font-semibold border-b border-line;
+    }
+
+    .data-table th {
+        @apply px-4 py-3 font-semibold;
+    }
+
+    .data-table tbody tr {
+        @apply border-b border-line transition;
+    }
+
+    .data-table tbody tr:last-child {
+        @apply border-b-0;
+    }
+
+    .data-table tbody tr.is-clickable:hover {
+        @apply bg-surface-raised cursor-pointer;
+    }
+
+    .data-table td {
+        @apply px-4 py-3 text-content-muted;
+    }
+
+    .modal-overlay {
+        @apply fixed inset-0 z-50 flex items-center justify-center bg-canvas/70 p-4;
+    }
+
+    .modal-panel {
+        @apply w-full max-w-md rounded-xl border border-line bg-surface shadow-2xl;
+    }
 }
 
 #blazor-error-ui {
@@ -32,9 +114,9 @@
     bottom: 0;
     left: 0;
     right: 0;
-    background: theme('colors.rose.50');
-    color: theme('colors.rose.800');
-    border-top: 1px solid theme('colors.rose.200');
+    background: theme('colors.surface.DEFAULT');
+    color: theme('colors.negative');
+    border-top: 1px solid theme('colors.line.strong');
     padding: 0.75rem 1rem;
     font-size: 0.875rem;
     z-index: 50;
@@ -48,8 +130,8 @@
 }
 
 .blazor-error-boundary {
-    background: theme('colors.rose.50');
-    color: theme('colors.rose.800');
+    background: theme('colors.surface.DEFAULT');
+    color: theme('colors.negative');
     padding: 1rem;
     border-radius: 0.5rem;
 }

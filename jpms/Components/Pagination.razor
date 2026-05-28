@@ -1,0 +1,30 @@
+<nav class="flex items-center justify-between gap-3 px-4 py-3 border-t border-line text-sm" aria-label="Pagination">
+    <p class="text-content-subtle">@RangeLabel</p>
+    <div class="flex items-center gap-1">
+        <button type="button" class="btn-ghost px-3 py-1.5" disabled="@IsFirstPage" @onclick="GoPrevious">
+            Previous
+        </button>
+        <span class="px-3 text-content-muted">Page @CurrentPage of @TotalPages</span>
+        <button type="button" class="btn-ghost px-3 py-1.5" disabled="@IsLastPage" @onclick="GoNext">
+            Next
+        </button>
+    </div>
+</nav>
+
+@code {
+    [Parameter, EditorRequired] public int CurrentPage { get; set; } = 1;
+    [Parameter, EditorRequired] public int TotalItems { get; set; }
+    [Parameter] public int PageSize { get; set; } = 20;
+    [Parameter] public EventCallback<int> CurrentPageChanged { get; set; }
+
+    private int TotalPages => Math.Max(1, (int)Math.Ceiling(TotalItems / (double)PageSize));
+    private bool IsFirstPage => CurrentPage <= 1;
+    private bool IsLastPage => CurrentPage >= TotalPages;
+
+    private int FirstShown => TotalItems == 0 ? 0 : ((CurrentPage - 1) * PageSize) + 1;
+    private int LastShown => Math.Min(CurrentPage * PageSize, TotalItems);
+    private string RangeLabel => $"{FirstShown}–{LastShown} of {TotalItems}";
+
+    private Task GoPrevious() => IsFirstPage ? Task.CompletedTask : CurrentPageChanged.InvokeAsync(CurrentPage - 1);
+    private Task GoNext() => IsLastPage ? Task.CompletedTask : CurrentPageChanged.InvokeAsync(CurrentPage + 1);
+}

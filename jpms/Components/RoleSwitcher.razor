@@ -6,25 +6,25 @@
 {
     <div class="relative">
         <button type="button" @onclick="ToggleOpen"
-                class="inline-flex items-center gap-2 rounded-full border border-slate-200 bg-white px-2.5 py-1 hover:border-slate-300 transition">
-            <span class="text-[10px] uppercase tracking-wider text-slate-500 font-semibold">Viewing as</span>
+                class="inline-flex items-center gap-2 rounded-full border border-line bg-surface px-2.5 py-1 hover:border-line-strong transition">
+            <span class="text-[10px] uppercase tracking-wider text-content-subtle font-semibold">Viewing as</span>
             <RoleBadge Role="Session.ActiveRole.Value" />
-            <span class="text-slate-400 text-xs" aria-hidden="true">@(isOpen ? "▲" : "▼")</span>
+            <span class="text-content-faint text-xs" aria-hidden="true">@(isOpen ? "▲" : "▼")</span>
         </button>
 
         @if (isOpen)
         {
-            <div class="absolute right-0 mt-2 w-56 rounded-xl border border-slate-200 bg-white shadow-lg z-20 overflow-hidden">
-                <ul class="divide-y divide-slate-100">
+            <div class="absolute right-0 mt-2 w-56 rounded-xl border border-line bg-surface shadow-lg z-20 overflow-hidden">
+                <ul class="divide-y divide-line">
                     @foreach (var role in Session.AvailableRoles)
                     {
                         <li>
                             <button type="button" @onclick="() => SelectRole(role)"
-                                    class="w-full text-left px-3 py-2 flex items-center gap-2 hover:bg-slate-50 transition">
+                                    class="w-full text-left px-3 py-2 flex items-center gap-2 hover:bg-surface-raised transition">
                                 <RoleBadge Role="role" />
                                 @if (role == Session.ActiveRole)
                                 {
-                                    <span class="ml-auto text-[10px] uppercase tracking-wider text-slate-400 font-semibold">Current</span>
+                                    <span class="ml-auto text-[10px] uppercase tracking-wider text-content-faint font-semibold">Current</span>
                                 }
                             </button>
                         </li>

@@ -3,65 +3,44 @@
 @inject SessionService Session
 @implements IDisposable
 
-<div class="min-h-dvh bg-slate-50 text-slate-900 antialiased">
-
-    <header class="bg-white border-b border-slate-200 sticky top-0 z-30 h-14">
-        <div class="h-full px-4 flex items-center justify-between gap-3">
-            <div class="flex items-center gap-3">
-                @if (CanSeeNavigation)
-                {
-                    <button type="button" @onclick="ToggleSideNav"
-                            class="md:hidden inline-flex items-center justify-center w-9 h-9 rounded-md text-slate-700 hover:bg-slate-100"
-                            aria-label="Open menu">
-                        <svg class="w-5 h-5" viewBox="0 0 20 20" fill="currentColor" aria-hidden="true">
-                            <path d="M3 5a1 1 0 011-1h12a1 1 0 110 2H4a1 1 0 01-1-1zM3 10a1 1 0 011-1h12a1 1 0 110 2H4a1 1 0 01-1-1zM3 15a1 1 0 011-1h12a1 1 0 110 2H4a1 1 0 01-1-1z" />
-                        </svg>
-                    </button>
-                }
-                <a href="@HomeHref" class="md:hidden flex items-center gap-2 font-semibold text-slate-900">
-                    <span class="inline-flex items-center justify-center w-7 h-7 rounded-md bg-slate-900 text-white text-xs">JP</span>
-                    <span>JPMS</span>
-                </a>
-            </div>
-            @if (Auth.IsSignedIn)
-            {
-                <RoleSwitcher />
-            }
-            else
-            {
-                <span class="text-[11px] uppercase tracking-wider text-slate-500 font-medium">Jewel Project Management System</span>
-            }
-        </div>
-    </header>
-
-    @if (CanSeeNavigation && isSideNavOpen)
-    {
-        <div class="fixed inset-0 top-14 z-20 bg-slate-900/50 md:hidden" @onclick="CloseSideNav" aria-hidden="true"></div>
-    }
+<div class="min-h-dvh bg-canvas text-content antialiased">
 
     @if (CanSeeNavigation)
     {
         <aside class="@SideNavClass">
-            <SideNav OnNavigate="CloseSideNav" />
+            <SideNav IsExpanded="isSideNavExpanded" OnToggleExpand="ToggleSideNav" />
         </aside>
     }
 
-    <main class="@MainContentClass">
-        @Body
-    </main>
+    <div class="@ShellClass">
+        <header class="sticky top-0 z-30 h-14 bg-canvas/80 backdrop-blur border-b border-line">
+            <div class="h-full px-4 flex items-center justify-end gap-3">
+                @if (Auth.IsSignedIn)
+                {
+                    <RoleSwitcher />
+                }
+                else
+                {
+                    <span class="eyebrow">Jewel Project Management System</span>
+                }
+            </div>
+        </header>
 
-    <footer class="@FooterClass">
-        <div class="px-4 py-3 text-xs text-slate-500 flex items-center justify-between">
-            <span>Jewel Enterprises</span>
-            <span>JPMS v0.1</span>
-        </div>
-    </footer>
+        <main>
+            @Body
+        </main>
+
+        <footer class="border-t border-line">
+            <div class="px-4 py-3 text-xs text-content-subtle flex items-center justify-between">
+                <span>Jewel Enterprises</span>
+                <span>JPMS v0.1</span>
+            </div>
+        </footer>
+    </div>
 </div>
 
 @code {
-    private bool isSideNavOpen;
-
-    private string HomeHref => Auth.IsSignedIn ? "/dashboard" : "/";
+    private bool isSideNavExpanded = true;
 
     private bool CanSeeNavigation => Auth.IsSignedIn && Session.IsApproved;
 
@@ -69,15 +48,19 @@
     {
         get
         {
-            var baseClass = "fixed top-14 bottom-0 left-0 z-30 w-64 transform transition-transform duration-200 md:translate-x-0";
-            var openClass = isSideNavOpen ? "translate-x-0" : "-translate-x-full";
-            return $"{baseClass} {openClass}";
+            var width = isSideNavExpanded ? "md:w-64" : "md:w-16";
+            return $"fixed top-0 bottom-0 left-0 z-40 w-16 {width} border-r border-line";
         }
     }
 
-    private string MainContentClass => CanSeeNavigation ? "md:pl-64" : "";
-
-    private string FooterClass => CanSeeNavigation ? "border-t border-slate-200 bg-white md:pl-64" : "border-t border-slate-200 bg-white";
+    private string ShellClass
+    {
+        get
+        {
+            if (!CanSeeNavigation) return "";
+            return isSideNavExpanded ? "pl-16 md:pl-64" : "pl-16 md:pl-16";
+        }
+    }
 
     protected override void OnInitialized()
     {
@@ -85,9 +68,7 @@
         Session.OnChange += StateHasChanged;
     }
 
-    private void ToggleSideNav() => isSideNavOpen = !isSideNavOpen;
-
-    private void CloseSideNav() => isSideNavOpen = false;
+    private void ToggleSideNav() => isSideNavExpanded = !isSideNavExpanded;
 
     public void Dispose()
     {

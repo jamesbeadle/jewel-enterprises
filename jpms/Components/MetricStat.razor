@@ -1,0 +1,27 @@
+<article class="@Class">
+    <div class="flex items-baseline justify-between gap-3">
+        <p class="text-sm text-content-subtle">@Label</p>
+        @if (DeltaLabel is not null)
+        {
+            <div class="text-right leading-tight">
+                <p class="text-xs font-medium @DeltaClass">@DeltaLabel</p>
+                @if (Caption is not null)
+                {
+                    <p class="text-[11px] text-content-subtle">@Caption</p>
+                }
+            </div>
+        }
+    </div>
+    <p class="mt-1 text-2xl md:text-3xl font-semibold text-content tracking-tight">@Value</p>
+</article>
+
+@code {
+    [Parameter, EditorRequired] public string Label { get; set; } = "";
+    [Parameter, EditorRequired] public string Value { get; set; } = "";
+    [Parameter] public string? DeltaLabel { get; set; }
+    [Parameter] public bool IsDeltaPositive { get; set; } = true;
+    [Parameter] public string? Caption { get; set; }
+    [Parameter] public string Class { get; set; } = "";
+
+    private string DeltaClass => IsDeltaPositive ? "text-positive" : "text-negative";
+}

@@ -2,11 +2,11 @@
 @inject AuthService Auth
 @inject NavigationManager Nav
 
-<div class="min-h-dvh flex flex-col bg-slate-50 text-slate-900 antialiased">
-    <header class="border-b border-slate-200 bg-white sticky top-0 z-10">
+<div class="min-h-dvh flex flex-col bg-canvas text-content antialiased">
+    <header class="border-b border-line bg-surface sticky top-0 z-10">
         <div class="max-w-4xl mx-auto px-4 py-3 flex items-center justify-between gap-3">
-            <a href="/" class="flex items-center gap-2 font-semibold text-slate-900 shrink-0">
-                <span class="inline-flex items-center justify-center w-7 h-7 rounded-md bg-slate-900 text-white text-xs">JP</span>
+            <a href="/" class="flex items-center gap-2.5 font-semibold text-content shrink-0">
+                <JewelIcon Class="w-7 h-7 text-accent" />
                 <span>JPMS Portal</span>
             </a>
             @if (Auth.IsSignedIn)
@@ -15,7 +15,7 @@
             }
             else
             {
-                <span class="text-[11px] uppercase tracking-wider text-slate-500 font-medium">External access</span>
+                <span class="eyebrow">External access</span>
             }
         </div>
     </header>
@@ -25,10 +25,10 @@
         @Body
     </main>
 
-    <footer class="border-t border-slate-200 bg-white">
-        <div class="max-w-4xl mx-auto px-4 py-3 text-xs text-slate-500 flex items-center justify-between">
+    <footer class="border-t border-line bg-surface">
+        <div class="max-w-4xl mx-auto px-4 py-3 text-xs text-content-subtle flex items-center justify-between">
             <span>Jewel Enterprises · external portal</span>
-            <a href="/" class="hover:text-slate-900 underline underline-offset-4">Jewel staff sign-in</a>
+            <a href="/" class="hover:text-content underline underline-offset-4">Jewel staff sign-in</a>
         </div>
     </footer>
 </div>
