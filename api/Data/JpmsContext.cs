@@ -56,6 +56,9 @@ public sealed class JpmsContext : DbContext
     public DbSet<EotEntity> Eots => Set<EotEntity>();
     public DbSet<CostCodeBudgetEntity> CostCodeBudgets => Set<CostCodeBudgetEntity>();
     public DbSet<TimesheetEntity> Timesheets => Set<TimesheetEntity>();
+    public DbSet<DayworkEntity> Dayworks => Set<DayworkEntity>();
+    public DbSet<ContraChargeEntity> ContraCharges => Set<ContraChargeEntity>();
+    public DbSet<SubcontractorRetentionEntity> SubcontractorRetentions => Set<SubcontractorRetentionEntity>();
 
     public DbSet<DefectEntity> Defects => Set<DefectEntity>();
     public DbSet<PracticalCompletionEntity> PracticalCompletions => Set<PracticalCompletionEntity>();
