@@ -7,6 +7,10 @@ public sealed class JpmsContext : DbContext
 {
     public JpmsContext(DbContextOptions<JpmsContext> options) : base(options) { }
 
+    public DbSet<DirectoryUserEntity> DirectoryUsers => Set<DirectoryUserEntity>();
+    public DbSet<DirectoryUserRoleEntity> DirectoryUserRoles => Set<DirectoryUserRoleEntity>();
+    public DbSet<AccessRequestEntity> AccessRequests => Set<AccessRequestEntity>();
+
     public DbSet<ProjectEntity> Projects => Set<ProjectEntity>();
     public DbSet<LeadEntity> Leads => Set<LeadEntity>();
     public DbSet<QualificationAssessmentEntity> QualificationAssessments => Set<QualificationAssessmentEntity>();
