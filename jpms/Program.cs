@@ -1,6 +1,7 @@
 using Jewel.JPMS;
 using Jewel.JPMS.Cqrs;
 using Jewel.JPMS.Features.Boq;
+using Jewel.JPMS.Features.Cashflow;
 using Jewel.JPMS.Features.Changes;
 using Jewel.JPMS.Features.Closeout;
 using Jewel.JPMS.Features.Commercial;
@@ -43,6 +44,7 @@ builder.Services.AddHsReadModels();
 builder.Services.AddMobilisationReadModels();
 builder.Services.AddSiteReadModels();
 builder.Services.AddCommercialReadModels();
+builder.Services.AddCashflowReadModels();
 builder.Services.AddCvrReadModels();
 builder.Services.AddCloseoutReadModels();
 builder.Services.AddChangesReadModels();
@@ -88,6 +90,7 @@ using (var routeScope = app.Services.CreateScope())
     SiteRouteRegistration.RegisterSiteRoutes(queryRoutes, commandRoutes);
     CommercialRouteRegistration.RegisterCommercialRoutes(queryRoutes, commandRoutes);
     CommercialInputsRouteRegistration.RegisterCommercialInputsRoutes(queryRoutes, commandRoutes);
+    CashflowRouteRegistration.RegisterCashflowRoutes(queryRoutes, commandRoutes);
     CvrRouteRegistration.RegisterCvrRoutes(queryRoutes, commandRoutes);
     CloseoutRouteRegistration.RegisterCloseoutRoutes(queryRoutes, commandRoutes);
     ChangesRouteRegistration.RegisterChangesRoutes(queryRoutes, commandRoutes);

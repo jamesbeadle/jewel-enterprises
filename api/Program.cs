@@ -1,6 +1,7 @@
 using Jewel.JPMS.Api.Data;
 using Jewel.JPMS.Api.Features.AccessRequests;
 using Jewel.JPMS.Api.Features.Boq;
+using Jewel.JPMS.Api.Features.Cashflow;
 using Jewel.JPMS.Api.Features.Changes;
 using Jewel.JPMS.Api.Features.Closeout;
 using Jewel.JPMS.Api.Features.Commercial;
@@ -48,6 +49,7 @@ var host = new HostBuilder()
         services.AddSiteFeature();
         services.AddCommercialFeature();
         services.AddCommercialInputsFeature();
+        services.AddCashflowFeature();
         services.AddCvrFeature();
         services.AddCloseoutFeature();
         services.AddChangesFeature();

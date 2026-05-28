@@ -1,5 +1,6 @@
 using Jewel.JPMS.Contracts.Commercial;
 using Jewel.JPMS.Cqrs;
+using Jewel.JPMS.Features.Cashflow;
 using Jewel.JPMS.Features.Commercial;
 using Jewel.JPMS.Models;
 
@@ -7,20 +8,25 @@ namespace Jewel.JPMS.Services;
 
 public sealed class HttpCommercialStore : ICommercialStore
 {
+    private static readonly CashflowSnapshot NoCashflowYet = new("", DateTimeOffset.MinValue, 0m, 0m, 0m);
+
     private readonly ValuationsReadModel valuationsReadModel;
     private readonly CostCodeBudgetsReadModel budgetsReadModel;
     private readonly TimesheetsReadModel timesheetsReadModel;
+    private readonly CashflowReadModel cashflowReadModel;
     private readonly ICommandSender commands;
 
-    public HttpCommercialStore(ValuationsReadModel valuationsReadModel, CostCodeBudgetsReadModel budgetsReadModel, TimesheetsReadModel timesheetsReadModel, ICommandSender commands)
+    public HttpCommercialStore(ValuationsReadModel valuationsReadModel, CostCodeBudgetsReadModel budgetsReadModel, TimesheetsReadModel timesheetsReadModel, CashflowReadModel cashflowReadModel, ICommandSender commands)
     {
         this.valuationsReadModel = valuationsReadModel;
         this.budgetsReadModel = budgetsReadModel;
         this.timesheetsReadModel = timesheetsReadModel;
+        this.cashflowReadModel = cashflowReadModel;
         this.commands = commands;
         valuationsReadModel.OnChanged += () => OnChange?.Invoke();
         budgetsReadModel.OnChanged += () => OnChange?.Invoke();
         timesheetsReadModel.OnChanged += () => OnChange?.Invoke();
+        cashflowReadModel.OnChanged += () => OnChange?.Invoke();
     }
 
     public event Action? OnChange;
@@ -69,8 +75,11 @@ public sealed class HttpCommercialStore : ICommercialStore
         return new Timesheet(timesheetId, "", "", DateTimeOffset.UtcNow, 0, "", true);
     }
 
-    public CashflowSnapshot LatestCashflow() =>
-        new("CF-001", DateTimeOffset.UtcNow, 1_180_000m, 920_000m, 260_000m);
+    public CashflowSnapshot LatestCashflow()
+    {
+        if (!cashflowReadModel.HasLoaded) _ = cashflowReadModel.RefreshAsync(CancellationToken.None);
+        return cashflowReadModel.Current ?? NoCashflowYet;
+    }
 
     private async Task DraftAsync(Valuation valuation)
     {
