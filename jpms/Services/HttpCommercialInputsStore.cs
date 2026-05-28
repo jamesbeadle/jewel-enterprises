@@ -22,10 +22,7 @@ public sealed class HttpCommercialInputsStore : ICommercialInputsStore
 
     public Daywork LogDaywork(Daywork daywork)
     {
-        _ = commands.SendAsync(
-            new LogDaywork(daywork.ProjectId, daywork.WorkedOn, daywork.SubcontractorReference, daywork.Description, daywork.InstructedBy, daywork.Hours, daywork.HourlyRate, daywork.LabourCost, daywork.PlantCost, daywork.MaterialsCost, daywork.UpliftPercent, daywork.ChargeableAmount),
-            CancellationToken.None);
-        OnChange?.Invoke();
+        _ = SendThenNotify(new LogDaywork(daywork.ProjectId, daywork.WorkedOn, daywork.SubcontractorReference, daywork.Description, daywork.InstructedBy, daywork.Hours, daywork.HourlyRate, daywork.LabourCost, daywork.PlantCost, daywork.MaterialsCost, daywork.UpliftPercent, daywork.ChargeableAmount));
         return daywork;
     }
 
@@ -34,10 +31,7 @@ public sealed class HttpCommercialInputsStore : ICommercialInputsStore
 
     public ContraCharge RecordContraCharge(ContraCharge contraCharge)
     {
-        _ = commands.SendAsync(
-            new RecordContraCharge(contraCharge.ProjectId, contraCharge.SubcontractorReference, contraCharge.RaisedOn, contraCharge.Description, contraCharge.Category, contraCharge.Amount, contraCharge.Status, contraCharge.RecoveredAmount),
-            CancellationToken.None);
-        OnChange?.Invoke();
+        _ = SendThenNotify(new RecordContraCharge(contraCharge.ProjectId, contraCharge.SubcontractorReference, contraCharge.RaisedOn, contraCharge.Description, contraCharge.Category, contraCharge.Amount, contraCharge.Status, contraCharge.RecoveredAmount));
         return contraCharge;
     }
 
@@ -46,10 +40,13 @@ public sealed class HttpCommercialInputsStore : ICommercialInputsStore
 
     public SubcontractorRetention RecordRetention(SubcontractorRetention retention)
     {
-        _ = commands.SendAsync(
-            new RecordSubcontractorRetention(retention.ProjectId, retention.SubcontractorReference, retention.CertifiedAmount, retention.RetentionPercent, retention.FirstReleasedAmount, retention.FinalReleasedAmount),
-            CancellationToken.None);
-        OnChange?.Invoke();
+        _ = SendThenNotify(new RecordSubcontractorRetention(retention.ProjectId, retention.SubcontractorReference, retention.CertifiedAmount, retention.RetentionPercent, retention.FirstReleasedAmount, retention.FinalReleasedAmount));
         return retention;
+    }
+
+    private async Task SendThenNotify<TResult>(Jewel.JPMS.Contracts.Cqrs.ICommand<TResult> command)
+    {
+        await commands.SendAsync(command, CancellationToken.None);
+        OnChange?.Invoke();
     }
 }

@@ -22,7 +22,7 @@ else if (Session.ActiveRole == Role.Admin)
 }
 else if (Session.ActiveRole is not null)
 {
-    <PlaceholderHome
+    <RoleHome
         Role="Session.ActiveRole.Value"
         DisplayName="@Auth.CurrentUser!.DisplayName"
         Email="@Auth.CurrentUser.Email" />

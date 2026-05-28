@@ -56,7 +56,7 @@ The dashboard resolves to one of three states:
 | State | When | Renders |
 |---|---|---|
 | Admin home | Signed-in email is in the directory with `Role.Admin` | `AdminHome` (stats row + pending requests + users + what's-next) |
-| Role placeholder | Signed-in email is in the directory with any other role | `PlaceholderHome` |
+| Role home | Signed-in email is in the directory with any other role | `RoleHome` (stats row + navigation tiles for the role's sections) |
 | Request access | Signed-in email isn't in the directory | `RequestAccessView` — submits a request into the admin queue |
 
 ## Authentication flow
@@ -70,7 +70,7 @@ The dashboard resolves to one of three states:
        ├─ AuthService.CurrentUser = email + provider
        ├─ UserDirectory.Find(email)
        │     ├─ Admin    ──► AdminHome
-       │     ├─ Other    ──► PlaceholderHome
+       │     ├─ Other    ──► RoleHome
        │     └─ Missing  ──► RequestAccessView
 ```
 
@@ -155,7 +155,7 @@ jpms/
 │   ├── ApprovedUsersPanel.razor   List of approved directory users
 │   ├── ApprovedUserRow.razor      One approved user — revoke
 │   ├── WhatsNextPanel.razor       Next-up backlog tiles
-│   ├── PlaceholderHome.razor      Non-admin role landing page
+│   ├── RoleHome.razor             Non-admin role landing page with section tiles
 │   ├── ProjectsTable.razor        Project list table with row navigation
 │   ├── ProjectDetailView.razor    Project detail page body
 │   ├── ProjectStageBadge.razor    Coloured project stage chip

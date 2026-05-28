@@ -3,6 +3,8 @@
 @inject AuthService Auth
 @inject SessionService Session
 @inject ICommercialStore CommercialStore
+@inject ICvrStore CvrStore
+@inject ICommercialInputsStore InputsStore
 @inject NavigationManager Nav
 @implements IDisposable
 
@@ -36,8 +38,15 @@ else
         await Session.EnsureLoadedAsync();
         if (!Auth.IsSignedIn) { Nav.NavigateTo("/login", forceLoad: true); return; }
         CommercialStore.OnChange += StateHasChanged;
+        CvrStore.OnChange += StateHasChanged;
+        InputsStore.OnChange += StateHasChanged;
         isLoaded = true;
     }
 
-    public void Dispose() => CommercialStore.OnChange -= StateHasChanged;
+    public void Dispose()
+    {
+        CommercialStore.OnChange -= StateHasChanged;
+        CvrStore.OnChange -= StateHasChanged;
+        InputsStore.OnChange -= StateHasChanged;
+    }
 }

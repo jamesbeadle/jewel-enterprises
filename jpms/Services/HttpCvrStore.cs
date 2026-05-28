@@ -49,10 +49,13 @@ public sealed partial class HttpCvrStore : ICvrStore
 
     public CvrPackageRow SavePackageRow(CvrPackageRow row)
     {
-        _ = commands.SendAsync(
-            new RecordCvrPackageRow(row.ProjectId, row.PackageName, row.OrderCost, row.OrderValue, row.VariationCost, row.VariationValue),
-            CancellationToken.None);
-        OnChange?.Invoke();
+        _ = SendThenNotify(new RecordCvrPackageRow(row.ProjectId, row.PackageName, row.OrderCost, row.OrderValue, row.VariationCost, row.VariationValue));
         return row;
+    }
+
+    private async Task SendThenNotify<TResult>(Jewel.JPMS.Contracts.Cqrs.ICommand<TResult> command)
+    {
+        await commands.SendAsync(command, CancellationToken.None);
+        OnChange?.Invoke();
     }
 }
