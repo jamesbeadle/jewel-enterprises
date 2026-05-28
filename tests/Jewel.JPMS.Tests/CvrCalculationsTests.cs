@@ -80,4 +80,17 @@ public sealed class CvrCalculationsTests
         Assert.Equal(32_000m, costToComplete);
         Assert.Equal(94_000m, forecast.ForecastFinalCost);
     }
+
+    [Fact]
+    public void CostIncurred_sumsInputsAndDeductsContraRecovered() =>
+        Assert.Equal(214_000m, CvrCalculations.CostIncurred(12_000m, 200_000m, 5_000m, 3_000m, 0m));
+
+    [Fact]
+    public void AssembleForecastComponent_computesCostToCompleteAndForecastFinalCost()
+    {
+        var component = CvrCalculations.AssembleForecastComponent(
+            "fc1", "PRJ-1", "Groundworks", 30_000m, 25_000m, 2_000m, 5_000m, 80_000m, 60m);
+        Assert.Equal(32_000m, component.CostToComplete);
+        Assert.Equal(94_000m, component.ForecastFinalCost);
+    }
 }

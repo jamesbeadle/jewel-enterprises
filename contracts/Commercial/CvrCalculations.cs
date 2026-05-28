@@ -36,4 +36,19 @@ public static class CvrCalculations
 
     public static decimal TimeRelatedPrelimOverspend(decimal weeksBehind, decimal weeklyPrelimRunRate) =>
         weeksBehind <= 0 ? 0 : weeksBehind * weeklyPrelimRunRate;
+
+    public static decimal CostIncurred(
+        decimal approvedTimesheetCost,
+        decimal workOrderInvoiced,
+        decimal dayworkCost,
+        decimal contraRecovered,
+        decimal retentionMovement) =>
+        approvedTimesheetCost + workOrderInvoiced + dayworkCost - contraRecovered + retentionMovement;
+
+    public static ForecastComponent AssembleForecastComponent(
+        string forecastComponentId, string projectId, string packageName,
+        decimal costIncurred, decimal costCommitted, decimal qsAccrualAmount,
+        decimal prelimForecast, decimal tenderedPackageCost, decimal completionPercent) =>
+        new(forecastComponentId, projectId, packageName, costIncurred, costCommitted,
+            qsAccrualAmount, prelimForecast, CostToComplete(tenderedPackageCost, completionPercent));
 }
