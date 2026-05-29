@@ -34,7 +34,7 @@
             </div>
         </header>
 
-        <main>
+        <main class="flex-1">
             @Body
         </main>
 
@@ -65,8 +65,10 @@
     {
         get
         {
-            if (!CanSeeNavigation) return "";
-            return isSideNavExpanded ? "pl-16 md:pl-64" : "pl-16 md:pl-16";
+            var column = "min-h-dvh flex flex-col";
+            if (!CanSeeNavigation) return column;
+            var padding = isSideNavExpanded ? "pl-16 md:pl-64" : "pl-16 md:pl-16";
+            return $"{column} {padding}";
         }
     }
 
