@@ -19,10 +19,13 @@ public static class VariationDocumentBuilder
         var project = await context.Projects.AsNoTracking()
             .FirstOrDefaultAsync(p => p.ProjectId == order.ProjectId, cancellationToken);
 
-        // The priced build-up lives on the valuation report under the minted V-ref, so it exists
-        // only once the order is approved. Before then the document carries the estimate — honest
-        // to the record: nothing has been written to the report yet.
+        // The priced build-up lives on the valuation report under the minted V-ref once the order
+        // is approved. Before then the line detail is the STAGED build-up on the record (the
+        // agreed / quoted lines captured ahead of approval) — and the document shows it at every
+        // stage, because the line items are what the reader needs to see even while quoting
+        // (James, 2026-09-07). The sheet labels which of the two it is printing.
         var lines = new List<VariationDocumentLine>();
+        var linesAreStaged = false;
         if (order.VariationRef is { Length: > 0 } variationRef)
             lines = await context.ValuationLineItems.AsNoTracking()
                 .Where(line => line.ProjectId == order.ProjectId
@@ -32,6 +35,17 @@ public static class VariationDocumentBuilder
                 .Select(line => new VariationDocumentLine(
                     line.CostCode, line.Description, line.Unit, line.Quantity, line.Rate, line.LineAmount))
                 .ToListAsync(cancellationToken);
+
+        if (lines.Count == 0 && VariationDraftLines.Parse(order.DraftLinesJson) is { Count: > 0 } staged)
+        {
+            // Same shape approval writes to the report ("item" lines, amount = qty × rate), so the
+            // quoting-stage sheet and the approved sheet read as one document.
+            lines = staged
+                .Select(line => new VariationDocumentLine(
+                    line.CostCode, line.Description, "item", line.Quantity, line.Rate, line.Quantity * line.Rate))
+                .ToList();
+            linesAreStaged = true;
+        }
 
         var status = (VariationOrderStatus)order.Status;
 
@@ -57,6 +71,7 @@ public static class VariationDocumentBuilder
             ProgrammeImpact: order.ProgrammeImpact,
             Exclusions: order.Exclusions,
             Lines: lines,
+            LinesAreStaged: linesAreStaged,
             GeneratedAt: DateTimeOffset.UtcNow);
     }
 }

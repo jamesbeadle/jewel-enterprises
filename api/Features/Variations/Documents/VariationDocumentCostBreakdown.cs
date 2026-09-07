@@ -5,8 +5,10 @@ namespace Jewel.JPMS.Api.Features.Variations.Documents;
 
 /// <summary>
 /// The document's cost breakdown: the priced build-up as it stands on the valuation report once
-/// the variation is approved, or the quoting-stage estimate before then. Totals are net of VAT —
-/// the valuation report the lines feed is an excl-VAT document, and the sheet says so.
+/// the variation is approved, or the STAGED build-up (the agreed / quoted lines) before then — the
+/// line detail prints at every stage; only a variation with nothing staged falls back to the
+/// estimate line. Totals are net of VAT — the valuation report the lines feed is an excl-VAT
+/// document, and the sheet says so.
 /// </summary>
 internal static class VariationDocumentCostBreakdown
 {
@@ -58,7 +60,9 @@ internal static class VariationDocumentCostBreakdown
         var total = table.AddRow();
         total.Shading.Color = Panel;
         BodyCell(total.Cells[0], "");
-        var totalLabel = total.Cells[1].AddParagraph("NET VO TOTAL (excl. VAT)");
+        var totalLabel = total.Cells[1].AddParagraph(model.LinesAreStaged
+            ? "QUOTED TOTAL (excl. VAT)"
+            : "NET VO TOTAL (excl. VAT)");
         totalLabel.Format.Font.Size = 8.5;
         totalLabel.Format.Font.Bold = true;
         totalLabel.Format.Font.Color = Navy;
@@ -70,17 +74,28 @@ internal static class VariationDocumentCostBreakdown
         totalValue.Format.Font.Color = model.LinesTotal < 0m ? Orange : Navy;
         total.Cells[5].Format.LeftIndent = Unit.FromMillimeter(1.5);
 
+        if (model.LinesAreStaged)
+        {
+            // Say what the reader is looking at: lines quoted ahead of approval, not yet on the
+            // valuation report — so a quoting-stage sheet can never be mistaken for an instruction.
+            var note = Panelled(section,
+                "Quoted build-up — these lines are the priced basis of the variation as it stands and are "
+                + "written to the valuation report on approval.");
+            note.Format.Font.Italic = true;
+            note.Format.Font.Color = Muted;
+        }
+
         SpaceAfterTable(section);
     }
 
-    // Before approval nothing has been written to the valuation report, so the document carries
-    // the estimate and says where the priced build-up will come from — never an empty table that
-    // could read as "this variation is worth nothing".
+    // Nothing staged and nothing approved: the document carries the estimate and says where the
+    // priced build-up will come from — never an empty table that could read as "this variation
+    // is worth nothing".
     private static void AddPreApprovalSummary(Section section, VariationDocumentModel model)
     {
         var summary = model.EstimatedValue is { } estimate
-            ? $"Estimated value {Money(estimate)} (excl. VAT). The priced line build-up is recorded on approval, when the value is written to the valuation report."
-            : "Not yet priced. The priced line build-up is recorded on approval, when the value is written to the valuation report.";
+            ? $"Estimated value {Money(estimate)} (excl. VAT). No line build-up has been staged on this variation yet — stage the agreed lines on the record and they print here."
+            : "Not yet priced. No line build-up has been staged on this variation yet — stage the agreed lines on the record and they print here.";
         var paragraph = Panelled(section, summary);
         paragraph.Format.Font.Italic = true;
         paragraph.Format.Font.Color = Muted;

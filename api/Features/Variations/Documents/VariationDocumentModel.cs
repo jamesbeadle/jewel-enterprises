@@ -29,9 +29,13 @@ public sealed record VariationDocumentModel(
     string? CommercialBasis,
     string? ProgrammeImpact,
     string? Exclusions,
-    // The priced build-up as it stands on the valuation report (approved orders only — before
-    // approval nothing has been written to the report, so the document carries the estimate).
+    // The line build-up: the priced lines as they stand on the valuation report once approved,
+    // otherwise the staged (agreed / quoted) lines held on the record — the document shows the
+    // line detail at every stage. Empty only when nothing has been staged yet.
     IReadOnlyList<VariationDocumentLine> Lines,
+    // True when Lines is the staged build-up rather than the report's lines — the sheet says so,
+    // because staged lines have not been written anywhere commercial yet.
+    bool LinesAreStaged,
     DateTimeOffset GeneratedAt)
 {
     /// <summary>The date the document presents as its issue date: the recorded client-issue date
