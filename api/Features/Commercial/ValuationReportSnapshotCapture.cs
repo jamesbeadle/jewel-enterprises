@@ -7,8 +7,9 @@ namespace Jewel.JPMS.Api.Features.Commercial;
 /// Freezes an immutable, line-level copy of a project's valuation report as it stands right now:
 /// every priced line with the % complete / cumulative claimed from the project's latest claim
 /// (missing entries count as 0%), plus the summary footer with "Certified to date" stamped from
-/// Issued+Paid valuation invoices at this moment. Values are copied, never referenced — later
-/// edits or deletions of live lines must not disturb what was submitted to the client.
+/// the Issued+Paid valuation invoices that came before that claim (never its own — the one rule,
+/// CertifiedBeforeClaim). Values are copied, never referenced — later edits or deletions of live
+/// lines must not disturb what was submitted to the client.
 ///
 /// <see cref="CaptureAsync"/> adds the snapshot and its lines to the change tracker but does NOT
 /// save; callers (invoice raise, submission/issue re-freezes after an amendment, on-demand
@@ -89,15 +90,13 @@ internal static class ValuationReportSnapshotCapture
             : await ClaimPeriodBaseline.PreviousCumulativeByLineAsync(
                 context, projectId, claim.ClaimNumber, cancellationToken);
 
-        // Gross certification: issued/paid cash amounts plus their embedded deposit credits.
-        var issuedInvoices = await context.ValuationInvoices
-            .Where(invoice => invoice.ProjectId == projectId
-                              && (invoice.Status == (int)ValuationInvoiceStatus.Issued
-                                  || invoice.Status == (int)ValuationInvoiceStatus.Paid))
-            .Select(invoice => new { invoice.Amount, invoice.DepositCredited })
-            .ToListAsync(cancellationToken);
-        var certifiedToDate = issuedInvoices.Sum(invoice => invoice.Amount + invoice.DepositCredited);
-        var depositCreditedToDate = issuedInvoices.Sum(invoice => invoice.DepositCredited);
+        // Gross certification (issued/paid cash amounts plus their embedded deposit credits) of
+        // the invoices that came BEFORE this claim — never the claim's own, so a working copy or
+        // a re-freeze taken after its invoice has been issued still reads as the statement.
+        var certification = await CertifiedBeforeClaim.ForAsync(
+            context, projectId, claim?.ClaimNumber, cancellationToken);
+        var certifiedToDate = certification.CertifiedToDate;
+        var depositCreditedToDate = certification.DepositCreditedToDate;
 
         var lineModels = lines.Select(line => line.ToModel()).ToList();
         var contractSum = ValuationCalculations.ContractSum(lineModels);

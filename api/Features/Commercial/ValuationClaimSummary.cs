@@ -22,17 +22,15 @@ internal static class ValuationClaimSummary
             .Select(line => line.ToModel())
             .ToList();
 
-        // Certified to date = GROSS certification: every issued/paid invoice's cash amount
-        // plus the deposit credit embedded in it (the certificate before the deposit came
-        // off). Draft (Raised) invoices don't count until issued.
-        var issuedInvoices = await context.ValuationInvoices
-            .Where(invoice => invoice.ProjectId == claim.ProjectId
-                              && (invoice.Status == (int)ValuationInvoiceStatus.Issued
-                                  || invoice.Status == (int)ValuationInvoiceStatus.Paid))
-            .Select(invoice => new { invoice.Amount, invoice.DepositCredited })
-            .ToListAsync(cancellationToken);
-        var certifiedToDate = issuedInvoices.Sum(invoice => invoice.Amount + invoice.DepositCredited);
-        var depositCreditedToDate = issuedInvoices.Sum(invoice => invoice.DepositCredited);
+        // Certified to date = GROSS certification (each invoice's cash amount plus the deposit
+        // credit embedded in it — the certificate before the deposit came off) of the issued/paid
+        // invoices that came BEFORE this claim: earlier claims' and historic ones, never this
+        // claim's own or a later claim's (the one rule, CertifiedBeforeClaim). Draft (Raised)
+        // invoices don't count until issued.
+        var certification = await CertifiedBeforeClaim.ForAsync(
+            context, claim.ProjectId, claim.ClaimNumber, cancellationToken);
+        var certifiedToDate = certification.CertifiedToDate;
+        var depositCreditedToDate = certification.DepositCreditedToDate;
 
         var contractSum = ValuationCalculations.ContractSum(lineModels);
         var netVariations = ValuationCalculations.NetVariations(lineModels);

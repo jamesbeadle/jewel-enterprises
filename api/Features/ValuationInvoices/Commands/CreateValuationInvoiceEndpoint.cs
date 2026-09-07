@@ -45,6 +45,15 @@ public sealed class CreateValuationInvoiceEndpoint
         var validationOutcome = validation.Check(command);
         if (validationOutcome.HasFailed) return new BadRequestObjectResult(validationOutcome.Errors);
 
-        return new OkObjectResult(await handler.HandleAsync(command, cancellationToken));
+        try
+        {
+            return new OkObjectResult(await handler.HandleAsync(command, cancellationToken));
+        }
+        catch (InvalidOperationException ex)
+        {
+            // A refused raise (claim still a draft, invoice already live) — the reason travels to
+            // the page as a 400, never a bodiless 500.
+            return new BadRequestObjectResult(ex.Message);
+        }
     }
 }

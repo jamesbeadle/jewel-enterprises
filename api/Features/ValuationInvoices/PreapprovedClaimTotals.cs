@@ -4,8 +4,10 @@ namespace Jewel.JPMS.Api.Features.ValuationInvoices;
 
 /// <summary>
 /// Re-freezes the summary totals of a project's Preapproved claims after the certified
-/// (valuation-invoiced) total changes — issuing or deleting an invoice would otherwise
-/// leave a preapproved claim showing the certified figure frozen at preapproval time.
+/// (valuation-invoiced) total changes — issuing or deleting a historic invoice would otherwise
+/// leave a preapproved claim showing the certified figure frozen at preapproval time. A claim's
+/// certified figure counts only the invoices that came before it (CertifiedBeforeClaim), so
+/// issuing the claim's OWN invoice leaves its totals exactly as the statement said them.
 /// Draft claims compute live in the UI and Confirmed claims are final, so neither is
 /// touched. Call AFTER SaveChanges: the recompute reads the invoice table from the
 /// database, not the change tracker.

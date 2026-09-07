@@ -22,9 +22,11 @@ internal sealed partial class VariationsAndValuationsActions
             Name: "create_valuation_invoice",
             Area: "Valuation invoices",
             Description: "RAISES a monthly valuation invoice against a project — a real financial "
-                + "record, created in the Raised state (optionally drawn from a valuation claim). "
-                + "With isManual it records a backdated historical invoice directly as Issued or "
-                + "Paid, counting fully toward Certified to date and Total Paid.",
+                + "record, created in the Raised state, drawn against a locked (Preapproved) "
+                + "valuation claim that has no live invoice yet; the raise freezes the report "
+                + "snapshot that becomes the client-facing statement. With isManual it records a "
+                + "backdated historical invoice directly as Issued or Paid, counting fully toward "
+                + "Certified to date and Total Paid.",
             CommandType: typeof(CreateValuationInvoice),
             ResultType: typeof(ValuationInvoice),
             AuthorisationType: typeof(CreateValuationInvoiceAuthorisation),
@@ -33,8 +35,11 @@ internal sealed partial class VariationsAndValuationsActions
             EmailStamps: Array.Empty<string>(),
             NameStamps: Array.Empty<string>(),
             Notes: "Confirm amount and period with the user before calling. projectId comes from "
-                + "list_projects. amountPaid/issuedAt/paidAt apply to manual invoices only. The "
-                + "ladder for normal invoices is Raised → Submitted → Approved → Issued → Paid."),
+                + "list_projects; valuationClaimId is required for a normal raise and must name a "
+                + "Preapproved claim with no live invoice (get_valuation_context lists the claims "
+                + "and their status) — a Draft claim or one already invoiced is refused with the "
+                + "reason. amountPaid/issuedAt/paidAt apply to manual invoices only. The ladder for "
+                + "normal invoices is Raised → Submitted → Approved → Issued → Paid."),
 
         new AiAction(
             Name: "update_valuation_invoice",

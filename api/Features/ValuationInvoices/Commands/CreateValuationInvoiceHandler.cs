@@ -16,6 +16,10 @@ namespace Jewel.JPMS.Api.Features.ValuationInvoices.Commands;
 /// point-in-time statement — the only client-facing form of the report (the live report tab is
 /// internal). Manual entries get no snapshot: today's report is not the report as it stood back
 /// then, so freezing it would fabricate history.
+///
+/// A raise is refused unless it is drawn against a locked claim with no live invoice
+/// (<see cref="ClaimReadyToInvoice"/>) — the endpoint turns that refusal into a 400 with the
+/// reason, which the page prints beside the form.
 /// </summary>
 public sealed class CreateValuationInvoiceHandler : ICommandHandler<CreateValuationInvoice, ValuationInvoice>
 {
@@ -32,6 +36,9 @@ public sealed class CreateValuationInvoiceHandler : ICommandHandler<CreateValuat
     {
         var project = await context.Projects.FindAsync(new object[] { command.ProjectId }, cancellationToken);
         if (project is null) throw new InvalidOperationException($"Project {command.ProjectId} not found.");
+
+        if (!command.IsManual)
+            await ClaimReadyToInvoice.EnsureAsync(context, command.ProjectId, command.ValuationClaimId, cancellationToken);
 
         var nextNumber = (await context.ValuationInvoices
             .Where(call => call.ProjectId == command.ProjectId)

@@ -18,6 +18,15 @@ public sealed class ReopenValuationClaimEndpoint
         if (signedInUser is null) return new UnauthorizedResult();
         var command = new ReopenValuationClaim(claimId);
         if (!authorisation.Allows(signedInUser, command)) return new StatusCodeResult(403);
-        return new OkObjectResult(await handler.HandleAsync(command, request.HttpContext.RequestAborted));
+        try
+        {
+            return new OkObjectResult(await handler.HandleAsync(command, request.HttpContext.RequestAborted));
+        }
+        catch (InvalidOperationException ex)
+        {
+            // A refused reopen (confirmed, or a live invoice against the claim) — the reason
+            // reaches the claim card as a 400, never a bodiless 500.
+            return new BadRequestObjectResult(ex.Message);
+        }
     }
 }
