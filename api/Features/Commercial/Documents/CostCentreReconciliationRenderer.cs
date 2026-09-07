@@ -49,17 +49,7 @@ public static partial class CostCentreReconciliationRenderer
         return pdf;
     }
 
-    private static Section AddA4Section(Document pdf)
-    {
-        var section = pdf.AddSection();
-        var setup = section.PageSetup;
-        setup.PageFormat = PageFormat.A4;
-        setup.TopMargin = Unit.FromCentimeter(1.3);
-        setup.BottomMargin = Unit.FromCentimeter(1.6);
-        setup.LeftMargin = Unit.FromCentimeter(1.6);
-        setup.RightMargin = Unit.FromCentimeter(1.6);
-        return section;
-    }
+    private static Section AddA4Section(Document pdf) => A4Page(pdf);
 
     private static byte[] ToPdfBytes(Document pdf)
     {

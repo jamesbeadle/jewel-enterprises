@@ -59,7 +59,7 @@ internal static class VariationDocumentCostBreakdown
 
         var total = table.AddRow();
         total.Shading.Color = Panel;
-        BodyCell(total.Cells[0], "");
+        total.Cells[0].AddParagraph(); // blank on purpose — BodyCell would print an em-dash here
         var totalLabel = total.Cells[1].AddParagraph(model.LinesAreStaged
             ? "QUOTED TOTAL (excl. VAT)"
             : "NET VO TOTAL (excl. VAT)");

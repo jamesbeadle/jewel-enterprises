@@ -62,16 +62,7 @@ public static partial class ValuationReportSnapshotRenderer
         normal.Font.Size = 9;
         normal.Font.Color = Ink;
 
-        var section = pdf.AddSection();
-        var setup = section.PageSetup;
-        setup.PageFormat = PageFormat.A4;
-        setup.TopMargin = Unit.FromCentimeter(1.3);
-        // The footer (orange rule + one line) sits FooterDistance up from the page edge; the
-        // bottom margin must clear it or the rule prints over the last bill row on a full page.
-        setup.BottomMargin = Unit.FromCentimeter(2.1);
-        setup.FooterDistance = Unit.FromCentimeter(1.0);
-        setup.LeftMargin = Unit.FromCentimeter(1.6);
-        setup.RightMargin = Unit.FromCentimeter(1.6);
+        var section = A4Page(pdf);
 
         AddHeaderBand(section, document);
         AddDetailsGrid(section, document);

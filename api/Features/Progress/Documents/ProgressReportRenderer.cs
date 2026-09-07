@@ -34,13 +34,7 @@ public static class ProgressReportRenderer
         normal.Font.Size = 9;
         normal.Font.Color = Ink;
 
-        var section = document.AddSection();
-        var setup = section.PageSetup;
-        setup.PageFormat = PageFormat.A4;
-        setup.TopMargin = Unit.FromCentimeter(1.3);
-        setup.BottomMargin = Unit.FromCentimeter(1.6);
-        setup.LeftMargin = Unit.FromCentimeter(1.6);
-        setup.RightMargin = Unit.FromCentimeter(1.6);
+        var section = A4Page(document);
 
         AddHeaderBand(section, model);
         AddDetailsGrid(section, model);
@@ -265,24 +259,8 @@ public static class ProgressReportRenderer
         image.Width = Unit.FromCentimeter(8.6);
     }
 
-    private static void AddFooter(Section section, ProgressReportDocumentModel model)
-    {
-        var footer = section.Footers.Primary.AddParagraph();
-        footer.Format.Borders.Top.Width = 0.75;
-        footer.Format.Borders.Top.Color = Orange;
-        footer.Format.Borders.Distance = Unit.FromMillimeter(2);
-        footer.Format.Font.Size = 7.5;
-
-        footer.AddFormattedText("◆ ", new Font { Color = Orange, Size = 7.5 });
-        footer.AddFormattedText("JEWEL BESPOKE BUILD", new Font { Color = Navy, Bold = true, Size = 7.5 });
-        footer.AddFormattedText("    WWW.JEWELBB.CO.UK", new Font { Color = Gold, Bold = true, Size = 7.5 });
-        footer.AddTab();
-        footer.AddFormattedText(
-            $"Generated {DateTime(model.GeneratedAt)} · from the JPMS register (source of truth)",
-            new Font { Color = Muted, Size = 7 });
-
-        footer.Format.TabStops.AddTabStop(Unit.FromCentimeter(18.3), TabAlignment.Right);
-    }
+    private static void AddFooter(Section section, ProgressReportDocumentModel model) =>
+        HouseFooter(section, $"Generated {DateTime(model.GeneratedAt)} · from the JPMS register (source of truth)");
 
     // ---- Helpers ------------------------------------------------------------------------------
 

@@ -50,17 +50,7 @@ public static partial class WorkOrderPoRenderer
         return document;
     }
 
-    private static Section AddA4Section(Document document)
-    {
-        var section = document.AddSection();
-        var setup = section.PageSetup;
-        setup.PageFormat = PageFormat.A4;
-        setup.TopMargin = Unit.FromCentimeter(1.3);
-        setup.BottomMargin = Unit.FromCentimeter(1.6);
-        setup.LeftMargin = Unit.FromCentimeter(1.6);
-        setup.RightMargin = Unit.FromCentimeter(1.6);
-        return section;
-    }
+    private static Section AddA4Section(Document document) => A4Page(document);
 
     private static byte[] ToPdfBytes(Document document)
     {

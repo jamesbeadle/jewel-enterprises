@@ -351,23 +351,6 @@ public static partial class RequestDocumentRenderer
         SpaceAfterTable(section);
     }
 
-    private static void AddFooter(Section section, RequestDocumentModel model)
-    {
-        var footer = section.Footers.Primary.AddParagraph();
-        footer.Format.Borders.Top.Width = 0.75;
-        footer.Format.Borders.Top.Color = Orange;
-        footer.Format.Borders.Distance = Unit.FromMillimeter(2);
-        footer.Format.Font.Size = 7.5;
-
-        footer.AddFormattedText("◆ ", new Font { Color = Orange, Size = 7.5 });
-        footer.AddFormattedText("JEWEL BESPOKE BUILD", new Font { Color = Navy, Bold = true, Size = 7.5 });
-        footer.AddFormattedText("    WWW.JEWELBB.CO.UK", new Font { Color = Gold, Bold = true, Size = 7.5 });
-        footer.AddTab();
-        footer.AddFormattedText(
-            $"Generated {DateTime(model.GeneratedAt)} · from the JPMS register (source of truth)",
-            new Font { Color = Muted, Size = 7 });
-
-        // Right-align the generated-at via a right tab stop at the usable width.
-        footer.Format.TabStops.AddTabStop(Unit.FromCentimeter(18.3), TabAlignment.Right);
-    }
+    private static void AddFooter(Section section, RequestDocumentModel model) =>
+        HouseFooter(section, $"Generated {DateTime(model.GeneratedAt)} · from the JPMS register (source of truth)");
 }

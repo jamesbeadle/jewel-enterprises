@@ -381,22 +381,8 @@ public static partial class ValuationReportSnapshotRenderer
     private static void AddFooter(Section section, ValuationReportSnapshotDocument document)
     {
         var snapshot = document.Detail.Snapshot;
-        var footer = section.Footers.Primary.AddParagraph();
-        footer.Format.Borders.Top.Width = 0.75;
-        footer.Format.Borders.Top.Color = Orange;
-        footer.Format.Borders.Distance = Unit.FromMillimeter(2);
-        footer.Format.Font.Size = 7.5;
-
-        footer.AddFormattedText("◆ ", new Font { Color = Orange, Size = 7.5 });
-        footer.AddFormattedText("JEWEL BESPOKE BUILD", new Font { Color = Navy, Bold = true, Size = 7.5 });
-        footer.AddFormattedText("    WWW.JEWELBB.CO.UK", new Font { Color = Gold, Bold = true, Size = 7.5 });
-        footer.AddTab();
-        footer.AddFormattedText(
-            document.IsDraft
-                ? $"Prepared {DateAndTime(snapshot.TakenAt)} · working copy of the live report"
-                : $"Snapshot taken {DateAndTime(snapshot.TakenAt)} · immutable record from the JPMS register",
-            new Font { Color = Muted, Size = 7 });
-
-        footer.Format.TabStops.AddTabStop(Unit.FromCentimeter(18.3), TabAlignment.Right);
+        HouseFooter(section, document.IsDraft
+            ? $"Prepared {DateAndTime(snapshot.TakenAt)} · working copy of the live report"
+            : $"Snapshot taken {DateAndTime(snapshot.TakenAt)} · immutable record from the JPMS register");
     }
 }

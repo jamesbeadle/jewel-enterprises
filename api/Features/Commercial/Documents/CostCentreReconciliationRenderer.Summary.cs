@@ -63,22 +63,6 @@ public static partial class CostCentreReconciliationRenderer
         SpaceBefore(note, 2);
     }
 
-    private static void AddFooter(Section section, CostCentreReconciliationDocument document)
-    {
-        var footer = section.Footers.Primary.AddParagraph();
-        footer.Format.Borders.Top.Width = 0.75;
-        footer.Format.Borders.Top.Color = Orange;
-        footer.Format.Borders.Distance = Unit.FromMillimeter(2);
-        footer.Format.Font.Size = 7.5;
-
-        footer.AddFormattedText("◆ ", new Font { Color = Orange, Size = 7.5 });
-        footer.AddFormattedText("JEWEL BESPOKE BUILD", new Font { Color = Navy, Bold = true, Size = 7.5 });
-        footer.AddFormattedText("    WWW.JEWELBB.CO.UK", new Font { Color = Gold, Bold = true, Size = 7.5 });
-        footer.AddTab();
-        footer.AddFormattedText(
-            $"Generated {DateAndTime(document.GeneratedAt)} · live figures from the JPMS Financials tab",
-            new Font { Color = Muted, Size = 7 });
-
-        footer.Format.TabStops.AddTabStop(Unit.FromCentimeter(18.3), TabAlignment.Right);
-    }
+    private static void AddFooter(Section section, CostCentreReconciliationDocument document) =>
+        HouseFooter(section, $"Generated {DateAndTime(document.GeneratedAt)} · live figures from the JPMS Financials tab");
 }

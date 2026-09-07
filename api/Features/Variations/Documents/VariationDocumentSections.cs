@@ -78,25 +78,8 @@ internal static class VariationDocumentSections
         SpaceAfterTable(section);
     }
 
-    public static void AddFooter(Section section, VariationDocumentModel model)
-    {
-        var footer = section.Footers.Primary.AddParagraph();
-        footer.Format.Borders.Top.Width = 0.75;
-        footer.Format.Borders.Top.Color = Orange;
-        footer.Format.Borders.Distance = Unit.FromMillimeter(2);
-        footer.Format.Font.Size = 7.5;
-
-        footer.AddFormattedText("◆ ", new Font { Color = Orange, Size = 7.5 });
-        footer.AddFormattedText("JEWEL BESPOKE BUILD", new Font { Color = Navy, Bold = true, Size = 7.5 });
-        footer.AddFormattedText("    WWW.JEWELBB.CO.UK", new Font { Color = Gold, Bold = true, Size = 7.5 });
-        footer.AddTab();
-        footer.AddFormattedText(
-            $"Generated {DateAndTime(model.GeneratedAt)} · from the JPMS register (source of truth)",
-            new Font { Color = Muted, Size = 7 });
-
-        // Right-align the generated-at via a right tab stop at the usable width.
-        footer.Format.TabStops.AddTabStop(Unit.FromCentimeter(18.3), TabAlignment.Right);
-    }
+    public static void AddFooter(Section section, VariationDocumentModel model) =>
+        HouseFooter(section, $"Generated {DateAndTime(model.GeneratedAt)} · from the JPMS register (source of truth)");
 
     private static void AddGridRow(Table table, string label1, string value1, string label2, string value2)
     {

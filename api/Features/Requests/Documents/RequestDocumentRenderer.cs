@@ -33,13 +33,7 @@ public static partial class RequestDocumentRenderer
         normal.Font.Size = 9;
         normal.Font.Color = Ink;
 
-        var section = document.AddSection();
-        var setup = section.PageSetup;
-        setup.PageFormat = PageFormat.A4;
-        setup.TopMargin = Unit.FromCentimeter(1.3);
-        setup.BottomMargin = Unit.FromCentimeter(1.3);
-        setup.LeftMargin = Unit.FromCentimeter(1.6);
-        setup.RightMargin = Unit.FromCentimeter(1.6);
+        var section = A4Page(document);
 
         AddHeaderBand(section, model);
         AddTitleBlock(section, model);

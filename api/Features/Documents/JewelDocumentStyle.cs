@@ -43,6 +43,52 @@ internal static class JewelDocumentStyle
         }
     }
 
+    /// <summary>
+    /// THE page geometry every house document shares: A4, 1.6 cm sides, 1.3 cm top — and a bottom
+    /// margin that CLEARS the footer. MigraDoc hangs the footer FooterDistance up from the page
+    /// edge and grows it upward from there, while the body runs down to BottomMargin; with the
+    /// default FooterDistance (1.25 cm) and a 1.3–1.6 cm bottom margin the two overlap, and the
+    /// footer's orange rule prints straight through the last table row on any full page. Every
+    /// renderer was carrying its own copy of these numbers (and the valuation snapshot had fixed
+    /// the overlap locally) — this is the one place the numbers live now.
+    /// </summary>
+    public static Section A4Page(Document document)
+    {
+        var section = document.AddSection();
+        var setup = section.PageSetup;
+        setup.PageFormat = PageFormat.A4;
+        setup.TopMargin = Unit.FromCentimeter(1.3);
+        setup.BottomMargin = Unit.FromCentimeter(2.1);
+        setup.FooterDistance = Unit.FromCentimeter(1.0);
+        setup.LeftMargin = Unit.FromCentimeter(1.6);
+        setup.RightMargin = Unit.FromCentimeter(1.6);
+        return section;
+    }
+
+    /// <summary>
+    /// THE house footer: orange rule, brand and site on the left, the document's provenance note
+    /// right-aligned ("Generated 07 Sep 2026 14:02 · from the JPMS register (source of truth)").
+    /// One footer for every document, so the sheets read as one family — and one height, which
+    /// is what <see cref="A4Page"/>'s bottom margin is sized to clear.
+    /// </summary>
+    public static void HouseFooter(Section section, string note)
+    {
+        var footer = section.Footers.Primary.AddParagraph();
+        footer.Format.Borders.Top.Width = 0.75;
+        footer.Format.Borders.Top.Color = Orange;
+        footer.Format.Borders.Distance = Unit.FromMillimeter(2);
+        footer.Format.Font.Size = 7.5;
+
+        footer.AddFormattedText("◆ ", new Font { Color = Orange, Size = 7.5 });
+        footer.AddFormattedText("JEWEL BESPOKE BUILD", new Font { Color = Navy, Bold = true, Size = 7.5 });
+        footer.AddFormattedText("    WWW.JEWELBB.CO.UK", new Font { Color = Gold, Bold = true, Size = 7.5 });
+        footer.AddTab();
+        footer.AddFormattedText(note, new Font { Color = Muted, Size = 7 });
+
+        // Right-align the note via a right tab stop at the usable width (21 cm − 2 × 1.6 cm).
+        footer.Format.TabStops.AddTabStop(Unit.FromCentimeter(17.8), TabAlignment.Right);
+    }
+
     public static void SectionHeading(Section section, string text)
     {
         var paragraph = section.AddParagraph(text);
