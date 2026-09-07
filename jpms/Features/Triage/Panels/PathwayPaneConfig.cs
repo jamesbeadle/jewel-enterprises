@@ -78,13 +78,18 @@ public sealed record PathwayPaneConfig(
         // Inventory (2026-08-28) is the pane's first linkable record type: goods for the job —
         // what the product is, where it's kept. Purchase orders split from work orders remain a
         // later phase.
-        new[] { RecordType.Inventory },
+        // Defects joined it 2026-09-07 (James): faulty goods and short deliveries are put right by
+        // the MERCHANT, not a trade, so a defect must be raisable and taggable from the supplier's
+        // own email. The record is the same DEF-#### on the same Defects register — a defect names
+        // the directory company it is raised with, and that company can be either category.
+        new[] { RecordType.Inventory, RecordType.Defect },
         CommunicationFamily.Supplier,
         new (string, IReadOnlyList<SystemActionKind>)[]
         {
             (SystemActionGuide.RaiseGroup, new[]
             {
                 SystemActionKind.AddInventoryItem,
+                SystemActionKind.RaiseDefect,
                 SystemActionKind.RaiseCalendarEvent,
             }),
             (SystemActionGuide.PeopleGroup, new[] { SystemActionKind.AddDirectoryContact }),

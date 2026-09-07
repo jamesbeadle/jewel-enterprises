@@ -57,7 +57,7 @@ public static class SystemActionGuide
         SystemActionKind.RaiseVariationOrder => "The client side has asked for, or caused, extra or changed work that needs pricing and approval.",
         SystemActionKind.RaiseWorkOrder => "You're placing work with a subcontractor — the email is the agreed scope or price; Apply emails them the purchase order.",
         SystemActionKind.CreateBidPackageInvite => "A package of work you're about to put out to tender — sets up the package so subcontractors can be invited.",
-        SystemActionKind.RaiseDefect => "Something a subcontractor has to put right — logs it on the project's Defects tab and chases it with them.",
+        SystemActionKind.RaiseDefect => "Something the company you're emailing has to put right — a trade's workmanship, or a merchant's faulty or short-delivered goods. Logs it on the project's Defects tab against that company, where it is sent to them and chased.",
         SystemActionKind.AddInventoryItem => "Goods for the job worth keeping on the books — what the product is and where it's kept. Adds it to the project's Inventory tab with this email filed to it.",
         SystemActionKind.RaiseSiteInstruction => "This email calls for an instruction to site — write what site is to do and where. The email alone is rarely the instruction, so the words you write here ARE the record; it goes on the project's Site Instructions page with this email filed to it. (An instruction already raised is tagged in the Tagging tab instead.)",
         SystemActionKind.RaiseCalendarEvent => "This email is arranging something dated — a site visit, a delivery, a meeting, subcontractor attendance. Puts it on the project's Calendar tab so everyone sees it coming.",

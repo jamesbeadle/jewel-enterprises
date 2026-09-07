@@ -87,7 +87,11 @@ public static class TriageCategories
         RecordType.BuildingControlInspection => Client, // the inspector's booking/report thread — same side as the case
         RecordType.BidPackageInvite => Subcontractor,
         RecordType.WorkOrder        => Subcontractor, // the order Jewel places with the subcontractor
-        RecordType.Defect           => Subcontractor, // the remediation is chased with the subcontractor
+        // The remediation is chased with the company that caused it. Raisable from the Supplier
+        // pane too since 2026-09-07 (faulty goods are the merchant's to put right); the thread
+        // still files under Subcontractor, because the pathway is keyed on record type — see
+        // DefectLinkProvider for why that is left alone.
+        RecordType.Defect           => Subcontractor,
         RecordType.SubcontractorComms => Subcontractor, // general subcontractor correspondence — the tag IS the filing
         RecordType.SupplierComms    => Supplier,     // general supplier correspondence — the tag IS the filing
         RecordType.Inventory        => Supplier,     // the goods come from a materials/goods supplier

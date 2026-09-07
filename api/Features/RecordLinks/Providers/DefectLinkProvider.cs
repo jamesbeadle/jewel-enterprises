@@ -7,9 +7,13 @@ namespace Jewel.JPMS.Api.Features.RecordLinks.Providers;
 // mechanism the Bid Package and Work Order families use, with no changes to the link/read layer or
 // triage UI.
 //
-// Subcontract-side by construction: the remediation is chased with the subcontractor, so
-// TriageCategories.BucketFor maps the type to JPMS/Subcontractor — a defect can never be reached
-// from a Client thread (the wall rejects it).
+// Filed under JPMS/Subcontractor whichever pane raises it: TriageCategories.BucketFor maps the
+// type, and the type is one type — the SAME DEF-#### record is raised from the Subcontractor pane
+// (a trade's workmanship) and, since 2026-09-07, from the Supplier pane (a merchant's faulty or
+// short-delivered goods). So a supplier-side defect files its thread under Subcontractor rather
+// than Supplier. Deliberate for now and the one wart in that arrangement: the pathway is decided
+// by record TYPE, and splitting it per raising pane would mean carrying the pane down through the
+// staged picks. The defect, its DEF-#### tag and its correspondence are unaffected.
 public sealed class DefectLinkProvider : ILinkableRecordProvider, ITagResolvingProvider
 {
     private readonly JpmsContext context;
