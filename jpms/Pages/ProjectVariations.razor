@@ -34,7 +34,7 @@
             <div class="flex items-center gap-3">
                 <ExportToExcelButton FileName="Variations register"
                                      Disabled="@(Rows.Count == 0)"
-                                     ShowIncludeAllRows="@Searching"
+                                     ShowIncludeAllRows="@Narrowed"
                                      IncludeAllLabel="Include entire register"
                                      BuildWorkbook="BuildExportWorkbook" />
                 @if (CanManageVariations)
@@ -75,9 +75,13 @@
             }
         </div>
 
-        @* Free-text search over the variation book — reference (both spellings), title,
-           description, cost code and the originating request's own text. *@
+        @* Status chips narrow the table to one stage of the ladder (counts follow the search);
+           the free-text search covers reference (both spellings), title, description, cost code
+           and the originating request's own text. Both narrow the TABLE only — the figures above
+           stay whole-book. *@
         <div class="flex flex-wrap items-center gap-2 mb-5 text-sm">
+            <FilterChips Items="@StatusChips" Selected="@StatusFilterKey" OnSelect="PickStatus"
+                         Disabled="@(Rows.Count == 0)" AriaLabel="Filter variations by status" />
             <div class="relative ml-auto w-full sm:w-80">
                 <SearchInput Value="@search" ValueChanged="OnSearchInput" Placeholder="Search text in variations…" />
                 @if (Searching)
@@ -93,7 +97,18 @@
         {
             <p class="text-sm text-content-subtle -mt-2 mb-5">
                 @FilteredRows.Count match@(FilteredRows.Count == 1 ? "" : "es") for “@search.Trim()”
+                @if (FilteringByStatus)
+                {
+                    <text> at @StatusFilterLabel</text>
+                }
                 <span class="text-content-faint">· searches reference, title, description, cost code and the originating request</span>
+                @if (HiddenByStatusCount > 0)
+                {
+                    <button type="button" class="ml-1 underline underline-offset-4 hover:text-content"
+                            @onclick="ClearStatusFilter">
+                        @HiddenByStatusCount more under another status — show all
+                    </button>
+                }
             </p>
         }
 
@@ -209,7 +224,13 @@
             <p class="text-sm text-content-subtle italic">
                 @if (Searching)
                 {
-                    <text>No variations match “@search.Trim()”.</text>
+                    <text>No variations match “@search.Trim()”@(FilteringByStatus ? $" at {StatusFilterLabel}" : "").</text>
+                }
+                else if (FilteringByStatus)
+                {
+                    <text>No variations at @StatusFilterLabel.</text>
+                    <button type="button" class="ml-1 underline underline-offset-4 hover:text-content"
+                            @onclick="ClearStatusFilter">Show all</button>
                 }
                 else
                 {

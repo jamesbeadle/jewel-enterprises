@@ -1,3 +1,4 @@
+using Jewel.JPMS.Components;
 using Jewel.JPMS.Features.RecordLinks;
 
 namespace Jewel.JPMS.Pages;
@@ -43,7 +44,70 @@ public partial class ProjectVariations
         yield return source.Title;
     }
 
+    // ---- Status filter --------------------------------------------------------------------------
+    // One chip per stage of the variation ladder plus "All" (accountant's ask, 2026-09-07). The
+    // filter narrows the TABLE only: the headline counts and the Approved-value tile above it stay
+    // whole-book figures, so the reader never mistakes a filtered subtotal for the project's position.
+    // Default is All — nothing is hidden until the reader chooses to hide it; the chip counts say
+    // where the rows are (and follow the search, so they count what the search left).
+
+    private const string AllStatusesKey = "all";
+
+    private static readonly (VariationOrderStatus Status, string Label)[] StatusChoicesInOrder =
+    {
+        (VariationOrderStatus.Quoting, "Quoting"),
+        (VariationOrderStatus.Issued, "Issued"),
+        (VariationOrderStatus.AwaitingArchitectInstruction, "Awaiting AI"),
+        (VariationOrderStatus.Approved, "Approved"),
+        (VariationOrderStatus.Rejected, "Rejected")
+    };
+
+    private VariationOrderStatus? statusFilter;
+
+    private bool FilteringByStatus => statusFilter is not null;
+
+    private string StatusFilterKey => statusFilter?.ToString() ?? AllStatusesKey;
+
+    private string StatusFilterLabel =>
+        statusFilter is { } picked
+            ? StatusChoicesInOrder.First(c => c.Status == picked).Label
+            : "All";
+
+    private void PickStatus(string key) =>
+        statusFilter = Enum.TryParse<VariationOrderStatus>(key, out var status) ? status : null;
+
+    private void ClearStatusFilter() => statusFilter = null;
+
+    private bool MatchesStatus(VariationOrder order) => statusFilter is null || order.Status == statusFilter;
+
+    private IReadOnlyList<TabItem> StatusChips
+    {
+        get
+        {
+            var searched = Rows.Where(MatchesSearch).ToList();
+            var chips = new List<TabItem>(StatusChoicesInOrder.Length + 1)
+            {
+                new(AllStatusesKey, "All", Count: searched.Count, Title: "Every variation in the book")
+            };
+            foreach (var (status, label) in StatusChoicesInOrder)
+            {
+                chips.Add(new TabItem(status.ToString(), label,
+                    Count: searched.Count(o => o.Status == status),
+                    Title: $"Only variations at {label}"));
+            }
+            return chips;
+        }
+    }
+
+    // ---- The rows on screen ---------------------------------------------------------------------
+
+    // Search OR status chip is narrowing the table — drives the export's "include entire register" offer.
+    private bool Narrowed => Searching || FilteringByStatus;
+
+    // Search matches parked under a status other than the selected chip.
+    private int HiddenByStatusCount => FilteringByStatus ? Rows.Count(o => MatchesSearch(o) && !MatchesStatus(o)) : 0;
+
     private IReadOnlyList<VariationOrder> FilteredRows =>
-        Rows.Where(MatchesSearch).ToList();
+        Rows.Where(o => MatchesSearch(o) && MatchesStatus(o)).ToList();
 
 }
