@@ -18,8 +18,8 @@ public static class ValuationInvoiceDisplay
 
     public static string StatusTitle(ValuationInvoice invoice) => invoice.Status switch
     {
-        ValuationInvoiceStatus.Raised => "Draft — send the claim for approval, or issue directly",
-        ValuationInvoiceStatus.Submitted => $"With the client for approval{(invoice.SubmittedAt is { } s ? $" since {s:dd MMM yyyy}" : "")}",
+        ValuationInvoiceStatus.Raised => "Draft — raised, not yet claimed: record the claim as sent, or issue directly",
+        ValuationInvoiceStatus.Submitted => $"Claimed — with the architect/client for approval{(invoice.SubmittedAt is { } s ? $" since {s:dd MMM yyyy}" : "")}",
         ValuationInvoiceStatus.Approved => "Approved by the client — issue to count toward certified to date",
         ValuationInvoiceStatus.Rejected => "Rejected — amend and resubmit, or cancel",
         ValuationInvoiceStatus.Issued => "Issued to the client — counts toward certified to date",

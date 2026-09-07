@@ -9,7 +9,7 @@ public partial class ValuationInvoicesSection
     {
         ValuationInvoiceStatus.Raised when !invoice.IsManual => new[]
         {
-            Item("Send claim", () => SubmitAsync(invoice), "Send to the architect/client for approval"),
+            Item("Record claim sent", () => SubmitAsync(invoice), "The claim has gone to the architect/client — records it as awaiting their approval (nothing is emailed)"),
             Item("Issue without approval", () => IssueAsync(invoice), "Skip the approval loop — counts toward certified to date"),
         },
         ValuationInvoiceStatus.Submitted => new[]
@@ -33,7 +33,7 @@ public partial class ValuationInvoicesSection
     {
         if (invoice.IsEditable && invoice.Status != ValuationInvoiceStatus.Cancelled)
             yield return invoice.Status == ValuationInvoiceStatus.Rejected
-                ? Item("Amend…", () => OpenEdit(invoice), "Amend and return to draft, ready to send again", group: 1)
+                ? Item("Amend…", () => OpenEdit(invoice), "Amend and return to draft, ready to claim again", group: 1)
                 : Item("Edit…", () => OpenEdit(invoice), "Amend period/amount", group: 1);
         if (!invoice.IsManual && invoice.Status is ValuationInvoiceStatus.Raised or ValuationInvoiceStatus.Rejected)
             yield return Item("Cancel invoice", () => CancelAsync(invoice),

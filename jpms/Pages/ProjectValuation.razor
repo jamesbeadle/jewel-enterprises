@@ -134,20 +134,23 @@
                                 We're claiming this
                             </button>
                             break;
+                        @* The handover: raising is accounts' first move. It files the invoice as a
+                           draft and freezes the report — it never sends anything. Claiming (the
+                           statement going to the architect/client) is recorded as its own step. *@
                         case ClaimStage.AwaitingInvoice:
                             <button @onclick="RaiseInvoiceAsync" disabled="@(busy || PaymentDueNow <= 0m)"
                                     title="@(PaymentDueNow > 0m
-                                              ? "One click: raises the valuation invoice for the amount due and sends the claim to the architect/client — the report snapshot freezes behind it."
+                                              ? "Files the valuation invoice for the amount due as a draft and freezes the report snapshot behind it. Nothing is sent — recording the claim as sent is the next step."
                                               : "Nothing is currently due — manage invoices in Valuation Invoices below")"
                                     class="btn-primary shrink-0">
-                                Raise &amp; send invoice (@Money(PaymentDueNow))
+                                Raise invoice (@Money(PaymentDueNow))
                             </button>
                             break;
                         case ClaimStage.InvoiceDraft:
-                            <button @onclick="SendInvoiceAsync" disabled="@busy"
-                                    title="Sends the drafted invoice to the architect/client for approval — Actions has the no-approval-loop issue"
+                            <button @onclick="RecordClaimSentAsync" disabled="@busy"
+                                    title="Records that the claim (the frozen report) has gone to the architect/client for approval — nothing is emailed from here. Actions has the no-approval-loop issue"
                                     class="btn-primary shrink-0">
-                                Send claim
+                                Record claim sent
                             </button>
                             break;
                         case ClaimStage.AwaitingApproval:

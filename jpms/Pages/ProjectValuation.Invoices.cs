@@ -13,16 +13,19 @@ public partial class ProjectValuation
     // The selected claim's live invoice — what the card's primary button acts on.
     private ValuationInvoice? SelectedInvoice => Selected is { } claim ? InvoiceFor(claim) : null;
 
-    private Task SendInvoiceAsync()
+    // Records that the claim has gone to the architect/client (Raised → Submitted, "Awaiting
+    // approval"). A record of an outside event, like Record approval / Record payment — the
+    // portal emails nothing here; the snapshot's Email action drafts the statement if wanted.
+    private Task RecordClaimSentAsync()
     {
         if (busy || SelectedInvoice is not { } invoice) return Task.CompletedTask;
         return GuardAsync(async () =>
         {
             await Invoices.SubmitAsync(invoice.ValuationInvoiceId);
             await ReloadInvoicePanelsAsync();
-            // An amended invoice freezes a fresh snapshot at send — refresh the register.
+            // An amended invoice freezes a fresh snapshot when re-claimed — refresh the register.
             OnCertifiedChanged();
-        }, "Couldn't send the claim — the server may be restarting. Please try again.");
+        }, "Couldn't record the claim as sent — the server may be restarting. Please try again.");
     }
 
     private Task ApproveInvoiceAsync()

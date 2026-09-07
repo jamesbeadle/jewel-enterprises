@@ -93,16 +93,17 @@ public partial class ProjectValuation
         {
             ClaimStage.Draft =>
                 "Set each line's cumulative % complete (Bulk edit % handles many at once), then lock the claim.",
+            // The handover: the project team's part is done; from here the card is accounts'.
             ClaimStage.AwaitingInvoice =>
-                $"Locked — {Money(claim.TotalWorksComplete)} works complete. One click raises the invoice for the amount due and sends the claim to the architect/client.",
+                $"Valued and locked by the project team — {Money(claim.TotalWorksComplete)} works complete. Over to accounts: raise the invoice for the amount due. Raising files it as a draft and freezes the report behind it — nothing is sent from here.",
             ClaimStage.InvoiceDraft =>
-                $"Invoice {invoice?.DisplayNumber} drafted for {Money(invoice?.Amount ?? 0m)} but not sent — send the claim, or issue it directly from Actions if this client runs no approval loop.",
+                $"Invoice {invoice?.DisplayNumber} raised for {Money(invoice?.Amount ?? 0m)}, not yet claimed. Send the frozen report to the architect/client as usual (Report Snapshots can draft the email), then record the claim as sent — or, if this client runs no approval loop, issue it directly from Actions.",
             ClaimStage.AwaitingApproval =>
                 $"Claimed — invoice {invoice?.DisplayNumber} for {Money(invoice?.Amount ?? 0m)} is with the architect/client{(invoice?.SubmittedAt is { } sub ? $" since {sub:dd MMM yyyy}" : "")}. Record their approval (or rejection, in Actions) when it comes.",
             ClaimStage.ApprovedAwaitingIssue =>
-                $"Approved — issue invoice {invoice?.DisplayNumber} to count it toward certified to date, then raise it in the accounts as usual.",
+                $"Approved — issue invoice {invoice?.DisplayNumber} to count it toward certified to date, then put it through the accounts as usual.",
             ClaimStage.InvoiceRejected =>
-                $"Invoice {invoice?.DisplayNumber} was rejected{(invoice?.RejectedAt is { } rej ? $" on {rej:dd MMM yyyy}" : "")} — amend it (back to draft, ready to resend), or cancel it in Valuation Invoices below.",
+                $"Invoice {invoice?.DisplayNumber} was rejected{(invoice?.RejectedAt is { } rej ? $" on {rej:dd MMM yyyy}" : "")} — amend it (back to draft, ready to claim again), or cancel it in Valuation Invoices below.",
             ClaimStage.AwaitingPayment =>
                 $"Invoice {invoice?.DisplayNumber} issued for {Money(invoice?.Amount ?? 0m)} — payment is no gate: carry on with the next claim and record the payment (Actions) when the cash lands.",
             ClaimStage.ReadyToConfirm => IsLatestClaim(claim)

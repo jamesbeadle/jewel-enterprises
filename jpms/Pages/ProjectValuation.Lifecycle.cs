@@ -29,12 +29,16 @@ public partial class ProjectValuation
         if (invoicesSection is not null) await invoicesSection.ReloadAsync();
     }, "Couldn't delete the claim — the server may be restarting. Please try again.");
 
-    // ---- Raise & send the invoice from the claim ---------------------------
-    // One click, two moves: creates the invoice for the claim's payment due (first day of the
-    // claim date's month as its period; the raise freezes the report snapshot) and sends the
-    // claim — straight to awaiting approval. The FD's flow then runs off this card: record
-    // approval → issue → record payment. If the send half fails, the invoice sits as a draft
-    // and the card's primary button becomes "Send claim", so recovery is the same click.
+    // ---- Raise the invoice from the claim ----------------------------------
+    // The handover point: the project team has valued and locked the claim; accounts pick it
+    // up here. One move only — creates the invoice for the claim's payment due (first day of
+    // the claim date's month as its period) as a DRAFT; the raise freezes the report snapshot
+    // that becomes the client-facing statement. Nothing leaves the portal. Sending the claim
+    // to the architect/client happens outside (or via the snapshot's Email draft), and the
+    // card's next primary button, "Record claim sent", records that it went — so raising and
+    // claiming are two clicks that match two real-world moments. (Until 2026-09-07 this was
+    // one click that also marked the claim Submitted, worded "Raise & send invoice" — read as
+    // the portal emailing the invoice, which it never did.)
     private Task RaiseInvoiceAsync()
     {
         if (Selected is null || busy) return Task.CompletedTask;
@@ -45,19 +49,10 @@ public partial class ProjectValuation
         {
             var period = new DateTimeOffset(
                 new DateTime(claim.ClaimDate.Year, claim.ClaimDate.Month, 1), TimeSpan.Zero);
-            var invoice = await Invoices.CreateAsync(ProjectId, period, amount, claim.ValuationClaimId);
-            try
-            {
-                await Invoices.SubmitAsync(invoice.ValuationInvoiceId);
-            }
-            finally
-            {
-                // Reload even when the send half fails — the raise already happened, and the
-                // card must show the draft it left behind. The raise froze a snapshot, so the
-                // register refreshes too.
-                await ReloadInvoicePanelsAsync();
-                OnCertifiedChanged();
-            }
-        }, "Couldn't raise & send the invoice — if it now shows as drafted, Send claim finishes the job. The server may be restarting.");
+            await Invoices.CreateAsync(ProjectId, period, amount, claim.ValuationClaimId);
+            // The raise froze a snapshot, so the register refreshes alongside the invoice list.
+            await ReloadInvoicePanelsAsync();
+            OnCertifiedChanged();
+        }, "Couldn't raise the invoice — the server may be restarting. Please try again.");
     }
 }

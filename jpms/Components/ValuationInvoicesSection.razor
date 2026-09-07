@@ -6,13 +6,14 @@
    accordion. Issued invoices drive "Certified to date" — and so the payment due — in the
    report summary; the total is reported up via OnInvoicedToDateChanged.
 
-   Lifecycle: raised & sent in one move from the claim card (Submitted — with the client;
-   the raise froze the report snapshot) → Approved → Issued → Paid, with Rejected returning
-   an invoice for amendment or cancellation, and a Submitted/Raised → Issued skip path for
-   projects without a formal approval loop. Raised survives as a draft state (an invoice
-   added below starts there). Manual entries are backdated historic invoices recorded
-   directly as Issued/Paid. The claim card on the valuation page drives the happy path;
-   this section's row menu covers the same moves plus the edge cases. *@
+   Lifecycle: Raised (accounts raise it from the claim card once the project team has locked
+   the claim — a draft; the raise froze the report snapshot) → Submitted (the claim recorded
+   as sent to the architect/client — the portal emails nothing) → Approved → Issued → Paid,
+   with Rejected returning an invoice for amendment or cancellation, and a Submitted/Raised →
+   Issued skip path for projects without a formal approval loop. An invoice added below also
+   starts Raised. Manual entries are backdated historic invoices recorded directly as
+   Issued/Paid. The claim card on the valuation page drives the happy path; this section's
+   row menu covers the same moves plus the edge cases. *@
 <div class="panel overflow-hidden">
     <div class="w-full flex items-center gap-3 px-4 py-3 hover:bg-surface-raised/60 transition">
         <button type="button" @onclick="Toggle" aria-expanded="@isOpen"
@@ -286,7 +287,7 @@
             {
                 <p class="text-sm text-content">
                     Amending <span class="font-mono">@editInvoice.DisplayNumber</span> returns it to
-                    draft — send the claim again and a fresh report snapshot freezes for the client.
+                    draft — record the claim as sent again and a fresh report snapshot freezes for the client.
                 </p>
             }
             <div>
