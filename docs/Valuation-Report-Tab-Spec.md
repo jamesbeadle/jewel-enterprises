@@ -155,7 +155,9 @@ PeriodIncrement           // CumulativeClaimed − the line's cumulative on the 
 Derived figures (recomputed from source, so every claim reconciles):
 ```
 CumulativeClaimed(line, claim) = PercentComplete × LineAmount
-CertifiedToDate(claim)         = Σ CumulativeClaimed across all Confirmed claims before this one
+CertifiedToDate(claim)         = Σ (Amount + DepositCredited) of Issued/Paid valuation invoices drawn against
+                                 claims BEFORE this one, plus historic entries linked to no claim — never the
+                                 claim's own invoice or a later claim's (CertifiedBeforeClaim, 2026-09-07)
 TotalWorksComplete(claim)      = Σ CumulativeClaimed for this claim across all lines
 RetentionHeld                  = TotalWorksComplete × RetentionPercent
 PaymentDue (ex VAT)            = TotalWorksComplete − RetentionHeld + RetentionReleased − CertifiedToDate

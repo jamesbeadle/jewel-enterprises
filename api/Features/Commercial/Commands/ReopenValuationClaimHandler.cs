@@ -21,6 +21,19 @@ public sealed class ReopenValuationClaimHandler : ICommandHandler<ReopenValuatio
         if (entity.Status != (int)ValuationClaimStatus.Preapproved)
             throw new InvalidOperationException("Only a Preapproved claim can be reopened to Draft.");
 
+        // A claim with a live invoice against it is what that invoice (and its frozen statement)
+        // describes — reopening it would leave the invoice pointing at figures being re-edited,
+        // and a Draft's live summary counts every issued invoice, its own included, so the payment
+        // due would jump on re-lock. Cancel the invoice first (2026-09-07).
+        var liveInvoiceReference = await context.ValuationInvoices.AsNoTracking()
+            .Where(invoice => invoice.ValuationClaimId == entity.ValuationClaimId
+                              && invoice.Status != (int)ValuationInvoiceStatus.Cancelled)
+            .OrderByDescending(invoice => invoice.Number)
+            .Select(invoice => invoice.Reference)
+            .FirstOrDefaultAsync(cancellationToken);
+        if (liveInvoiceReference is not null)
+            throw new InvalidOperationException($"This claim has invoice {liveInvoiceReference} against it — cancel that first, then reopen the claim.");
+
         entity.Status = (int)ValuationClaimStatus.Draft;
         entity.PreapprovedAt = null;
         // Frozen totals go back to zero, matching a freshly started claim: Draft views

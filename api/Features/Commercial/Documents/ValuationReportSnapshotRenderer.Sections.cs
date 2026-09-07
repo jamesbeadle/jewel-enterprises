@@ -358,13 +358,17 @@ public static partial class ValuationReportSnapshotRenderer
     private static void AddClosingNote(Section section, ValuationReportSnapshotDocument document)
     {
         var snapshot = document.Detail.Snapshot;
+        // The working-copy note must be true at every stage of the claim — draft, locked, invoiced
+        // or confirmed — so it says what this print IS and where the issued statement lives, and
+        // never claims the figures are still moving or that nothing has gone out.
         var note = section.AddParagraph(document.IsDraft
             ? "All figures are net of VAT. This is a WORKING COPY of the live valuation report as it stood "
-              + $"when prepared on {Date(snapshot.TakenAt)} — figures may change until the claim is locked "
-              + "and a snapshot is taken; nothing here has been issued to anyone. Contract, provisional and "
-              + "contingency items are shown individually under their area headings; each approved variation "
-              + "shows as one consolidated row per order, and orders not yet approved are not listed. Declined "
-              + "and to-be-confirmed items are not priced into any total."
+              + $"when prepared on {Date(snapshot.TakenAt)}: an internal review print of the claim as the report "
+              + "currently shows it, not a statement issued to anyone. The statement issued for a claim is the "
+              + "frozen snapshot behind its valuation invoice, held in the Report Snapshots register. Contract, "
+              + "provisional and contingency items are shown individually under their area headings; each "
+              + "approved variation shows as one consolidated row per order, and orders not yet approved are "
+              + "not listed. Declined and to-be-confirmed items are not priced into any total."
             : "All figures are net of VAT. This statement is a frozen record of the valuation report exactly "
               + $"as it stood when the snapshot was taken on {Date(snapshot.TakenAt)}; work recorded since is "
               + "not reflected here. Contract, provisional and contingency items are shown individually under "

@@ -105,8 +105,10 @@ public sealed record ValuationSummaryFigures(
 
         if (claim is not null)
         {
-            // Frozen totals from the locked claim (its CertifiedToDate captured the
-            // invoiced total at the moment it was locked).
+            // Frozen totals from the locked claim. Its CertifiedToDate is the certification
+            // BEFORE the claim — earlier claims' issued invoices, never its own — so a claim
+            // reads the same after its invoice is issued and paid as the statement said
+            // (the api's CertifiedBeforeClaim rule).
             return new(
                 contractSum, netVariations, revisedContractSum, claim.TotalWorksComplete,
                 retentionPercent, claim.RetentionHeld, retentionReleasePercent, claim.RetentionReleased,
