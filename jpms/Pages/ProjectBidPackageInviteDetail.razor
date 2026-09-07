@@ -123,10 +123,14 @@
 
             @if (activeTab == "submissions")
             {
-                <TenderSubmissionsSection ProjectId="@ProjectId"
+                <TenderSubmissionsSection ProjectId="@ProjectId" BidPackageId="@BidPackageId" PackageReference="@package.Reference"
                                           CanEdit="CanEdit" CanAddToDirectory="CanAddToDirectory" Busy="busy"
                                           HasRecipients="@(recipients.Count > 0)"
-                                          Emails="emails"
+                                          Emails="emails" EmailsLoaded="EmailsReady"
+                                          EmailsError="@(EmailsReady && fetchedEmails is null ? "Couldn't load the tender responses — the reason is in the banner above." : null)"
+                                          OnReloadEmails="ReloadEmailsAsync"
+                                          Dispositions="emailDispositions"
+                                          OnDiscard="DiscardEmail" OnRestore="RestoreEmail"
                                           AwardNote="@awardNote"
                                           Awarded="@(package.Status == BidPackageStatus.Awarded ? AwardedOrder : null)"
                                           WorkOrderEmailNote="@woEmailNote" WorkOrderEmailLink="@woEmailLink"

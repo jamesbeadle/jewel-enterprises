@@ -3,9 +3,10 @@ using Jewel.JPMS.Contracts.Drawings;
 
 namespace Jewel.JPMS.Api.Features.Bluebeam.Extraction;
 
-// A revision's data view. Markups come from SQL; the text pages come back off the blob (they can
-// run long, and the register never queries into them). A text blob that has gone missing degrades
-// to an empty list rather than failing the whole view — the markups and status still render.
+// A revision's data view. Markups come from SQL; the structured read and the text pages come
+// back off their blobs (they can run long, and the register never queries into them). A blob
+// that has gone missing degrades to null/empty rather than failing the whole view — the row's
+// summary and status still render.
 public sealed class GetDrawingExtractionHandler : IQueryHandler<GetDrawingExtraction, DrawingExtractionView?>
 {
     private readonly JpmsContext context;
@@ -28,29 +29,29 @@ public sealed class GetDrawingExtractionHandler : IQueryHandler<GetDrawingExtrac
             .ThenBy(row => row.MarkupType)
             .ToListAsync(cancellationToken);
 
-        var textPages = await ReadTextPagesAsync(extraction.TextBlobRef, cancellationToken);
+        var structure = await ReadBlobAsync<DrawingStructure>(extraction.StructureBlobRef, cancellationToken);
+        var textPages = await ReadBlobAsync<List<DrawingTextPage>>(extraction.TextBlobRef, cancellationToken);
         return new DrawingExtractionView(
             extraction.ToModel(),
+            structure,
             markups.Select(markup => markup.ToModel()).ToList(),
-            textPages);
+            textPages ?? new List<DrawingTextPage>());
     }
 
-    private async Task<IReadOnlyList<DrawingTextPage>> ReadTextPagesAsync(
-        string? textBlobRef, CancellationToken cancellationToken)
+    private async Task<T?> ReadBlobAsync<T>(string? blobRef, CancellationToken cancellationToken) where T : class
     {
-        if (string.IsNullOrWhiteSpace(textBlobRef)) return Array.Empty<DrawingTextPage>();
-        var blob = await drawingBlobs.OpenAsync(textBlobRef, cancellationToken);
-        if (blob is null) return Array.Empty<DrawingTextPage>();
+        if (string.IsNullOrWhiteSpace(blobRef)) return null;
+        var blob = await drawingBlobs.OpenAsync(blobRef, cancellationToken);
+        if (blob is null) return null;
 
         await using var content = blob.Content;
         try
         {
-            return await JsonSerializer.DeserializeAsync<List<DrawingTextPage>>(
-                content, cancellationToken: cancellationToken) ?? new List<DrawingTextPage>();
+            return await JsonSerializer.DeserializeAsync<T>(content, cancellationToken: cancellationToken);
         }
         catch (JsonException)
         {
-            return Array.Empty<DrawingTextPage>();
+            return null;
         }
     }
 }

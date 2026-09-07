@@ -1,9 +1,19 @@
 @namespace Jewel.JPMS.Features.Procurement
+@using Jewel.JPMS.Features.Triage.Panels
 
 @* Tender submissions: the filed tender emails, each one click from a reviewable submission
    (filed from the Control Centre's System actions → File Bid Package Tender, or tagged by
    hand — the package tag is what lists them), the award summary once there is one, and the
-   quotes compared line by line. *@
+   quotes compared line by line.
+
+   The emails are shown in THE record-page email widget (RecordCorrespondencePanel: full body,
+   attachments, Reply / Forward / Find & tag / Untag — same as the Emails tab), one card per
+   email rather than per thread because every email here is its own candidate, with the tender
+   verbs on each: Extract information, and Discard for an email that isn't a tender at all (a
+   chase, an acknowledgement, a question). Discarded emails fold away into the accordion below
+   with Restore; extracted ones carry an "Extracted" pill and offer Extract again. Both verdicts
+   are the package's (BidPackageEmailDisposition, 2026-09-07) — the tag, and so the Emails tab,
+   never change. *@
 <section class="mb-8">
     <div class="flex items-center justify-between mb-3">
         <h3 class="eyebrow">Tender submissions</h3>
@@ -15,38 +25,94 @@
         }
     </div>
 
-    @if (Emails.Count > 0)
-    {
-        <div class="panel mb-3">
-            <div class="flex flex-wrap items-center justify-between gap-2 px-4 py-2 border-b border-line">
-                <p class="eyebrow">Tender responses</p>
-                <span class="text-xs text-content-subtle">Extract a tender to review it against the line schedule and save it as a submission.</span>
-            </div>
-            <ul class="divide-y divide-line">
-                @foreach (var email in Emails)
+    <div class="panel px-4 py-3 mb-3">
+        <RecordCorrespondencePanel Type="RecordType.BidPackageInvite" RecordId="@BidPackageId"
+                                   RecordReference="@PackageReference" ProjectId="@ProjectId"
+                                   Title="Tender responses" LoadingLabel="Loading tender responses"
+                                   Emails="PendingEmails" Loaded="EmailsLoaded" Error="@EmailsError"
+                                   OnReload="OnReloadEmails"
+                                   GroupByConversation="false">
+            <EmptyMessage>
+                @if (DiscardedEmails.Count > 0)
                 {
-                    <li class="flex flex-wrap items-center justify-between gap-2 px-4 py-2.5">
-                        <div class="min-w-0">
-                            <p class="text-sm text-content truncate">
-                                <span class="font-medium">@(string.IsNullOrWhiteSpace(email.FromName) ? email.FromEmail : email.FromName)</span>
-                                <span class="text-content-subtle"> — @email.Subject</span>
-                                @if (email.HasAttachments)
+                    <text>No tender responses waiting — @DiscardedEmails.Count discarded below.</text>
+                }
+                else
+                {
+                    <text>
+                        No tender responses yet. File each returned tender email from the Control
+                        Centre (System actions → File Bid Package Tender) and it appears here ready
+                        to extract — or use “Record tender manually” for a tender phoned through
+                        or posted.
+                    </text>
+                }
+            </EmptyMessage>
+            <EmailBadge Context="email">
+                @if (DispositionOf(email) is { Outcome: BidPackageEmailOutcome.Extracted } extracted)
+                {
+                    <div class="mt-1">
+                        <Pill Tone="Tone.Positive" Title="@VerdictTitle("Extracted", extracted)">Extracted → submission</Pill>
+                    </div>
+                }
+            </EmailBadge>
+            <EmailActions Context="email">
+                @if (CanEdit)
+                {
+                    var extracted = DispositionOf(email)?.Outcome == BidPackageEmailOutcome.Extracted;
+                    <button type="button" class="btn-secondary px-2 py-1 text-xs" disabled="@Busy"
+                            title="Read this email and its returned pricing schedule with AI, mapped against the package's line items, ready to review and save as a submission."
+                            @onclick="() => OnExtractFromEmail.InvokeAsync(email)">@(extracted ? "Extract again" : "Extract information")</button>
+                    @if (!extracted)
+                    {
+                        <button type="button" class="text-xs font-medium text-content-subtle hover:text-negative" disabled="@Busy"
+                                title="Not a tender — folds it away under Discarded below. The email stays tagged to the package (the Emails tab is unchanged) and can be restored any time."
+                                @onclick="() => OnDiscard.InvokeAsync(email)">Discard</button>
+                    }
+                }
+            </EmailActions>
+        </RecordCorrespondencePanel>
+        @if (EmailsLoaded && PendingEmails.Count > 0)
+        {
+            <p class="text-xs text-content-subtle mt-3">
+                Extract a tender to review it against the line schedule and save it as a submission.
+                Discard an email that isn't a tender — it folds away below and can be restored.
+            </p>
+        }
+    </div>
+
+    @if (DiscardedEmails.Count > 0)
+    {
+        @* Not tenders — kept in reach (the tag still files them here) but out of the way. *@
+        <details class="mb-3">
+            <summary class="text-xs font-medium text-content-subtle cursor-pointer select-none">
+                Discarded (@DiscardedEmails.Count) — emails judged not to be tenders
+            </summary>
+            <div class="mt-2 opacity-80">
+                <CorrespondenceThreadList Emails="DiscardedEmails" ExcludeTag="@($"JPMS/{PackageReference}")"
+                                          GroupByConversation="false">
+                    <EmailBadge Context="email">
+                        @if (DispositionOf(email) is { } verdict)
+                        {
+                            <div class="mt-1 flex flex-wrap items-center gap-2">
+                                <Pill Tone="Tone.Muted" Title="@VerdictTitle("Discarded", verdict)">Discarded</Pill>
+                                @if (!string.IsNullOrWhiteSpace(verdict.Note))
                                 {
-                                    <Pill Tone="Tone.Muted" Class="ml-2">attachment</Pill>
+                                    <span class="text-xs text-content-subtle">@verdict.Note</span>
                                 }
-                            </p>
-                            <p class="text-xs text-content-subtle">@DateTimeText(email.ReceivedAt)</p>
-                        </div>
+                            </div>
+                        }
+                    </EmailBadge>
+                    <EmailActions Context="email">
                         @if (CanEdit)
                         {
-                            <button type="button" class="btn-secondary px-2 py-1 text-xs shrink-0" disabled="@Busy"
-                                    title="Read this email and its returned pricing schedule with AI, mapped against the package's line items, ready to review and save as a submission."
-                                    @onclick="() => OnExtractFromEmail.InvokeAsync(email)">Extract information</button>
+                            <button type="button" class="text-xs font-medium text-accent hover:underline" disabled="@Busy"
+                                    title="Put this email back under Tender responses, ready to extract."
+                                    @onclick="() => OnRestore.InvokeAsync(email)">Restore</button>
                         }
-                    </li>
-                }
-            </ul>
-        </div>
+                    </EmailActions>
+                </CorrespondenceThreadList>
+            </div>
+        </details>
     }
 
     @if (AwardNote is not null)
@@ -118,12 +184,21 @@
 
 @code {
     [Parameter, EditorRequired] public string ProjectId { get; set; } = "";
+    /// <summary>The package the emails are read by (its tag) and the verdicts belong to.</summary>
+    [Parameter, EditorRequired] public string BidPackageId { get; set; } = "";
+    [Parameter, EditorRequired] public string PackageReference { get; set; } = "";
     [Parameter] public bool CanEdit { get; set; }
     [Parameter] public bool CanAddToDirectory { get; set; }
     [Parameter] public bool Busy { get; set; }
     [Parameter] public bool HasRecipients { get; set; }
-    /// <summary>The package's tagged emails — each a tender response to extract.</summary>
+    /// <summary>The package's tagged emails, read live by tag — the same list as the Emails tab.</summary>
     [Parameter] public IReadOnlyList<MailboxMessage> Emails { get; set; } = Array.Empty<MailboxMessage>();
+    [Parameter] public bool EmailsLoaded { get; set; }
+    [Parameter] public string? EmailsError { get; set; }
+    /// <summary>Re-read the tagged list — after Find &amp; tag, Untag, or a reply that self-files.</summary>
+    [Parameter] public EventCallback OnReloadEmails { get; set; }
+    /// <summary>The package's verdicts on its emails (Discarded / Extracted); pending = no verdict.</summary>
+    [Parameter] public IReadOnlyList<BidPackageEmailDisposition> Dispositions { get; set; } = Array.Empty<BidPackageEmailDisposition>();
 
     [Parameter] public string? AwardNote { get; set; }
     /// <summary>The work order the award raised, once the package is awarded.</summary>
@@ -142,7 +217,26 @@
 
     [Parameter] public EventCallback OnRecordManually { get; set; }
     [Parameter] public EventCallback<MailboxMessage> OnExtractFromEmail { get; set; }
+    /// <summary>Judge an email "not a tender" / put it back — the host sends the command and
+    /// refreshes <see cref="Dispositions"/>.</summary>
+    [Parameter] public EventCallback<MailboxMessage> OnDiscard { get; set; }
+    [Parameter] public EventCallback<MailboxMessage> OnRestore { get; set; }
     [Parameter] public EventCallback OnEmailWorkOrder { get; set; }
     [Parameter] public EventCallback<Quote> OnAward { get; set; }
     [Parameter] public EventCallback<string> OnAddToDirectory { get; set; }
+
+    // ---- Verdicts joined to the live list ----------------------------------------------------
+    // A verdict matches by Graph id, else by the stable internet id; a verdict whose email has
+    // since been untagged matches nothing and simply doesn't show.
+    private BidPackageEmailDisposition? DispositionOf(MailboxMessage email) =>
+        Dispositions.FirstOrDefault(verdict => verdict.Matches(email));
+
+    private bool IsDiscarded(MailboxMessage email) =>
+        DispositionOf(email)?.Outcome == BidPackageEmailOutcome.Discarded;
+
+    private IReadOnlyList<MailboxMessage> PendingEmails => Emails.Where(email => !IsDiscarded(email)).ToList();
+    private IReadOnlyList<MailboxMessage> DiscardedEmails => Emails.Where(IsDiscarded).ToList();
+
+    private static string VerdictTitle(string verb, BidPackageEmailDisposition verdict) =>
+        $"{verb} by {verdict.SetByEmail} on {DateTimeText(verdict.SetAt)}";
 }

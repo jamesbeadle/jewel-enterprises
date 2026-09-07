@@ -1,6 +1,7 @@
 using Jewel.JPMS.Api.Data;
 using Jewel.JPMS.Api.Data.Entities;
 using Jewel.JPMS.Api.Features.Bluebeam.Queue;
+using Jewel.JPMS.Api.Features.Drawings.Geometry;
 using Jewel.JPMS.Api.Features.Drawings.Storage;
 using Microsoft.EntityFrameworkCore;
 
@@ -8,11 +9,15 @@ namespace Jewel.JPMS.Api.Features.Bluebeam.Extraction;
 
 /// <summary>
 /// One extraction, end to end — runs on the worker (the session dance takes minutes; the SWA
-/// gateway kills HTTP at ~45s). The local half runs first (PdfPig text + page geometry), then the
-/// Bluebeam half: create session → add file → PUT bytes within the upload URL's ten minutes →
-/// confirm → read markups; the session is finalised and deleted in a finally so a failed run
-/// never leaks one. Idempotent against queue re-delivery: a row already Succeeded is only re-run
-/// when the message says Force. Failure stamps the row and rethrows so the queue's retry (5
+/// gateway kills HTTP at ~45s). The PDF's own read comes first and is the run: text layer,
+/// positioned geometry, and the structured read built from them (title block, proven scale,
+/// dimensions, callouts, shapes). Bluebeam is the optional second half — only when it is
+/// configured AND connected: create session → add file → PUT bytes within the upload URL's ten
+/// minutes → confirm → read markups; the session is finalised and deleted in a finally so a
+/// failed run never leaks one. A Bluebeam failure does NOT fail the run — the markups are simply
+/// absent with a note saying why, because they only matter when someone has measured in Revu.
+/// Idempotent against queue re-delivery: a row already Succeeded is only re-run when the message
+/// says Force. A failure of the PDF read stamps the row and rethrows so the queue's retry (5
 /// attempts, then poison) is the retry policy.
 /// </summary>
 public sealed class DrawingExtractionRunner
@@ -69,10 +74,36 @@ public sealed class DrawingExtractionRunner
         var pdfBytes = await ReadRevisionBytesAsync(revision, cancellationToken);
 
         var textLayer = PdfTextLayerExtractor.Read(pdfBytes);
-        var markupsRawJson = await ReadMarkupsThroughBluebeamAsync(extraction, revision, pdfBytes, cancellationToken);
+        var geometry = PdfGeometryExtractor.Read(pdfBytes);
+        var structure = DrawingStructureBuilder.Build(geometry, textLayer.Pages);
+        var (markupsRawJson, markupsNote) = await ReadMarkupsIfConnectedAsync(extraction, revision, pdfBytes, cancellationToken);
 
         await resultWriter.RecordSuccessAsync(
-            extraction, revision, textLayer, markupsRawJson, message.RequestedBy, cancellationToken);
+            extraction, revision,
+            new DrawingExtractionOutcome(textLayer, geometry, structure, markupsRawJson, markupsNote),
+            message.RequestedBy, cancellationToken);
+    }
+
+    // Markups are read only when Bluebeam is configured and an admin has connected it; anything
+    // that stops the read becomes the note on the row rather than a failed extraction.
+    private async Task<(string? MarkupsRawJson, string? Note)> ReadMarkupsIfConnectedAsync(
+        DrawingExtractionEntity extraction, DrawingRevisionEntity revision, byte[] pdfBytes,
+        CancellationToken cancellationToken)
+    {
+        if (!bluebeam.IsConfigured)
+            return (null, "Bluebeam isn't configured, so no Revu markups were read — only needed when someone has measured the drawing in Revu.");
+        if (await tokens.FindConnectionAsync(cancellationToken) is null)
+            return (null, "Bluebeam isn't connected (Admin → Integrations), so no Revu markups were read — only needed when someone has measured the drawing in Revu.");
+        try
+        {
+            return (await ReadMarkupsThroughBluebeamAsync(extraction, revision, pdfBytes, cancellationToken), null);
+        }
+        catch (Exception failure) when (failure is not OperationCanceledException)
+        {
+            logger.LogWarning(failure, "Bluebeam markups could not be read for revision {RevisionId}.", extraction.DrawingRevisionId);
+            var reason = failure.Message.Length <= 700 ? failure.Message : failure.Message[..700];
+            return (null, $"Revu markups couldn't be read this time: {reason} The drawing's own geometry and text were read regardless — extract again to retry the markups.");
+        }
     }
 
     private async Task<byte[]> ReadRevisionBytesAsync(

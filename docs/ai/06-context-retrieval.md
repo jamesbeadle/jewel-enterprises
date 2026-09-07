@@ -125,7 +125,7 @@ Finding the evidence is half the task; the other half is comparing it to the por
 the portal. The valuation workflow needs two readers and two dialogs that do not exist:
 
 `get_valuation_context(project)` returns the live report: every line with its variation reference,
-line amount, % complete on the current claim, the previous confirmed % and cumulative, and the
+line amount, % complete on the current claim, the previous claim's % and this period's movement, and the
 claim's status. `get_variation_context(reference)` returns one variation in full — approved lines
 per cost centre, narratives, the linked RFI and its status, the work orders raised against it —
 so "V01" is one call rather than three.

@@ -2,7 +2,6 @@
 @inject AuthService Auth
 @inject SessionService Session
 @inject IDrawingStore DrawingStore
-@inject BluebeamStatusStore Bluebeam
 @inject NavigationManager Nav
 @implements IDisposable
 @using Jewel.JPMS.Features.Drawings
@@ -116,8 +115,10 @@
                 {
                     <div class="flex items-center gap-2">
                         @* Manual pipeline trigger — extraction is deliberately NOT automatic on
-                           upload. Queues the previewed revision through Bluebeam (markups) +
-                           PdfPig (text layer); the Extracted data panel below shows the run. *@
+                           upload. Queues the previewed revision for the worker's read of the
+                           PDF itself (title block, scale, dimensions, notes, shapes, text) plus
+                           Bluebeam markups if that connection exists; the Extracted data panel
+                           below shows the run. *@
                         @if (CanExtract)
                         {
                             <button type="button" disabled="@extractBusy" @onclick="DoExtractData"

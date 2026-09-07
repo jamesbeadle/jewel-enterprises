@@ -142,7 +142,11 @@ internal static partial class AiCommercialTools
                             percentComplete = counts ? (decimal?)(now?.PercentComplete ?? 0m) : null,
                             claimedToDate = counts ? (decimal?)(now?.CumulativeClaimed ?? 0m) : null,
                             previousPercent = counts && previous is not null ? (decimal?)(before?.PercentComplete ?? 0m) : null,
-                            periodIncrement = counts ? (decimal?)(now?.PeriodIncrement ?? 0m) : null
+                            // Derived from the same previous claim as previousPercent (the one
+                            // rule, ClaimPeriodBaseline) — never the entry's stored increment.
+                            periodIncrement = counts
+                                ? (decimal?)((now?.CumulativeClaimed ?? 0m) - (before?.CumulativeClaimed ?? 0m))
+                                : null
                         };
                     }).ToList();
 

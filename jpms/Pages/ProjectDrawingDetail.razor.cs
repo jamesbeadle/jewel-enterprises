@@ -89,10 +89,7 @@ public partial class ProjectDrawingDetail
         await Session.EnsureLoadedAsync();
         if (!Auth.IsSignedIn) { Nav.NavigateTo("/login", forceLoad: true); return; }
         DrawingStore.OnChange += HandleChange;
-        Bluebeam.OnChange += HandleChange;
         Reload();
-        // Fetched once per session; until it lands the Extract button sits disabled with its tooltip.
-        _ = Bluebeam.EnsureLoadedAsync();
     }
 
     protected override void OnParametersSet() => Reload();
@@ -175,16 +172,15 @@ public partial class ProjectDrawingDetail
         (revision.ContentType ?? "").Contains("pdf", StringComparison.OrdinalIgnoreCase)
         || revision.FileName.EndsWith(".pdf", StringComparison.OrdinalIgnoreCase);
 
-    // Extraction needs a previewable PDF revision and the shared Bluebeam connection.
+    // Extraction needs a previewable PDF revision — nothing else. The PDF's own geometry and text
+    // are the read; Bluebeam markups ride along only when the connection happens to be there.
     private bool CanExtract =>
-        CanManage && Bluebeam.IsConnected && PreviewRevision is { } revision && IsPdf(revision);
+        CanManage && PreviewRevision is { } revision && IsPdf(revision);
 
     private string ExtractDisabledReason =>
-        !Bluebeam.IsConnected
-            ? "Extraction needs the Bluebeam connection — connect it under Admin → Integrations"
-            : PreviewRevision is null
-                ? "No stored revision to extract from"
-                : "Only PDF revisions can be extracted";
+        PreviewRevision is null
+            ? "No stored revision to extract from"
+            : "Only PDF revisions can be extracted";
 
     private async Task DoExtractData()
     {
@@ -237,6 +233,5 @@ public partial class ProjectDrawingDetail
     public void Dispose()
     {
         DrawingStore.OnChange -= HandleChange;
-        Bluebeam.OnChange -= HandleChange;
     }
 }

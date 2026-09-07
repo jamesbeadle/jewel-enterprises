@@ -22,9 +22,11 @@ public sealed class SaveExtractedQuoteEndpoint
         var signedInUser = await users.ResolveAsync(request, request.HttpContext.RequestAborted);
         if (signedInUser is null) return new UnauthorizedResult();
 
-        var command = await request.ReadFromJsonAsync<SaveExtractedQuote>();
-        if (command is null) return new BadRequestResult();
-        if (command.BidPackageId != bidPackageId) return new BadRequestObjectResult("Route bidPackageId does not match body.");
+        var posted = await request.ReadFromJsonAsync<SaveExtractedQuote>();
+        if (posted is null) return new BadRequestResult();
+        if (posted.BidPackageId != bidPackageId) return new BadRequestObjectResult("Route bidPackageId does not match body.");
+        // Who saved is stamped here (it names the email's Extracted verdict), never trusted from the body.
+        var command = posted with { SavedByEmail = signedInUser.Email };
 
         if (!authorisation.Allows(signedInUser, command)) return new StatusCodeResult(403);
         var validationOutcome = validation.Check(command);

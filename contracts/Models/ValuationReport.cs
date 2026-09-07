@@ -120,7 +120,8 @@ public sealed record ClaimLine(
     string ValuationLineItemId,
     decimal PercentComplete,    // cumulative % entered this claim
     decimal CumulativeClaimed,  // PercentComplete% x LineAmount
-    decimal PeriodIncrement);   // CumulativeClaimed - previous confirmed cumulative for this line
+    decimal PeriodIncrement);   // CumulativeClaimed - the line's cumulative on the claim immediately
+                                // before (whatever its status); the API's ClaimPeriodBaseline rule
 
 // An immutable, line-level copy of the valuation report frozen at a moment in time — the report
 // behind a valuation invoice, captured when the invoice is raised (or a period-end record when

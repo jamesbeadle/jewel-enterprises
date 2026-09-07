@@ -17,7 +17,15 @@ public static class DrawingExtractionMapping
         entity.Attempts,
         entity.ErrorMessage,
         entity.PageCount,
-        entity.MarkupCount);
+        entity.MarkupCount,
+        entity.MarkupsNote,
+        entity.DimensionCount,
+        entity.CalloutCount,
+        entity.ShapeCount,
+        entity.Scale,
+        entity.ScaleVerified,
+        entity.DrawingNumber,
+        entity.RevisionLabel);
 
     public static DrawingMarkup ToModel(this DrawingMarkupEntity entity) => new(
         entity.DrawingMarkupId,

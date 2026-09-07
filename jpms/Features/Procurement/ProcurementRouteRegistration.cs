@@ -40,6 +40,12 @@ public static class ProcurementRouteRegistration
             new QueryRoute("/api/bid-packages/{bidPackageId}/emails",
                 query => $"/api/bid-packages/{((ListBidPackageEmails)query).BidPackageId}/emails"));
 
+        // The package's verdicts on its tagged emails (Discarded / Extracted), joined client-side
+        // to the live list above.
+        queries.Register<ListBidPackageEmailDispositions, IReadOnlyList<BidPackageEmailDisposition>>(
+            new QueryRoute("/api/bid-packages/{bidPackageId}/email-dispositions",
+                query => $"/api/bid-packages/{((ListBidPackageEmailDispositions)query).BidPackageId}/email-dispositions"));
+
         queries.Register<ListQuoteLineItemsForBidPackage, IReadOnlyList<QuoteLineItem>>(
             new QueryRoute("/api/bid-packages/{bidPackageId}/quote-lines",
                 query => $"/api/bid-packages/{((ListQuoteLineItemsForBidPackage)query).BidPackageId}/quote-lines"));
@@ -202,6 +208,10 @@ public static class ProcurementRouteRegistration
         commands.Register<SaveExtractedQuote, Quote>(
             new CommandRoute("POST", "/api/bid-packages/{bidPackageId}/extracted-quotes",
                 command => $"/api/bid-packages/{((SaveExtractedQuote)command).BidPackageId}/extracted-quotes"));
+
+        commands.Register<SetBidPackageEmailDisposition, IReadOnlyList<BidPackageEmailDisposition>>(
+            new CommandRoute("POST", "/api/bid-packages/{bidPackageId}/email-dispositions",
+                command => $"/api/bid-packages/{((SetBidPackageEmailDisposition)command).BidPackageId}/email-dispositions"));
 
         commands.Register<SubmitQuoteForBidPackage, Quote>(
             new CommandRoute("POST", "/api/bid-packages/{bidPackageId}/quotes",

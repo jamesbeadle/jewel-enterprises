@@ -136,7 +136,7 @@ CertifiedToDate, PaymentDueExVat
 ClaimLineId, ValuationClaimId, ValuationLineItemId,
 PercentComplete,          // cumulative % entered this claim
 CumulativeClaimed,        // PercentComplete × LineAmount
-PeriodIncrement           // CumulativeClaimed − previous confirmed cumulative for this line
+PeriodIncrement           // CumulativeClaimed − the line's cumulative on the claim immediately before (any status)
 ```
 
 ### Claim lifecycle (the workflow)
@@ -148,7 +148,8 @@ PeriodIncrement           // CumulativeClaimed − previous confirmed cumulative
 3. Hit OK           — "we are claiming this" → Status = Preapproved. Amounts locked for the claim,
                       awaiting the client.
 4. Client pays      — Status = Confirmed. Per-row claimed amounts become final; CertifiedToDate
-                      advances; the next claim measures its increment from here.
+                      advances. (The next claim's increment measures from the claim before it
+                      whether or not that claim is paid — payment timing is CertifiedToDate's.)
 ```
 
 Derived figures (recomputed from source, so every claim reconciles):

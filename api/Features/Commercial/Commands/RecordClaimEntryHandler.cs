@@ -5,8 +5,8 @@ using Jewel.JPMS.Contracts.Commercial;
 namespace Jewel.JPMS.Api.Features.Commercial.Commands;
 
 // Upserts the % complete for one line within a Draft claim and recomputes the line's
-// cumulative claimed amount and this period's increment (cumulative minus the cumulative
-// last confirmed for the same line).
+// cumulative claimed amount and this period's increment (cumulative minus the line's
+// cumulative on the claim immediately before — ClaimPeriodBaseline, the one rule).
 public sealed class RecordClaimEntryHandler : ICommandHandler<RecordClaimEntry, ClaimLine>
 {
     private readonly JpmsContext context;
@@ -27,17 +27,9 @@ public sealed class RecordClaimEntryHandler : ICommandHandler<RecordClaimEntry, 
 
         var cumulativeClaimed = ValuationCalculations.CumulativeClaimed(command.PercentComplete, lineItem.LineAmount);
 
-        // Cumulative claimed on this line at the most recent confirmed claim before this one.
-        var previousCumulative = await (
-            from claimLine in context.ClaimLines
-            join priorClaim in context.ValuationClaims on claimLine.ValuationClaimId equals priorClaim.ValuationClaimId
-            where claimLine.ValuationLineItemId == command.ValuationLineItemId
-                  && priorClaim.ProjectId == claim.ProjectId
-                  && priorClaim.Status == (int)ValuationClaimStatus.Confirmed
-                  && priorClaim.ClaimNumber < claim.ClaimNumber
-            orderby priorClaim.ClaimNumber descending
-            select (decimal?)claimLine.CumulativeClaimed)
-            .FirstOrDefaultAsync(cancellationToken) ?? 0m;
+        // Cumulative claimed on this line on the claim immediately before this one.
+        var previousByLine = await ClaimPeriodBaseline.PreviousCumulativeByLineAsync(
+            context, claim.ProjectId, claim.ClaimNumber, cancellationToken);
 
         var entity = await context.ClaimLines.FirstOrDefaultAsync(
             line => line.ValuationClaimId == command.ValuationClaimId && line.ValuationLineItemId == command.ValuationLineItemId,
@@ -55,7 +47,7 @@ public sealed class RecordClaimEntryHandler : ICommandHandler<RecordClaimEntry, 
 
         entity.PercentComplete = command.PercentComplete;
         entity.CumulativeClaimed = cumulativeClaimed;
-        entity.PeriodIncrement = cumulativeClaimed - previousCumulative;
+        entity.PeriodIncrement = ClaimPeriodBaseline.PeriodIncrement(cumulativeClaimed, previousByLine, command.ValuationLineItemId);
 
         await context.SaveChangesAsync(cancellationToken);
         return entity.ToModel();

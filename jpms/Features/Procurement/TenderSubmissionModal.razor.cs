@@ -144,7 +144,10 @@ public partial class TenderSubmissionModal
                     draft.Quantity, draft.Rate, draft.Total))
                 .ToList();
             await Commands.SendAsync(
-                new SaveExtractedQuote(BidPackageId, subcontractorId, notes ?? "", lines), CancellationToken.None);
+                new SaveExtractedQuote(BidPackageId, subcontractorId, notes ?? "", lines,
+                    // From an email: the save also records that email as Extracted → this quote.
+                    SourceMessageId: sourceEmail?.Id, SourceInternetMessageId: sourceEmail?.InternetMessageId),
+                CancellationToken.None);
             isOpen = false;
             await OnSaved.InvokeAsync();
         }

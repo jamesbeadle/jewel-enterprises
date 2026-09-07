@@ -173,6 +173,10 @@ public sealed class AiConnectorTests
         // read revisions for their assigned work, exactly as over HTTP.
         Assert.Contains("list_documents", director);
         Assert.Contains("list_documents", subcontractor);
+        // get_document_extraction (2026-09-07) is the structured read of a revision's PDF behind
+        // the same DrawingReaders gate as the page's Extracted-data panel.
+        Assert.Contains("get_document_extraction", director);
+        Assert.Contains("get_document_extraction", subcontractor);
         Assert.DoesNotContain("list_drawings", director); // the old name is a lookup courtesy, never advertised
     }
 

@@ -132,6 +132,9 @@
     <Compile Include="..\api\Features\Bluebeam\Extraction\BluebeamMarkupParser.cs" Link="Shared\Bluebeam\BluebeamMarkupParser.cs" />
     <Compile Include="..\api\Features\Bluebeam\Extraction\DrawingExtractionRunner.cs" Link="Shared\Bluebeam\DrawingExtractionRunner.cs" />
     <Compile Include="..\api\Features\Bluebeam\Extraction\DrawingExtractionResultWriter.cs" Link="Shared\Bluebeam\DrawingExtractionResultWriter.cs" />
+    <Compile Include="..\api\Features\Bluebeam\Extraction\DrawingExtractionOutcome.cs" Link="Shared\Bluebeam\DrawingExtractionOutcome.cs" />
+    <!-- The PDF's own read (2026-09-07): positioned geometry + the structured drawing record. -->
+    <Compile Include="..\api\Features\Drawings\Geometry\*.cs" Link="Shared\Drawings\Geometry\%(Filename)%(Extension)" />
     <!-- The drawings blob store the runner reads PDFs from and writes payload blobs to. -->
     <Compile Include="..\api\Features\Drawings\Storage\IDrawingBlobStore.cs" Link="Shared\Bluebeam\IDrawingBlobStore.cs" />
     <Compile Include="..\api\Features\Drawings\Storage\AzureBlobDrawingStore.cs" Link="Shared\Bluebeam\AzureBlobDrawingStore.cs" />

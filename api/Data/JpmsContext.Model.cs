@@ -373,6 +373,14 @@ public sealed partial class JpmsContext
         modelBuilder.Entity<BidPackageAttachmentEntity>()
             .HasIndex(row => row.BidPackageId)
             .HasDatabaseName("IX_BidPackageAttachments_BidPackageId");
+        // Email verdicts (Discarded / Extracted) are read per package and joined to the live tagged
+        // list; the internet-id index lets a verdict re-find its email after a Graph id change.
+        modelBuilder.Entity<BidPackageEmailDispositionEntity>()
+            .HasIndex(row => row.BidPackageId)
+            .HasDatabaseName("IX_BidPackageEmailDispositions_BidPackageId");
+        modelBuilder.Entity<BidPackageEmailDispositionEntity>()
+            .HasIndex(row => row.InternetMessageId)
+            .HasDatabaseName("IX_BidPackageEmailDispositions_InternetMessageId");
 
         // ---- Tender enquiries -----------------------------------------------------------------------
         // Read per project (the Tender Enquiries tab) and by number (the TEQ-#### tag resolves back

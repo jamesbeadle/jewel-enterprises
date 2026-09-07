@@ -5,7 +5,8 @@ namespace Jewel.JPMS.Api.Features.Bluebeam.Extraction;
 /// Reads the PDF's own embedded text layer and page geometry with PdfPig — no OCR, so a scanned
 /// drawing with no text layer legitimately comes back with empty pages, and that emptiness is
 /// itself information. Reading order beats content-stream order for the same reason it does in
-/// AiSourceReader: title blocks and notes read stream-wise interleave into nonsense.
+/// AiSourceReader: title blocks and notes read stream-wise interleave into nonsense. Ligature
+/// glyphs ("posiƟon") are mapped back to letters on the way out.
 /// </summary>
 public static class PdfTextLayerExtractor
 {
@@ -44,14 +45,16 @@ public static class PdfTextLayerExtractor
 
     private static string ReadPageText(UglyToad.PdfPig.Content.Page page)
     {
+        string text;
         try
         {
-            return UglyToad.PdfPig.DocumentLayoutAnalysis.TextExtractor
+            text = UglyToad.PdfPig.DocumentLayoutAnalysis.TextExtractor
                 .ContentOrderTextExtractor.GetText(page);
         }
         catch (Exception)
         {
-            return page.Text;
+            text = page.Text;
         }
+        return Drawings.Geometry.DrawingTextNormaliser.Normalise(text);
     }
 }

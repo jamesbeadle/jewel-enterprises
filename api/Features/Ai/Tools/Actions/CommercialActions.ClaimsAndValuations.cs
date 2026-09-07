@@ -207,9 +207,9 @@ internal sealed partial class CommercialActions
             Name: "confirm_valuation_claim",
             Area: "Commercial",
             Description: "Records that the client has paid: freezes the claim's summary totals and "
-                + "per-row claimed amounts and advances the project's certified-to-date position, which "
-                + "the next claim measures its increment from. Final — a Confirmed claim cannot be "
-                + "reopened.",
+                + "per-row claimed amounts and advances the project's certified-to-date position. "
+                + "The next claim's this-period figures are unaffected — they always measure from the "
+                + "claim immediately before, paid or not. Final — a Confirmed claim cannot be reopened.",
             CommandType: typeof(ConfirmValuationClaim),
             ResultType: typeof(ValuationClaim),
             AuthorisationType: typeof(ValuationReportAuthorisation),

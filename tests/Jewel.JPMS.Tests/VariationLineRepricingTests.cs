@@ -108,7 +108,7 @@ public sealed class VariationLineRepricingTests
     public void ALineThatHasNeverBeenCertified_claimsItsWholeCumulativeThisPeriod()
     {
         var (cumulative, periodIncrement) =
-            ValuationCalculations.RebasedClaim(50m, NewLineAmount, certifiedCumulative: 0m);
+            ValuationCalculations.RebasedClaim(50m, NewLineAmount, previousCumulative: 0m);
 
         Assert.Equal(4_871.495m, cumulative);
         Assert.Equal(cumulative, periodIncrement);

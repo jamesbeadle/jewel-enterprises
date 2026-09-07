@@ -29,7 +29,14 @@ description: "How documents move from email to their registers — Document Tria
   Never mark approval on anyone's behalf without their explicit say-so in this conversation.
 - Deleting a REVISION and deleting the DOCUMENT are different destructive acts; both need the
   user's confirmed intent, named by document code.
-- "Extract data" (Bluebeam markups + text layer) runs on ANY PDF revision in the register — a
-  report or an award as much as a drawing; it is never automatic on upload.
+- "Extract data" runs on ANY PDF revision in the register — a report or an award as much as a
+  drawing; it is never automatic on upload. Since 2026-09-07 it is the portal's OWN read of the
+  PDF: title block, revision table, a scale the sheet PROVES (figured dimensions matched to drawn
+  lines), every dimension with the line it measures, notes/callouts with positions, closed
+  shapes with real sizes — all in real-world millimetres. Read it with get_document_extraction
+  (revisionId, or drawingId for the newest extracted revision). For a take-off use the FIGURED
+  dimension, never a scaled distance; check scaleVerified first; a scanned sheet has no text
+  layer and yields nothing measurable — say so. Bluebeam/Revu markups are an optional extra that
+  only exist when someone measured in Revu AND the connection is set up — never a prerequisite.
 - The tool/action parameters still say drawingId / drawingFolderId / drawingCode — the
   register's old name — and list_documents returns rows under `drawings`. Same records, new label.

@@ -63,26 +63,15 @@ public sealed class StartValuationClaimHandler : ICommandHandler<StartValuationC
                     .ToListAsync(cancellationToken))
                 .ToHashSet();
 
-            // Baseline per line = cumulative at the most recent Confirmed claim before this one
-            // (the same rule RecordClaimEntryHandler applies), fetched once for all lines.
-            var baselineByLine = (await (
-                    from claimLine in context.ClaimLines
-                    join priorClaim in context.ValuationClaims on claimLine.ValuationClaimId equals priorClaim.ValuationClaimId
-                    where priorClaim.ProjectId == command.ProjectId
-                          && priorClaim.Status == (int)ValuationClaimStatus.Confirmed
-                          && priorClaim.ClaimNumber < command.ClaimNumber
-                    select new { claimLine.ValuationLineItemId, claimLine.CumulativeClaimed, priorClaim.ClaimNumber })
-                    .ToListAsync(cancellationToken))
-                .GroupBy(entry => entry.ValuationLineItemId)
-                .ToDictionary(
-                    group => group.Key,
-                    group => group.OrderByDescending(entry => entry.ClaimNumber).First().CumulativeClaimed);
+            // Baseline per line = cumulative on the claim immediately before this one (the one
+            // rule, ClaimPeriodBaseline), fetched once for all lines. Seeded from the latest
+            // claim, that IS the seed claim, so every line opens with a nil period increment —
+            // only movement entered on the new claim counts as this period's.
+            var previousByLine = await ClaimPeriodBaseline.PreviousCumulativeByLineAsync(
+                context, command.ProjectId, command.ClaimNumber, cancellationToken);
 
             foreach (var seedLine in seedLines.Where(line => liveLineItemIds.Contains(line.ValuationLineItemId)))
             {
-                var previousCumulative = baselineByLine.TryGetValue(seedLine.ValuationLineItemId, out var confirmed)
-                    ? confirmed
-                    : 0m;
                 context.ClaimLines.Add(new ClaimLineEntity
                 {
                     ClaimLineId = CommercialIdentifierFactory.NextClaimLineId(),
@@ -90,7 +79,8 @@ public sealed class StartValuationClaimHandler : ICommandHandler<StartValuationC
                     ValuationLineItemId = seedLine.ValuationLineItemId,
                     PercentComplete = seedLine.PercentComplete,
                     CumulativeClaimed = seedLine.CumulativeClaimed,
-                    PeriodIncrement = seedLine.CumulativeClaimed - previousCumulative
+                    PeriodIncrement = ClaimPeriodBaseline.PeriodIncrement(
+                        seedLine.CumulativeClaimed, previousByLine, seedLine.ValuationLineItemId)
                 });
             }
         }

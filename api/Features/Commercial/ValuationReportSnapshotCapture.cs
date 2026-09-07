@@ -79,6 +79,16 @@ internal static class ValuationReportSnapshotCapture
                 .Where(entry => entry.ValuationClaimId == claim.ValuationClaimId)
                 .ToDictionaryAsync(entry => entry.ValuationLineItemId, cancellationToken);
 
+        // "Previous" and "this period" are derived here from the claim immediately before, by
+        // the one rule (ClaimPeriodBaseline) — never copied from the entry's stored increment,
+        // which is a convenience written when the % was entered and can lag what the claim
+        // before it finally said. The statement must show the movement since the last
+        // statement, whatever that statement's payment status.
+        var previousByLine = claim is null
+            ? new Dictionary<string, decimal>()
+            : await ClaimPeriodBaseline.PreviousCumulativeByLineAsync(
+                context, projectId, claim.ClaimNumber, cancellationToken);
+
         // Gross certification: issued/paid cash amounts plus their embedded deposit credits.
         var issuedInvoices = await context.ValuationInvoices
             .Where(invoice => invoice.ProjectId == projectId
@@ -165,7 +175,8 @@ internal static class ValuationReportSnapshotCapture
                 LineAmount = line.LineAmount,
                 PercentComplete = entry?.PercentComplete ?? 0m,
                 CumulativeClaimed = entry?.CumulativeClaimed ?? 0m,
-                PeriodIncrement = entry?.PeriodIncrement ?? 0m,
+                PeriodIncrement = ClaimPeriodBaseline.PeriodIncrement(
+                    entry?.CumulativeClaimed ?? 0m, previousByLine, line.ValuationLineItemId),
                 Comments = line.Comments,
                 DisplayOrder = displayOrder++,
                 ClientReference = !string.IsNullOrWhiteSpace(line.ClientReference)

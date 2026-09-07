@@ -6,8 +6,8 @@ namespace Jewel.JPMS.Api.Features.Commercial.Commands;
 
 // Batched RecordClaimEntry: upserts many lines' % complete on one claim in a single save.
 // Same maths per line as the single-entry handler — cumulative = % x line amount, period
-// increment = cumulative minus the cumulative last confirmed for that line — with the
-// baselines fetched once for the whole batch rather than per line.
+// increment = cumulative minus the line's cumulative on the claim immediately before
+// (ClaimPeriodBaseline, the one rule) — with the baselines fetched once for the batch.
 public sealed class RecordClaimEntriesHandler : ICommandHandler<RecordClaimEntries, IReadOnlyList<ClaimLine>>
 {
     private readonly JpmsContext context;
@@ -23,20 +23,10 @@ public sealed class RecordClaimEntriesHandler : ICommandHandler<RecordClaimEntri
             .ToDictionaryAsync(line => line.ValuationLineItemId,
                 line => (line.LineAmount, line.ElementType), cancellationToken);
 
-        // Cumulative claimed per line at the most recent Confirmed claim before this one —
-        // the same rule as RecordClaimEntryHandler, fetched once for the whole batch.
-        var baselineByLine = (await (
-                from claimLine in context.ClaimLines
-                join priorClaim in context.ValuationClaims on claimLine.ValuationClaimId equals priorClaim.ValuationClaimId
-                where priorClaim.ProjectId == claim.ProjectId
-                      && priorClaim.Status == (int)ValuationClaimStatus.Confirmed
-                      && priorClaim.ClaimNumber < claim.ClaimNumber
-                select new { claimLine.ValuationLineItemId, claimLine.CumulativeClaimed, priorClaim.ClaimNumber })
-                .ToListAsync(cancellationToken))
-            .GroupBy(entry => entry.ValuationLineItemId)
-            .ToDictionary(
-                group => group.Key,
-                group => group.OrderByDescending(entry => entry.ClaimNumber).First().CumulativeClaimed);
+        // Cumulative claimed per line on the claim immediately before this one — the same
+        // rule as RecordClaimEntryHandler, fetched once for the whole batch.
+        var previousByLine = await ClaimPeriodBaseline.PreviousCumulativeByLineAsync(
+            context, claim.ProjectId, claim.ClaimNumber, cancellationToken);
 
         var existingByLine = await context.ClaimLines
             .Where(line => line.ValuationClaimId == command.ValuationClaimId)
@@ -52,7 +42,6 @@ public sealed class RecordClaimEntriesHandler : ICommandHandler<RecordClaimEntri
             // validation's +/-100000 rail (see RecordClaimEntryHandler).
 
             var cumulativeClaimed = ValuationCalculations.CumulativeClaimed(input.PercentComplete, lineInfo.LineAmount);
-            var previousCumulative = baselineByLine.TryGetValue(input.ValuationLineItemId, out var confirmed) ? confirmed : 0m;
 
             if (!existingByLine.TryGetValue(input.ValuationLineItemId, out var entity))
             {
@@ -68,7 +57,7 @@ public sealed class RecordClaimEntriesHandler : ICommandHandler<RecordClaimEntri
 
             entity.PercentComplete = input.PercentComplete;
             entity.CumulativeClaimed = cumulativeClaimed;
-            entity.PeriodIncrement = cumulativeClaimed - previousCumulative;
+            entity.PeriodIncrement = ClaimPeriodBaseline.PeriodIncrement(cumulativeClaimed, previousByLine, input.ValuationLineItemId);
             results.Add(entity);
         }
 

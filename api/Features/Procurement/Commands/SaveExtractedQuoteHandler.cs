@@ -70,6 +70,16 @@ public sealed class SaveExtractedQuoteHandler : ICommandHandler<SaveExtractedQuo
         if (package.Status is (int)BidPackageStatus.Draft or (int)BidPackageStatus.Inviting)
             package.Status = (int)BidPackageStatus.QuotesReceived;
 
+        // Extracted from a tagged email: record that email's verdict as Extracted → this quote, so
+        // the Submissions tab shows it as done rather than offering to extract it again. Any earlier
+        // verdict on the email (a Discard someone reversed by extracting after all) is replaced.
+        if (!string.IsNullOrWhiteSpace(command.SourceMessageId))
+        {
+            await BidPackageEmailDispositionStore.UpsertAsync(
+                context, command.BidPackageId, command.SourceMessageId, command.SourceInternetMessageId,
+                BidPackageEmailOutcome.Extracted, quote.QuoteId, note: "", setByEmail: command.SavedByEmail, cancellationToken);
+        }
+
         await context.SaveChangesAsync(cancellationToken);
         return quote.ToModel();
     }

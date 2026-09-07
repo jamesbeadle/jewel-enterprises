@@ -38,11 +38,33 @@ internal sealed partial class ProcurementActions
             AuthorisationType: typeof(SaveExtractedQuoteAuthorisation),
             ValidationType: typeof(SaveExtractedQuoteValidation),
             VisibleTo: PackageAdministrators,
-            EmailStamps: Array.Empty<string>(),
+            EmailStamps: new[] { "SavedByEmail" },
             NameStamps: Array.Empty<string>(),
             Notes: "Have the user review the lines (e.g. from extract_tender_from_message) before "
                 + "committing. Lines align to package line items via bidPackageLineItemId; null "
-                + "marks an extra line the subcontractor priced that is not on the package."),
+                + "marks an extra line the subcontractor priced that is not on the package. Pass "
+                + "sourceMessageId (and sourceInternetMessageId) when the submission came from a "
+                + "tagged email: the email is then recorded as Extracted on the package's "
+                + "Submissions tab instead of being offered for extraction again."),
+
+        new AiAction(
+            Name: "set_bid_package_email_disposition",
+            Area: "Procurement",
+            Description: "Records the package's verdict on one of its tagged emails on the "
+                + "Submissions tab: outcome Discarded marks it \"not a tender\" (folded away under "
+                + "Discarded, still tagged to the package — the Emails tab is unchanged); outcome "
+                + "Pending clears the verdict (Restore). Never changes mailbox tags. Returns the "
+                + "package's full list of verdicts.",
+            CommandType: typeof(SetBidPackageEmailDisposition),
+            ResultType: typeof(IReadOnlyList<BidPackageEmailDisposition>),
+            AuthorisationType: typeof(SetBidPackageEmailDispositionAuthorisation),
+            ValidationType: typeof(SetBidPackageEmailDispositionValidation),
+            VisibleTo: PackageAdministrators,
+            EmailStamps: new[] { "SetByEmail" },
+            NameStamps: Array.Empty<string>(),
+            Notes: "messageId (and internetMessageId) come from the package's correspondence "
+                + "(read_record_emails). Extracted is not set here — save_extracted_quote with "
+                + "sourceMessageId stamps it. Reversible either way, so no confirmation is needed."),
 
         new AiAction(
             Name: "record_tender_response",

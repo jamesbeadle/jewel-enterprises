@@ -29,9 +29,12 @@ public sealed class BluebeamConnectionEntity
 /// <summary>
 /// One drawing revision's extraction — the pipeline status plus, once it succeeds, the shape of
 /// what came out. One row per revision (re-extraction overwrites in place); the raw payloads —
-/// Bluebeam's markups JSON verbatim and the PdfPig text layer — live as blobs under the revision's
-/// own key prefix in the drawings container, with only their refs here. ProjectId/DrawingId are
-/// denormalised so the register's bulk queries never join through the revision.
+/// the PdfPig text layer, the positioned geometry (layer two), the structured read built from it
+/// (layer three) and, when Bluebeam was connected, its markups JSON verbatim — live as blobs
+/// under the revision's own key prefix in the drawings container, with only their refs here.
+/// The title-block summary and counts are denormalised so a register can show them without
+/// opening a blob. ProjectId/DrawingId are denormalised so bulk queries never join through the
+/// revision.
 /// </summary>
 public sealed class DrawingExtractionEntity
 {
@@ -56,6 +59,21 @@ public sealed class DrawingExtractionEntity
     public int? MarkupCount { get; set; }
     [MaxLength(1024)]    public string? MarkupsBlobRef { get; set; }
     [MaxLength(1024)]    public string? TextBlobRef { get; set; }
+    // Why Bluebeam markups are absent on a successful run (not connected, call failed) — the
+    // structured read below never depends on them.
+    [MaxLength(1024)]    public string? MarkupsNote { get; set; }
+
+    // The PDF's own read (2026-09-07): positioned words + vector geometry (layer two) and the
+    // DrawingStructure built from it (layer three), each a JSON blob; the summary here.
+    [MaxLength(1024)]    public string? GeometryBlobRef { get; set; }
+    [MaxLength(1024)]    public string? StructureBlobRef { get; set; }
+    public int? DimensionCount { get; set; }
+    public int? CalloutCount { get; set; }
+    public int? ShapeCount { get; set; }
+    [MaxLength(32)]      public string? Scale { get; set; }
+    public bool? ScaleVerified { get; set; }
+    [MaxLength(128)]     public string? DrawingNumber { get; set; }
+    [MaxLength(32)]      public string? RevisionLabel { get; set; }
     // The Studio session the run used — diagnostics only; the session is finalised and deleted.
     [MaxLength(128)]     public string? BluebeamSessionId { get; set; }
 }

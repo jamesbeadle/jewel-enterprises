@@ -74,6 +74,7 @@ public sealed partial class JpmsContext : DbContext
     public DbSet<QuoteLineItemEntity> QuoteLineItems => Set<QuoteLineItemEntity>();
     public DbSet<BidPackageDrawingEntity> BidPackageDrawings => Set<BidPackageDrawingEntity>();
     public DbSet<BidPackageAttachmentEntity> BidPackageAttachments => Set<BidPackageAttachmentEntity>();
+    public DbSet<BidPackageEmailDispositionEntity> BidPackageEmailDispositions => Set<BidPackageEmailDispositionEntity>();
     public DbSet<TenderEnquiryEntity> TenderEnquiries => Set<TenderEnquiryEntity>();
     public DbSet<TenderEnquiryAnswerEntity> TenderEnquiryAnswers => Set<TenderEnquiryAnswerEntity>();
     public DbSet<TenderEnquiryAttachmentEntity> TenderEnquiryAttachments => Set<TenderEnquiryAttachmentEntity>();

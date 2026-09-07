@@ -64,6 +64,8 @@
 else
 {
     <CorrespondenceThreadList Emails="Emails" ExcludeTag="@OwnTag"
+                              GroupByConversation="GroupByConversation"
+                              EmailBadge="EmailBadge" EmailActions="EmailActions"
                               OnReply="email => StartCompose(email, forward: false)"
                               OnForward="email => StartCompose(email, forward: true)"
                               OnUntagged="_ => OnReload.InvokeAsync()" />
@@ -88,6 +90,12 @@ else
     [Parameter] public string? Error { get; set; }
     /// <summary>Re-read the list — after a tag, an untag, or a send that self-files by tag.</summary>
     [Parameter] public EventCallback OnReload { get; set; }
+
+    /// <summary>Passed straight through to the list: a host with its own per-email verbs (the bid
+    /// package's Extract / Discard) and status (Extracted), and whether emails fold by thread.</summary>
+    [Parameter] public RenderFragment<MailboxMessage>? EmailActions { get; set; }
+    [Parameter] public RenderFragment<MailboxMessage>? EmailBadge { get; set; }
+    [Parameter] public bool GroupByConversation { get; set; } = true;
 
     private MailboxMessage? replyingTo;
     private bool isForward;

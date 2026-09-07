@@ -494,6 +494,57 @@ namespace Jewel.JPMS.Api.Migrations
                     b.ToTable("BidPackageDrawings");
                 });
 
+            modelBuilder.Entity("Jewel.JPMS.Api.Data.Entities.BidPackageEmailDispositionEntity", b =>
+                {
+                    b.Property<string>("BidPackageEmailDispositionId")
+                        .HasMaxLength(64)
+                        .HasColumnType("nvarchar(64)");
+
+                    b.Property<string>("BidPackageId")
+                        .IsRequired()
+                        .HasMaxLength(64)
+                        .HasColumnType("nvarchar(64)");
+
+                    b.Property<string>("InternetMessageId")
+                        .HasMaxLength(512)
+                        .HasColumnType("nvarchar(512)");
+
+                    b.Property<string>("MessageId")
+                        .IsRequired()
+                        .HasMaxLength(512)
+                        .HasColumnType("nvarchar(512)");
+
+                    b.Property<string>("Note")
+                        .IsRequired()
+                        .HasMaxLength(1024)
+                        .HasColumnType("nvarchar(1024)");
+
+                    b.Property<int>("Outcome")
+                        .HasColumnType("int");
+
+                    b.Property<string>("QuoteId")
+                        .HasMaxLength(64)
+                        .HasColumnType("nvarchar(64)");
+
+                    b.Property<DateTimeOffset>("SetAt")
+                        .HasColumnType("datetimeoffset");
+
+                    b.Property<string>("SetByEmail")
+                        .IsRequired()
+                        .HasMaxLength(256)
+                        .HasColumnType("nvarchar(256)");
+
+                    b.HasKey("BidPackageEmailDispositionId");
+
+                    b.HasIndex("BidPackageId")
+                        .HasDatabaseName("IX_BidPackageEmailDispositions_BidPackageId");
+
+                    b.HasIndex("InternetMessageId")
+                        .HasDatabaseName("IX_BidPackageEmailDispositions_InternetMessageId");
+
+                    b.ToTable("BidPackageEmailDispositions");
+                });
+
             modelBuilder.Entity("Jewel.JPMS.Api.Data.Entities.BidPackageEntity", b =>
                 {
                     b.Property<string>("BidPackageId")
@@ -2033,13 +2084,23 @@ namespace Jewel.JPMS.Api.Migrations
                         .HasMaxLength(128)
                         .HasColumnType("nvarchar(128)");
 
+                    b.Property<int?>("CalloutCount")
+                        .HasColumnType("int");
+
                     b.Property<DateTimeOffset?>("CompletedAt")
                         .HasColumnType("datetimeoffset");
+
+                    b.Property<int?>("DimensionCount")
+                        .HasColumnType("int");
 
                     b.Property<string>("DrawingId")
                         .IsRequired()
                         .HasMaxLength(64)
                         .HasColumnType("nvarchar(64)");
+
+                    b.Property<string>("DrawingNumber")
+                        .HasMaxLength(128)
+                        .HasColumnType("nvarchar(128)");
 
                     b.Property<string>("DrawingRevisionId")
                         .IsRequired()
@@ -2050,10 +2111,18 @@ namespace Jewel.JPMS.Api.Migrations
                         .HasMaxLength(2048)
                         .HasColumnType("nvarchar(2048)");
 
+                    b.Property<string>("GeometryBlobRef")
+                        .HasMaxLength(1024)
+                        .HasColumnType("nvarchar(1024)");
+
                     b.Property<int?>("MarkupCount")
                         .HasColumnType("int");
 
                     b.Property<string>("MarkupsBlobRef")
+                        .HasMaxLength(1024)
+                        .HasColumnType("nvarchar(1024)");
+
+                    b.Property<string>("MarkupsNote")
                         .HasMaxLength(1024)
                         .HasColumnType("nvarchar(1024)");
 
@@ -2076,11 +2145,29 @@ namespace Jewel.JPMS.Api.Migrations
                         .HasMaxLength(256)
                         .HasColumnType("nvarchar(256)");
 
+                    b.Property<string>("RevisionLabel")
+                        .HasMaxLength(32)
+                        .HasColumnType("nvarchar(32)");
+
+                    b.Property<string>("Scale")
+                        .HasMaxLength(32)
+                        .HasColumnType("nvarchar(32)");
+
+                    b.Property<bool?>("ScaleVerified")
+                        .HasColumnType("bit");
+
+                    b.Property<int?>("ShapeCount")
+                        .HasColumnType("int");
+
                     b.Property<DateTimeOffset?>("StartedAt")
                         .HasColumnType("datetimeoffset");
 
                     b.Property<int>("Status")
                         .HasColumnType("int");
+
+                    b.Property<string>("StructureBlobRef")
+                        .HasMaxLength(1024)
+                        .HasColumnType("nvarchar(1024)");
 
                     b.Property<string>("TextBlobRef")
                         .HasMaxLength(1024)

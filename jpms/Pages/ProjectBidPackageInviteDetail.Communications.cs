@@ -114,6 +114,11 @@ public partial class ProjectBidPackageInviteDetail
         try { fetchedEmails = await Queries.AskAsync(new ListBidPackageEmails(BidPackageId), CancellationToken.None); }
         catch (Exception ex) { error = Append(error, $"Couldn't load related emails: {ex.Message}"); }
 
+        // The package's verdicts on those emails (Discarded / Extracted) — best-effort: without them
+        // every email simply shows as pending, which is only ever a display gap.
+        try { emailDispositions = await Queries.AskAsync(new ListBidPackageEmailDispositions(BidPackageId), CancellationToken.None); }
+        catch { /* the Submissions tab shows every email as pending */ }
+
         try { fetchedQuotes = await Queries.AskAsync(new ListQuotesForBidPackage(BidPackageId), CancellationToken.None); }
         catch (Exception ex) { error = Append(error, $"Couldn't load tender submissions: {ex.Message}"); }
 

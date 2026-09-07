@@ -21,14 +21,14 @@ public static class ValuationCalculations
 
     // Where a re-priced line leaves the claim in progress. The percentage is what a QS entered, so
     // it stands; the money is derived, so it follows the new line amount. The period increment is
-    // what that adds to — or takes back off — the figure last CERTIFIED for the line, which was
-    // certified at the old amount and does not move: the correction lands in the open period
-    // instead of rewriting a closed one.
+    // what that adds to — or takes back off — the figure the line stood at on the claim before
+    // (whatever that claim's status), which was claimed at the old amount and does not move: the
+    // correction lands in the open period instead of rewriting a closed one.
     public static (decimal CumulativeClaimed, decimal PeriodIncrement) RebasedClaim(
-        decimal percentComplete, decimal lineAmount, decimal certifiedCumulative)
+        decimal percentComplete, decimal lineAmount, decimal previousCumulative)
     {
         var cumulative = CumulativeClaimed(percentComplete, lineAmount);
-        return (cumulative, cumulative - certifiedCumulative);
+        return (cumulative, cumulative - previousCumulative);
     }
 
     // Original contract sum = priced works + PC sums + contingency (excludes variations,

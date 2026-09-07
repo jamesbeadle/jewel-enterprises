@@ -34,6 +34,7 @@ public static class ProcurementFeatureRegistration
         services.AddScoped<IQueryHandler<ListBidPackageRecipients, IReadOnlyList<BidPackageRecipient>>, ListBidPackageRecipientsHandler>();
         services.AddScoped<IQueryHandler<ListBidPackageLineItems, IReadOnlyList<BidPackageLineItem>>, ListBidPackageLineItemsHandler>();
         services.AddScoped<IQueryHandler<ListBidPackageEmails, IReadOnlyList<MailboxMessage>>, ListBidPackageEmailsHandler>();
+        services.AddScoped<IQueryHandler<ListBidPackageEmailDispositions, IReadOnlyList<BidPackageEmailDisposition>>, ListBidPackageEmailDispositionsHandler>();
         services.AddScoped<IQueryHandler<ListQuoteLineItemsForBidPackage, IReadOnlyList<QuoteLineItem>>, ListQuoteLineItemsForBidPackageHandler>();
         services.AddScoped<IQueryHandler<ListBidPackageDrawings, IReadOnlyList<Drawing>>, ListBidPackageDrawingsHandler>();
         services.AddScoped<IQueryHandler<SearchLocalSubcontractors, LocalSubcontractorSearchResult>, SearchLocalSubcontractorsHandler>();
@@ -151,6 +152,9 @@ public static class ProcurementFeatureRegistration
         services.AddScoped<ICommandHandler<SaveExtractedQuote, Quote>, SaveExtractedQuoteHandler>();
         services.AddScoped<SaveExtractedQuoteAuthorisation>();
         services.AddScoped<SaveExtractedQuoteValidation>();
+        services.AddScoped<ICommandHandler<SetBidPackageEmailDisposition, IReadOnlyList<BidPackageEmailDisposition>>, SetBidPackageEmailDispositionHandler>();
+        services.AddScoped<SetBidPackageEmailDispositionAuthorisation>();
+        services.AddScoped<SetBidPackageEmailDispositionValidation>();
 
         services.AddScoped<ICommandHandler<SubmitQuoteForBidPackage, Quote>, SubmitQuoteForBidPackageHandler>();
         services.AddScoped<SubmitQuoteForBidPackageAuthorisation>();

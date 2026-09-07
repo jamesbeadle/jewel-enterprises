@@ -16,7 +16,11 @@
     additionally gets an Untag button per email: it removes THIS record's tag from that one email
     — armed on first press, confirmed on second, so a stray click can't unfile correspondence.
     An email left with no JPMS tag at all is back in the Control Centre queue by definition (the
-    queue IS the untagged inbox), so untagging is always recoverable from triage.
+    queue IS the untagged inbox), so untagging is always recoverable from triage. A host with its
+    own per-email verbs (the bid package's Extract / Discard, 2026-09-07) passes EmailActions — a
+    fragment rendered in the action row after the built-in buttons — and can set
+    GroupByConversation="false" to list one card per email (a list where every email is its own
+    candidate, not a thread to fold).
 *@
 
 <ul class="space-y-2">
@@ -72,6 +76,19 @@
     [Parameter] public EventCallback<MailboxMessage> OnTagLike { get; set; }
     [Parameter] public string TagLikeLabel { get; set; } = "Tag open email like this";
 
+    /// <summary>Host-specific verbs for one email, rendered in its action row after the built-in
+    /// buttons (Reply, Forward, thread toggle…). Null = none.</summary>
+    [Parameter] public RenderFragment<MailboxMessage>? EmailActions { get; set; }
+
+    /// <summary>Extra content under an email's header line (a status pill, a note) — rendered
+    /// before the body preview. Null = none.</summary>
+    [Parameter] public RenderFragment<MailboxMessage>? EmailBadge { get; set; }
+
+    /// <summary>True (default): one card per conversation, earlier members folded behind the
+    /// thread toggle. False: one card per email, newest first — for lists where each email stands
+    /// on its own.</summary>
+    [Parameter] public bool GroupByConversation { get; set; } = true;
+
     private readonly HashSet<string> expandedThreads = new();
     private readonly HashSet<string> expandedEmails = new();
     // Detail cached for the component's life: null value = fetch in flight ("Loading full email…").
@@ -82,7 +99,7 @@
     // Emails without a ConversationId (Graph occasionally omits it) each stand as their own card.
     private List<ThreadGroup> Threads =>
         Emails
-            .GroupBy(email => string.IsNullOrEmpty(email.ConversationId) ? $"single:{email.Id}" : email.ConversationId)
+            .GroupBy(email => !GroupByConversation || string.IsNullOrEmpty(email.ConversationId) ? $"single:{email.Id}" : email.ConversationId)
             .Select(group =>
             {
                 var newestFirst = group.OrderByDescending(email => email.ReceivedAt).ToList();
@@ -118,6 +135,10 @@
                         <Pill Tone="Tone.Info">@TagStem(tag)</Pill>
                     }
                 </div>
+            }
+            @if (EmailBadge is not null)
+            {
+                @EmailBadge(email)
             }
 
             @if (isExpanded)
@@ -224,6 +245,10 @@
                             ? "Hide earlier emails"
                             : $"Thread · {threadGroup.Earlier.Count + 1} emails")
                     </button>
+                }
+                @if (EmailActions is not null)
+                {
+                    @EmailActions(email)
                 }
                 @if (OnUntagged.HasDelegate && !string.IsNullOrWhiteSpace(ExcludeTag))
                 {

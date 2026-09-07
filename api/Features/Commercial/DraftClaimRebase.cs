@@ -61,28 +61,28 @@ internal static class DraftClaimRebase
                 from claimLine in context.ClaimLines
                 join claim in context.ValuationClaims on claimLine.ValuationClaimId equals claim.ValuationClaimId
                 where lineIds.Contains(claimLine.ValuationLineItemId)
-                select new { Entry = claimLine, claim.Status, claim.ClaimNumber })
+                      && claim.Status == (int)ValuationClaimStatus.Draft
+                select new { Entry = claimLine, claim.ProjectId, claim.ClaimNumber })
             .ToListAsync(cancellationToken);
 
-        foreach (var row in entries.Where(row => row.Status == (int)ValuationClaimStatus.Draft))
+        // The baseline is the line's cumulative on the claim immediately before the draft — the
+        // same rule RecordClaimEntries applies (ClaimPeriodBaseline). The previous claim is locked
+        // (or older), so its money does not move: the correction lands in the open period.
+        foreach (var draft in entries.GroupBy(row => (row.ProjectId, row.ClaimNumber)))
         {
-            if (!amountByLine.TryGetValue(row.Entry.ValuationLineItemId, out var amount)) continue;
+            var previousByLine = await ClaimPeriodBaseline.PreviousCumulativeByLineAsync(
+                context, draft.Key.ProjectId, draft.Key.ClaimNumber, cancellationToken);
 
-            // The baseline is the most recent CONFIRMED claim's cumulative for this line — the same
-            // rule RecordClaimEntries applies, and the definition PeriodIncrement carries in the
-            // contract. A preapproved claim is not a baseline: it has not been certified.
-            var certified = entries
-                .Where(prior => prior.Entry.ValuationLineItemId == row.Entry.ValuationLineItemId
-                                && prior.Status == (int)ValuationClaimStatus.Confirmed
-                                && prior.ClaimNumber < row.ClaimNumber)
-                .OrderByDescending(prior => prior.ClaimNumber)
-                .Select(prior => prior.Entry.CumulativeClaimed)
-                .FirstOrDefault();
+            foreach (var row in draft)
+            {
+                if (!amountByLine.TryGetValue(row.Entry.ValuationLineItemId, out var amount)) continue;
 
-            var (cumulative, periodIncrement) =
-                ValuationCalculations.RebasedClaim(row.Entry.PercentComplete, amount, certified);
-            row.Entry.CumulativeClaimed = cumulative;
-            row.Entry.PeriodIncrement = periodIncrement;
+                var (cumulative, periodIncrement) = ValuationCalculations.RebasedClaim(
+                    row.Entry.PercentComplete, amount,
+                    previousByLine.GetValueOrDefault(row.Entry.ValuationLineItemId, 0m));
+                row.Entry.CumulativeClaimed = cumulative;
+                row.Entry.PeriodIncrement = periodIncrement;
+            }
         }
     }
 }

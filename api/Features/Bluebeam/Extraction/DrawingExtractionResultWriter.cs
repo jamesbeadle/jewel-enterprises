@@ -6,12 +6,13 @@ using Microsoft.EntityFrameworkCore;
 namespace Jewel.JPMS.Api.Features.Bluebeam.Extraction;
 
 /// <summary>
-/// Persists an extraction's outcome. Success stores both raw payloads as blobs under the
-/// revision's own key prefix (markups verbatim, text as [{page,text}] JSON), replaces the
-/// revision's markup rows, stamps the extraction row AND the revision's MetadataExtractedAt (the
-/// register's badge) in one save, then writes the audit row directly — the worker doesn't link
-/// AuditTrail, and audit stays best-effort either way. Failure stamps the row so the UI can show
-/// the error the queue's retries keep hitting.
+/// Persists an extraction's outcome. Success stores the payloads as blobs under the revision's
+/// own key prefix — text as [{page,text}] JSON, the positioned geometry, the structured read,
+/// and Bluebeam's markups verbatim when they were read — replaces the revision's markup rows,
+/// stamps the extraction row's summary (counts, title block, scale) AND the revision's
+/// MetadataExtractedAt (the register's badge) in one save, then writes the audit row directly —
+/// the worker doesn't link AuditTrail, and audit stays best-effort either way. Failure stamps
+/// the row so the UI can show the error the queue's retries keep hitting.
 /// </summary>
 public sealed class DrawingExtractionResultWriter
 {
@@ -27,16 +28,21 @@ public sealed class DrawingExtractionResultWriter
 
     public async Task RecordSuccessAsync(
         DrawingExtractionEntity extraction, DrawingRevisionEntity revision,
-        PdfTextLayerExtractor.TextLayer textLayer, string markupsRawJson, string requestedBy,
-        CancellationToken cancellationToken)
+        DrawingExtractionOutcome outcome, string requestedBy, CancellationToken cancellationToken)
     {
-        extraction.MarkupsBlobRef = await UploadJsonAsync(
-            extraction, "extraction-markups.json", markupsRawJson, cancellationToken);
         extraction.TextBlobRef = await UploadJsonAsync(
-            extraction, "extraction-text.json", JsonSerializer.Serialize(textLayer.Pages), cancellationToken);
+            extraction, "extraction-text.json", JsonSerializer.Serialize(outcome.TextLayer.Pages), cancellationToken);
+        extraction.GeometryBlobRef = await UploadJsonAsync(
+            extraction, "extraction-geometry.json", JsonSerializer.Serialize(outcome.Geometry), cancellationToken);
+        extraction.StructureBlobRef = await UploadJsonAsync(
+            extraction, "extraction-structure.json", JsonSerializer.Serialize(outcome.Structure), cancellationToken);
+        extraction.MarkupsBlobRef = outcome.MarkupsRawJson is null
+            ? null
+            : await UploadJsonAsync(extraction, "extraction-markups.json", outcome.MarkupsRawJson, cancellationToken);
 
-        var markups = BluebeamMarkupParser.Parse(
-            markupsRawJson, extraction.DrawingExtractionId, extraction.DrawingRevisionId);
+        var markups = outcome.MarkupsRawJson is null
+            ? new List<DrawingMarkupEntity>()
+            : BluebeamMarkupParser.Parse(outcome.MarkupsRawJson, extraction.DrawingExtractionId, extraction.DrawingRevisionId);
         var existingRows = await context.DrawingMarkups
             .Where(row => row.DrawingRevisionId == extraction.DrawingRevisionId)
             .ToListAsync(cancellationToken);
@@ -47,14 +53,35 @@ public sealed class DrawingExtractionResultWriter
         extraction.Status = (int)DrawingExtractionStatus.Succeeded;
         extraction.CompletedAt = now;
         extraction.ErrorMessage = null;
-        extraction.PageCount = textLayer.Pages.Count;
-        extraction.PagesJson = PdfTextLayerExtractor.GeometryJson(textLayer.Geometry);
-        extraction.MarkupCount = markups.Count;
+        extraction.PageCount = outcome.TextLayer.Pages.Count;
+        extraction.PagesJson = PdfTextLayerExtractor.GeometryJson(outcome.TextLayer.Geometry);
+        extraction.MarkupCount = outcome.MarkupsRawJson is null ? null : markups.Count;
+        extraction.MarkupsNote = outcome.MarkupsNote;
+        StampSummary(extraction, outcome.Structure);
         revision.MetadataExtractedAt = now;
         await context.SaveChangesAsync(cancellationToken);
 
-        await WriteAuditRowAsync(extraction, revision, markups.Count, requestedBy, cancellationToken);
+        await WriteAuditRowAsync(extraction, revision, requestedBy, cancellationToken);
     }
+
+    // The register-facing summary: what the sheet says it is and how much the read found.
+    private static void StampSummary(DrawingExtractionEntity extraction, DrawingStructure structure)
+    {
+        var scale = structure.Scales.FirstOrDefault(page => page.MmPerPoint is not null);
+        extraction.DimensionCount = structure.Dimensions.Count;
+        extraction.CalloutCount = structure.Callouts.Count;
+        extraction.ShapeCount = structure.Shapes.Count;
+        extraction.Scale = scale is null ? null : ScaleLabel(scale);
+        extraction.ScaleVerified = scale is null ? null : scale.Verified;
+        extraction.DrawingNumber = Clip(structure.TitleBlock.DrawingNumber, 128);
+        extraction.RevisionLabel = Clip(structure.TitleBlock.Revision ?? structure.Revisions.LastOrDefault()?.Id, 32);
+    }
+
+    public static string ScaleLabel(DrawingPageScale scale) =>
+        scale.Declared ?? (scale.MmPerPoint is { } mm ? $"1:{Math.Round(mm * 72 / 25.4)}" : "");
+
+    private static string? Clip(string? value, int maxLength) =>
+        value is null ? null : value.Length <= maxLength ? value : value[..maxLength];
 
     public async Task RecordFailureAsync(
         DrawingExtractionEntity extraction, Exception failure, CancellationToken cancellationToken)
@@ -87,11 +114,14 @@ public sealed class DrawingExtractionResultWriter
 
     // Best-effort, after the result is safely saved — an audit hiccup must never fail the run.
     private async Task WriteAuditRowAsync(
-        DrawingExtractionEntity extraction, DrawingRevisionEntity revision, int markupCount,
-        string requestedBy, CancellationToken cancellationToken)
+        DrawingExtractionEntity extraction, DrawingRevisionEntity revision, string requestedBy,
+        CancellationToken cancellationToken)
     {
         try
         {
+            var scale = extraction.Scale is null ? "no scale"
+                : $"scale {extraction.Scale}{(extraction.ScaleVerified == true ? " (verified)" : " (unverified)")}";
+            var markups = extraction.MarkupCount is { } count ? $"{count} Revu markup(s)" : "no Revu markups";
             context.AuditEvents.Add(new AuditEventEntity
             {
                 AuditEventId = Guid.NewGuid().ToString("N"),
@@ -101,7 +131,9 @@ public sealed class DrawingExtractionResultWriter
                 Pathway = "",
                 ProjectId = extraction.ProjectId,
                 RecordReference = "",
-                Detail = $"Extracted drawing data from \"{revision.FileName}\" — {markupCount} markup(s)"
+                Detail = $"Extracted drawing data from \"{revision.FileName}\" — "
+                    + $"{extraction.DimensionCount ?? 0} dimension(s), {extraction.CalloutCount ?? 0} note(s), "
+                    + $"{extraction.ShapeCount ?? 0} shape(s), {scale}, {markups}"
             });
             await context.SaveChangesAsync(cancellationToken);
         }
