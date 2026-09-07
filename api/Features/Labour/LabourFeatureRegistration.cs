@@ -91,6 +91,26 @@ public static class LabourFeatureRegistration
         services.AddScoped<ICommandHandler<RejectWorkerDayByName, TimesheetDetail>, RejectWorkerDayByNameHandler>();
         services.AddScoped<RejectWorkerDayByNameAuthorisation>();
         services.AddScoped<RejectWorkerDayByNameValidation>();
+        // Corrections (2026-09-07, the accountant's ask): unapprove puts an approved day back to
+        // Submitted (cost withdrawn), move re-homes a day on another project — MD/FD/Admin only,
+        // reason mandatory, audited; the by-name wrappers (unapprove_worker_day / move_worker_day)
+        // run the same handlers.
+        services.AddScoped<UnapproveTimesheetHandler>();
+        services.AddScoped<ICommandHandler<UnapproveTimesheet, TimesheetDetail>>(
+            provider => provider.GetRequiredService<UnapproveTimesheetHandler>());
+        services.AddScoped<UnapproveTimesheetAuthorisation>();
+        services.AddScoped<UnapproveTimesheetValidation>();
+        services.AddScoped<MoveTimesheetHandler>();
+        services.AddScoped<ICommandHandler<MoveTimesheet, TimesheetMoveResult>>(
+            provider => provider.GetRequiredService<MoveTimesheetHandler>());
+        services.AddScoped<MoveTimesheetAuthorisation>();
+        services.AddScoped<MoveTimesheetValidation>();
+        services.AddScoped<ICommandHandler<UnapproveWorkerDayByName, TimesheetDetail>, UnapproveWorkerDayByNameHandler>();
+        services.AddScoped<UnapproveWorkerDayByNameAuthorisation>();
+        services.AddScoped<UnapproveWorkerDayByNameValidation>();
+        services.AddScoped<ICommandHandler<MoveWorkerDayByName, TimesheetMoveResult>, MoveWorkerDayByNameHandler>();
+        services.AddScoped<MoveWorkerDayByNameAuthorisation>();
+        services.AddScoped<MoveWorkerDayByNameValidation>();
 
         // Labour overview: forecast, placement grid, chase list (scope §4–§5).
         services.AddScoped<IQueryHandler<GetLabourOverview, LabourOverviewSnapshot>, GetLabourOverviewHandler>();

@@ -8,6 +8,7 @@
 @inject NavigationManager Nav
 @inject IQueryClient Queries
 @inject IJSRuntime JS
+@inject Jewel.JPMS.Features.Projects.ProjectListReadModel Projects
 @implements IDisposable
 
 <PageTitle>Labour · JPMS</PageTitle>
@@ -112,7 +113,9 @@
                                               CostCodeOptions="@CostCodeOptions"
                                               @bind-EditCostCode="editCostCode" @bind-EditHours="editHours"
                                               OnSave="SaveEditAsync" OnCancelEdit="() => editingId = null"
-                                              OnAdjust="() => StartEdit(timesheet)" OnReject="() => StartReject(timesheet)" />
+                                              OnAdjust="() => StartEdit(timesheet)" OnReject="() => StartReject(timesheet)"
+                                              CanCorrect="CanCorrect"
+                                              OnUnapprove="() => StartUnapprove(timesheet)" OnMove="() => StartMove(timesheet)" />
                             }
                         </tbody>
                     </table>
@@ -266,6 +269,78 @@
         {
             <Notice Tone="Tone.Negative">@rejectError</Notice>
         }
+    </Modal>
+
+    @* ---- Unapprove: the MD/FD's reversal of a posted approval (2026-09-07). Reason first —
+           it is the audit record; the day goes back to Submitted and its cost is withdrawn. ---- *@
+    <Modal IsOpen="@(unapproving is not null)" Title="Reverse approval"
+           ConfirmLabel="@(isCorrecting ? "Reversing…" : "Reverse approval")"
+           ConfirmDisabled="@(isCorrecting || string.IsNullOrWhiteSpace(correctionReason))"
+           OnCancel="CloseCorrection" OnConfirm="ConfirmUnapproveAsync"
+           DismissOnOverlayClick="false">
+        @if (unapproving is not null)
+        {
+            <p class="text-sm text-content mb-2">
+                <span class="font-medium">@unapproving.WorkerName</span> · @unapproving.WorkedOn.ToString("ddd dd MMM yyyy") ·
+                @unapproving.Hours h on @unapproving.CostCode · £@unapproving.CostAmount.ToString("N2") approved
+            </p>
+            <p class="text-xs text-content-subtle mb-3">
+                The day goes back to Submitted and its £@unapproving.CostAmount.ToString("N2") leaves Financials, the
+                settlement view and the site P&amp;L now. What it loses — rate, cost, who approved it and when — is
+                kept on the audit trail with your name and the reason below. You can then adjust, re-code and
+                approve it again, or reject it back to the worker.
+            </p>
+        }
+        <label class="block text-sm text-content-muted mb-2">Reason (required — this is what the audit trail records)
+            <input class="field mt-1 w-full" @bind="correctionReason" @bind:event="oninput"
+                   placeholder="e.g. Approved with the wrong hours — his timesheet message says 4h, not 8h" />
+        </label>
+        @if (correctionError is not null)
+        {
+            <Notice Tone="Tone.Negative">@correctionError</Notice>
+        }
+    </Modal>
+
+    @* ---- Move: re-home a day on the right project as it stands (2026-09-07). An approved day
+           meets the destination's budget hard-block; the tick is the MD/FD's override. ---- *@
+    <Modal IsOpen="@(moving is not null)" Title="Move to another project"
+           ConfirmLabel="@(isCorrecting ? "Moving…" : moveOverBudget ? "Move over budget" : "Move day")"
+           ConfirmDisabled="@(isCorrecting || string.IsNullOrWhiteSpace(correctionReason) || moveToProjectId == "")"
+           OnCancel="CloseCorrection" OnConfirm="ConfirmMoveAsync"
+           DismissOnOverlayClick="false">
+        @if (moving is not null)
+        {
+            <p class="text-sm text-content mb-2">
+                <span class="font-medium">@moving.WorkerName</span> · @moving.WorkedOn.ToString("ddd dd MMM yyyy") ·
+                @moving.Hours h on @(moving.CostCode == "" ? "no cost code" : moving.CostCode) · @moving.Status
+                @if (moving.Status == TimesheetStatus.Approved) { <text> · £@moving.CostAmount.ToString("N2")</text> }
+            </p>
+            <p class="text-xs text-content-subtle mb-3">
+                The day moves as it stands — date, hours, cost code, status@(moving.Status == TimesheetStatus.Approved ? " and its approval" : "") —
+                and appears on the other project's Labour tab for this week. Both projects' audit history record the move.
+            </p>
+        }
+        <div class="space-y-3">
+            <FormField Label="Move to">
+                <SearchSelect Options="@MoveProjectOptions" WidthClass="w-full mt-1" Placeholder="Project…"
+                              @bind-Value="moveToProjectId" />
+            </FormField>
+            <label class="block text-sm text-content-muted">Reason (required — this is what the audit trail records)
+                <input class="field mt-1 w-full" @bind="correctionReason" @bind:event="oninput"
+                       placeholder="e.g. Worked Ravenswood on the Monday per his timesheet message, entered on Woodhouse" />
+            </label>
+            @if (moveBudgetBlock is not null)
+            {
+                <Notice Tone="Tone.Negative">
+                    <p class="mb-2">@moveBudgetBlock</p>
+                    <Checkbox @bind-Value="moveOverBudget" Label="Move anyway — over budget, with the reason above on the audit trail" />
+                </Notice>
+            }
+            @if (correctionError is not null)
+            {
+                <Notice Tone="Tone.Negative">@correctionError</Notice>
+            }
+        </div>
     </Modal>
 
     @* ---- Over-budget approval: the MD/FD's deliberate, audited exception to the hard-block. ---- *@

@@ -36,6 +36,17 @@ internal static class LabourRoleSets
     public static readonly RoleSet OverrideBudgetBlock =
         RoleSet.Of(Role.Admin, JpmsRoles.Director, JpmsRoles.FinanceDirector);
 
+    /// <summary>
+    /// May correct what approval has already posted: put an approved timesheet back to Submitted
+    /// (withdrawing its cost) or move a timesheet to another project. Decision 2026-09-07, from
+    /// the accountant's ask: the same MD/FD/Admin set that may sign an overspend, and no wider —
+    /// a PM who approved a day on the wrong project asks the FD, and the FD's reason is the
+    /// audit record. Named separately from OverrideBudgetBlock so the two decisions can drift
+    /// apart later without a silent widening of either.
+    /// </summary>
+    public static readonly RoleSet CorrectApprovedTime =
+        RoleSet.Of(Role.Admin, JpmsRoles.Director, JpmsRoles.FinanceDirector);
+
     /// <summary>May manage the settlement reconciliation (covers, variances).</summary>
     public static readonly RoleSet ManageSettlement =
         RoleSet.Of(Role.Admin, JpmsRoles.Director, JpmsRoles.FinanceDirector,

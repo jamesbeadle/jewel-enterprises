@@ -59,7 +59,7 @@ internal static class WorkerWeekTimesheets
 
     public static string NotSubmittedDetail(TimesheetEntity timesheet) =>
         timesheet.Status == (int)TimesheetStatus.Approved
-            ? "already approved — approved timesheets are immutable (cost has posted)"
+            ? "already approved — cost has posted; only the MD/FD can reverse it (unapprove_worker_day, with a reason) or move it to another project (move_worker_day)"
             : "rejected — the worker must resubmit before it can be acted on";
 
     /// <summary>In-week check shared by the validations, so a date outside the stated week is

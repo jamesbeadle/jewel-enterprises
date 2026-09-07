@@ -85,8 +85,9 @@ internal sealed partial class LabourAndBackOfficeActions
             Description: "Applies ONE cost code to a worker's Submitted timesheets in a week on "
                 + "one project — the Labour tab's bulk coding, by name. Coding is the step before "
                 + "approval: an uncoded day cannot be approved. Runs the grid's own Adjust per "
-                + "row (hours unchanged); rows already approved are immutable and report so "
-                + "rather than change. Per-day outcomes say exactly what was coded and what "
+                + "row (hours unchanged); rows already approved report so rather than change "
+                + "(the MD/FD's unapprove_worker_day is the way back). Per-day outcomes say "
+                + "exactly what was coded and what "
                 + "was not.",
             CommandType: typeof(CodeWorkerWeekByName),
             ResultType: typeof(WorkerWeekCodingResult),
@@ -108,8 +109,10 @@ internal sealed partial class LabourAndBackOfficeActions
             Description: "Approves a worker's Submitted timesheets in a week on one project — the "
                 + "Labour tab's Approve selected, by name. Approval POSTS the hours to Financials "
                 + "as actual labour cost at the worker's rate, and an approved timesheet is "
-                + "immutable — its cost code and hours can never be changed afterwards (the "
-                + "correction path is reject-and-resubmit). Uncoded days are refused until coded "
+                + "closed to the approver — its cost code and hours cannot be changed afterwards; "
+                + "only the MD/FD can reverse it (unapprove_worker_day) or move it to another "
+                + "project (move_worker_day), both with a reason and audited. Uncoded days are "
+                + "refused until coded "
                 + "(code_worker_week); the per-cost-code budget hard-block applies, and a "
                 + "budget refusal reports the code's current allocated/spent/committed figures. "
                 + "MD/FD/Admin may deliberately approve PAST the block with allowOverBudget: true "
@@ -139,7 +142,7 @@ internal sealed partial class LabourAndBackOfficeActions
             Description: "Rejects a worker's Submitted timesheet on one date back to them with a "
                 + "reason — the Labour tab's Reject, by name. The worker reads the reason on "
                 + "their My day page and can resubmit; nothing is deleted. Approved timesheets "
-                + "are immutable and refuse.",
+                + "refuse — the MD/FD's unapprove_worker_day puts one back to Submitted first.",
             CommandType: typeof(RejectWorkerDayByName),
             ResultType: typeof(TimesheetDetail),
             AuthorisationType: typeof(RejectWorkerDayByNameAuthorisation),
@@ -150,5 +153,69 @@ internal sealed partial class LabourAndBackOfficeActions
             Notes: "workerName as the user says it; projectId from list_projects; date is the "
                 + "single day being rejected. reason is mandatory and the worker sees it — write "
                 + "it to them (\"Hours look double-entered — please re-check Tuesday\")."),
+
+        // ---- Corrections (2026-09-07, the accountant's ask): the FD's way back once approval
+        //      has posted. Same handlers as the Labour tab's row actions, same MD/FD/Admin gate,
+        //      same downstream guards (signed-off week part, settlement cover, Xero coding run),
+        //      same audit rows. ----
+
+        new AiAction(
+            Name: "unapprove_worker_day",
+            Area: "Labour",
+            Description: "Reverses the approval of a worker's timesheet on one date on one "
+                + "project — the day goes back to Submitted and its posted cost is withdrawn "
+                + "from Financials, the settlement view and the site P&L in the same save. The "
+                + "rate, £, approver and approval time the row loses are kept on the audit row "
+                + "with the reason. MD/FD/Admin only. Refuses when the day's month has gone "
+                + "downstream — a signed-off week part, an invoice line marked as covering the "
+                + "day, or a Xero coding run that has posted the worker's month — naming the "
+                + "step that undoes it. The day is then the approver's again: adjust or re-code "
+                + "and approve, or reject_worker_day back to the worker.",
+            CommandType: typeof(UnapproveWorkerDayByName),
+            ResultType: typeof(TimesheetDetail),
+            AuthorisationType: typeof(UnapproveWorkerDayByNameAuthorisation),
+            ValidationType: typeof(UnapproveWorkerDayByNameValidation),
+            VisibleTo: LabourRoleSets.CorrectApprovedTime,
+            EmailStamps: new[] { "ReversedByEmail" },
+            NameStamps: Array.Empty<string>(),
+            RequiresConfirmation: true,
+            Notes: "Show the user the day as it stands (view_labour_week — worker, date, hours, "
+                + "cost code, approved £) and get their yes first: this withdraws posted cost. "
+                + "workerName as the user says it; projectId from list_projects; date is the "
+                + "single day. reason is mandatory and is the audit record — write what "
+                + "happened (\"Approved on Woodhouse in error — worked Ravenswood, per his "
+                + "timesheet message\"). If the aim is the RIGHT PROJECT rather than different "
+                + "hours or code, move_worker_day does it in one step and keeps the approval."),
+
+        new AiAction(
+            Name: "move_worker_day",
+            Area: "Labour",
+            Description: "Moves a worker's timesheet on one date from one project to another, "
+                + "keeping everything on the row — date, hours, cost code, status and, when "
+                + "approved, its rate/cost snapshot, approver and approval time — so the cost "
+                + "simply changes which project's Financials carry it; a linked site-register "
+                + "row moves with it. Any status. MD/FD/Admin only. An approved day re-meets the "
+                + "destination's per-cost-code budget hard-block exactly as approval would: a "
+                + "refusal comes back as budgetBlockReason with nothing moved, and "
+                + "allowOverBudget: true (same override, same reason, same audit row as an "
+                + "over-budget approval) moves it anyway. Refuses when the source month has "
+                + "been settled or coded to Xero, naming the step that undoes it. Writes an "
+                + "audit row on both projects.",
+            CommandType: typeof(MoveWorkerDayByName),
+            ResultType: typeof(TimesheetMoveResult),
+            AuthorisationType: typeof(MoveWorkerDayByNameAuthorisation),
+            ValidationType: typeof(MoveWorkerDayByNameValidation),
+            VisibleTo: LabourRoleSets.CorrectApprovedTime,
+            EmailStamps: new[] { "MovedByEmail" },
+            NameStamps: Array.Empty<string>(),
+            RequiresConfirmation: true,
+            Notes: "Show the user the day as it stands (view_labour_week) and the destination "
+                + "project by reference and name, and get their yes first. workerName as the "
+                + "user says it; projectId is where the day IS and toProjectId where it should "
+                + "be, both from list_projects; date is the single day. reason is mandatory and "
+                + "lands on both projects' audit history. allowOverBudget is never a default: "
+                + "offer it only after a budgetBlockReason comes back, only for the MD/FD/Admin, "
+                + "and put the block and the user's own reason in front of them in the confirm "
+                + "turn — re-allocating budget (set_cost_code_budget) may be the better answer."),
     };
 }

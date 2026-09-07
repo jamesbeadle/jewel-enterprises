@@ -11,9 +11,32 @@ description: "Labour and timesheet doctrine — how hours become cost and what i
 2. **Code before approving** (code_worker_week): uncoded days REFUSE approval.
 3. **approve_worker_week posts cost.** Approval snapshots the worker's rate effective on the
    worked date and posts the hours to Financials as actual labour cost. An approved timesheet is
-   IMMUTABLE — hours and cost code can never change afterwards; the correction path is
-   reject-and-resubmit (reject_worker_day, with a reason the worker reads) or a settlement
-   variance. Never promise an edit to an approved row.
+   CLOSED to the approver — hours and cost code cannot be edited on it; before approval the
+   correction path is reject-and-resubmit (reject_worker_day, with a reason the worker reads).
+   Never promise an edit to an approved row.
+
+## Correcting an approved day (2026-09-07 — MD/FD/Admin only, confirm-first, reason mandatory)
+
+An approved day on the wrong project is a normal month-end event. Two actions are the way
+back, and only the MD/FD/Admin hold them; everyone else asks them.
+- **move_worker_day** — the day was worked on ANOTHER PROJECT: moves it as it stands (date,
+  hours, cost code, status, and its approval — rate, £, approver, when — when approved) so the
+  cost simply changes which project's Financials carry it. An approved day meets the
+  destination's budget hard-block exactly as approval would; `budgetBlockReason` comes back
+  with nothing moved, and `allowOverBudget: true` is the same MD/FD override with the same
+  audit row. Prefer this over unapprove when the project is the only thing wrong.
+- **unapprove_worker_day** — the day is wrong in itself (hours, code, shouldn't have been
+  approved): puts it back to Submitted and withdraws its posted cost everywhere in one save;
+  the approval snapshot lives on in the audit row with the reason. Then adjust/re-code and
+  approve again, or reject_worker_day back to the worker.
+- Both REFUSE once the month has gone downstream and name the step that undoes it: a
+  signed-off week part (unapprove only — remove_labour_week_sign_off), an invoice line marked
+  as covering the day (unmark the cover, or post a settlement variance instead), or a Xero
+  coding run that has posted the worker's month (reset_xero_coding_outcome). Relay the
+  refusal; take the named step only with the user's yes.
+- Always view_labour_week first and put the day (worker, date, hours, code, £) and — for a
+  move — the destination by reference and name in front of the user before confirming. The
+  reason is the audit record: write what happened, not "correction".
 
 ## Money rules
 

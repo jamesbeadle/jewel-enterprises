@@ -122,7 +122,17 @@ public enum AuditEventType
     // rows carry the KPI reference and nothing else — no user, no subject, no message id — and
     // the audit endpoint refuses a non-administrator's read narrowed to them. Pathway is "".
     KpiEmailMarked = 38,             // an email was marked as a KPI (KPI-####)
-    KpiEmailRemoved = 39             // a KPI mark was taken off an email
+    KpiEmailRemoved = 39,            // a KPI mark was taken off an email
+    // Labour corrections (written since 2026-09-07, the accountant's ask): an approved day on the
+    // wrong project is a normal month-end event, and until now the only remedies were a
+    // settlement variance or a request to the developer. Both corrections are MD/FD/Admin only
+    // with a mandatory reason, and these rows are the record — LabourApprovalReversed carries
+    // the approval snapshot the day lost (rate, £, who approved, when), LabourDayMoved the
+    // projects either side; a move of an approved day past the destination's budget also writes
+    // LabourBudgetOverridden, exactly as an over-budget approval does. Not client-facing:
+    // Pathway is "", like CostCentreRecoded.
+    LabourApprovalReversed = 40,     // an approved timesheet was put back to Submitted, its posted cost withdrawn
+    LabourDayMoved = 41              // a timesheet was moved to another project (status, hours and snapshot kept)
 }
 
 // One append-only audit event. WebLink (when present) opens the email or draft in Outlook on the

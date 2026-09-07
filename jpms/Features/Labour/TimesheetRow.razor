@@ -46,6 +46,24 @@
         {
             <button type="button" class="btn-secondary mr-1" @onclick="() => OnAdjust.InvokeAsync()">Adjust</button>
             <button type="button" class="btn-secondary" @onclick="() => OnReject.InvokeAsync()">Reject</button>
+            @if (CanCorrect)
+            {
+                <button type="button" class="btn-secondary ml-1" title="Move this day to another project as it stands"
+                        @onclick="() => OnMove.InvokeAsync()">Move…</button>
+            }
+        }
+        else if (CanCorrect)
+        {
+            @* The MD/FD's way back once approval has posted (2026-09-07): reverse the approval
+               (cost withdrawn, day back to Submitted) or move the day to the right project with
+               its approval intact. Both ask for a reason and write the audit trail. *@
+            @if (Timesheet.Status == TimesheetStatus.Approved)
+            {
+                <button type="button" class="btn-secondary mr-1" title="Put this day back to Submitted and withdraw its posted cost"
+                        @onclick="() => OnUnapprove.InvokeAsync()">Unapprove</button>
+            }
+            <button type="button" class="btn-secondary" title="Move this day to another project as it stands"
+                    @onclick="() => OnMove.InvokeAsync()">Move…</button>
         }
     </td>
 </tr>
@@ -66,4 +84,9 @@
     [Parameter] public EventCallback OnCancelEdit { get; set; }
     [Parameter] public EventCallback OnAdjust { get; set; }
     [Parameter] public EventCallback OnReject { get; set; }
+    /// <summary>The page's mirror of LabourRoleSets.CorrectApprovedTime (MD/FD/Admin) — decides
+    /// whether Unapprove / Move… are offered; the server re-checks.</summary>
+    [Parameter] public bool CanCorrect { get; set; }
+    [Parameter] public EventCallback OnUnapprove { get; set; }
+    [Parameter] public EventCallback OnMove { get; set; }
 }

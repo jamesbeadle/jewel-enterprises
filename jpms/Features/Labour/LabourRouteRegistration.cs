@@ -80,6 +80,15 @@ public static class LabourRouteRegistration
             new CommandRoute("POST", "/api/labour/timesheets/{timesheetId}/rejection",
                 command => $"/api/labour/timesheets/{((RejectTimesheet)command).TimesheetId}/rejection"));
 
+        // Corrections (2026-09-07): the MD/FD's way back once approval has posted.
+        commands.Register<UnapproveTimesheet, TimesheetDetail>(
+            new CommandRoute("POST", "/api/labour/timesheets/{timesheetId}/unapproval",
+                command => $"/api/labour/timesheets/{((UnapproveTimesheet)command).TimesheetId}/unapproval"));
+
+        commands.Register<MoveTimesheet, TimesheetMoveResult>(
+            new CommandRoute("POST", "/api/labour/timesheets/{timesheetId}/move",
+                command => $"/api/labour/timesheets/{((MoveTimesheet)command).TimesheetId}/move"));
+
         commands.Register<SetXeroLineTimesheetCover, Acknowledgement>(
             CommandRoute.Post("/api/labour/timesheet-covers"));
 

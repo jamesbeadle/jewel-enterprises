@@ -228,6 +228,28 @@ public sealed class HttpLabourStore : ILabourStore
         return rejected;
     }
 
+    public async Task<TimesheetDetail> UnapproveTimesheetAsync(string projectId, string timesheetId, string reason)
+    {
+        var reversed = await commands.SendAsync(new UnapproveTimesheet(timesheetId, reason), CancellationToken.None);
+        await timesheetsReadModel.RefreshAsync(projectId, CancellationToken.None);
+        // The settlement view counts approved £ — it just lost some.
+        if (settlementReadModel.LoadedFor(projectId)) await settlementReadModel.RefreshAsync(projectId, CancellationToken.None);
+        return reversed;
+    }
+
+    public async Task<TimesheetMoveResult> MoveTimesheetAsync(string projectId, string timesheetId, string toProjectId, string reason,
+        bool allowOverBudget = false)
+    {
+        var result = await commands.SendAsync(new MoveTimesheet(timesheetId, toProjectId, reason, allowOverBudget), CancellationToken.None);
+        if (!result.Moved) return result;
+        // The row has left this project's grid (and register, when it came from a sign-in); the
+        // destination's read models refresh on their own next visit (stale-while-revalidate).
+        await timesheetsReadModel.RefreshAsync(projectId, CancellationToken.None);
+        if (attendanceReadModel.LoadedFor(projectId)) await attendanceReadModel.RefreshAsync(projectId, CancellationToken.None);
+        if (settlementReadModel.LoadedFor(projectId)) await settlementReadModel.RefreshAsync(projectId, CancellationToken.None);
+        return result;
+    }
+
     public LabourOverviewSnapshot? Overview(int year, int month)
     {
         var key = $"{year:0000}-{month:00}";

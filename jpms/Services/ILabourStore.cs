@@ -65,6 +65,13 @@ public interface ILabourStore
     Task<LabourApprovalResult> ApproveTimesheetsAsync(string projectId, IReadOnlyList<string> timesheetIds,
         bool allowOverBudget = false, string overBudgetReason = "");
     Task<TimesheetDetail> RejectTimesheetAsync(string projectId, string timesheetId, string reason);
+    /// <summary>MD/FD/Admin correction (2026-09-07): puts an approved row back to Submitted,
+    /// withdrawing its posted cost; the reason is mandatory and lands on the audit trail.</summary>
+    Task<TimesheetDetail> UnapproveTimesheetAsync(string projectId, string timesheetId, string reason);
+    /// <summary>MD/FD/Admin correction (2026-09-07): moves a row to another project as it stands.
+    /// Moved = false carries the destination's budget refusal; allowOverBudget re-sends past it.</summary>
+    Task<TimesheetMoveResult> MoveTimesheetAsync(string projectId, string timesheetId, string toProjectId, string reason,
+        bool allowOverBudget = false);
 
     // Labour overview: the company-wide month view (forecast, placement grid, chase, sign-off).
     LabourOverviewSnapshot? Overview(int year, int month);

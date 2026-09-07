@@ -82,3 +82,31 @@ public sealed record RejectWorkerDayByName(
     string WorkerName,
     DateTimeOffset Date,
     string Reason) : ICommand<TimesheetDetail>;
+
+// ---- Corrections by name (2026-09-07, the accountant's ask) -----------------------------------
+// The connector twins of UnapproveTimesheet / MoveTimesheet: keyed by worker name and date, and
+// wrappers over the SAME handlers, so an FD correcting a day in Claude meets exactly the gates,
+// refusals and audit rows the Labour tab's Actions menu gives them.
+
+/// <summary>Puts a worker's approved timesheet on one date on one project back to Submitted with
+/// a reason — withdrawing its posted cost. MD/FD/Admin only. ReversedByEmail is stamped
+/// server-side from the connector caller.</summary>
+public sealed record UnapproveWorkerDayByName(
+    string ProjectId,
+    string WorkerName,
+    DateTimeOffset Date,
+    string Reason,
+    string ReversedByEmail = "") : ICommand<TimesheetDetail>;
+
+/// <summary>Moves a worker's timesheet on one date from one project to another with a reason —
+/// any status, everything on the row kept. An approved day meets the destination's budget
+/// hard-block; AllowOverBudget is the MD/FD/Admin override. MovedByEmail is stamped server-side
+/// from the connector caller.</summary>
+public sealed record MoveWorkerDayByName(
+    string ProjectId,
+    string WorkerName,
+    DateTimeOffset Date,
+    string ToProjectId,
+    string Reason,
+    bool AllowOverBudget = false,
+    string MovedByEmail = "") : ICommand<TimesheetMoveResult>;
