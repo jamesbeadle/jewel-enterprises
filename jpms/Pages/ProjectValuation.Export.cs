@@ -9,8 +9,14 @@ public partial class ProjectValuation
     // ---- Working-copy Excel export ------------------------------------------
     // Same stem as the working-copy PDF's file name (ValuationReportFileNames), so the two
     // downloads of one claim sit together; the date is stamped on by the export button.
-    private string LiveExportFileName =>
-        ValuationReportFileNames.Stem(Projects.Find(ProjectId)?.Reference ?? "", Selected?.DisplayName);
+    private string LiveExportFileName
+    {
+        get
+        {
+            var project = Projects.Find(ProjectId);
+            return ValuationReportFileNames.Stem(project?.Reference ?? "", project?.Name, Selected?.DisplayName);
+        }
+    }
 
     // The live report in the same workbook shape as a snapshot export (Summary with variations
     // as one row per order, one tab per variation order carrying its lines, and the Pending

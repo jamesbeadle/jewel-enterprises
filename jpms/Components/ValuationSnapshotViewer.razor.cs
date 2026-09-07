@@ -17,8 +17,11 @@ public partial class ValuationSnapshotViewer
     private bool loadFailed;
     private string? loadedSnapshotId;
 
-    private string ExportFileName(ValuationReportSnapshot snapshot) =>
-        ValuationReportFileNames.Stem(Projects.Find(snapshot.ProjectId)?.Reference ?? "", snapshot.Label);
+    private string ExportFileName(ValuationReportSnapshot snapshot)
+    {
+        var project = Projects.Find(snapshot.ProjectId);
+        return ValuationReportFileNames.Stem(project?.Reference ?? "", project?.Name, snapshot.Label);
+    }
 
     // Null until the mailbox has ANSWERED — an empty list is a real "none", never a placeholder
     // (the loading convention: nullable backing field, gate on the null).

@@ -79,7 +79,7 @@ public sealed class ValuationReportSnapshotPdfBuilder
         // Named exactly as the snapshot viewer names its spreadsheet, so the pair match.
         return new ValuationReportStatement(
             project.ProjectId, project.Reference, project.Name, project.ClientName, detail, IsDraft: false,
-            ValuationReportFileNames.For(project.Reference, snapshot.Label, snapshot.TakenAt),
+            ValuationReportFileNames.For(project.Reference, project.Name, snapshot.Label, snapshot.TakenAt),
             await CostCentreNamesAsync(cancellationToken));
     }
 
@@ -111,7 +111,7 @@ public sealed class ValuationReportSnapshotPdfBuilder
         // document, so this PDF and the page's spreadsheet of the same claim share a name.
         return new ValuationReportStatement(
             projectId, project.Reference, project.Name, project.ClientName, detail, IsDraft: true,
-            ValuationReportFileNames.For(project.Reference, claimName, DateTimeOffset.UtcNow),
+            ValuationReportFileNames.For(project.Reference, project.Name, claimName, DateTimeOffset.UtcNow),
             await CostCentreNamesAsync(cancellationToken));
     }
 
