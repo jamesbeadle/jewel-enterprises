@@ -22,11 +22,29 @@ public partial class DocumentControl
     private DateTime? subcontractorExpiry;
 
 
+    // ---- Project filter: narrows every view (Queue / Filed / Discarded) and the header count
+    //      to one project. Client-side — the store already lists every item — and matched on
+    //      the item's ProjectIdHint, which is the project set when the attachment was sent to
+    //      triage from the Control Centre. "" is "All projects". ----
+    private string projectFilter = "";
+
     private IReadOnlyList<DocumentControlItem> AllItems => items ?? Array.Empty<DocumentControlItem>();
+    private IReadOnlyList<DocumentControlItem> FilteredItems =>
+        string.IsNullOrWhiteSpace(projectFilter)
+            ? AllItems
+            : AllItems.Where(item => string.Equals(item.ProjectIdHint, projectFilter, StringComparison.Ordinal)).ToList();
     private IReadOnlyList<DocumentControlItem> PendingItems =>
-        AllItems.Where(item => item.Status == DocumentControlStatus.Pending).ToList();
+        FilteredItems.Where(item => item.Status == DocumentControlStatus.Pending).ToList();
     private IReadOnlyList<DocumentControlItem> VisibleItems =>
-        AllItems.Where(item => item.Status == StatusFor(view)).ToList();
+        FilteredItems.Where(item => item.Status == StatusFor(view)).ToList();
+
+    private bool IsFilteredByProject => !string.IsNullOrWhiteSpace(projectFilter);
+    private string? FilterProjectName => ProjectNameFor(projectFilter);
+
+    private IReadOnlyList<SearchSelect.Option> ProjectFilterOptions =>
+        (ProjectList.Current ?? Array.Empty<Project>()).InWorkOrder()
+            .Select(project => new SearchSelect.Option(project.ProjectId, $"{project.Reference} — {project.Name}"))
+            .ToList();
 
     private DocumentControlItem? Selected =>
         selectedId is null ? null : AllItems.FirstOrDefault(item => item.DocumentControlItemId == selectedId);
@@ -38,10 +56,13 @@ public partial class DocumentControl
         _ => DocumentControlStatus.Pending
     };
 
-    private string EmptyText => view switch
+    private string EmptyText => (view, IsFilteredByProject) switch
     {
-        DocView.Filed => "Nothing has been filed yet.",
-        DocView.Discarded => "Nothing has been discarded.",
+        (DocView.Filed, true) => "Nothing has been filed for this project.",
+        (DocView.Filed, false) => "Nothing has been filed yet.",
+        (DocView.Discarded, true) => "Nothing has been discarded for this project.",
+        (DocView.Discarded, false) => "Nothing has been discarded.",
+        (_, true) => "No documents waiting for this project.",
         _ => "No documents waiting."
     };
 
@@ -107,6 +128,18 @@ public partial class DocumentControl
         doneNote = null;
         // The open document stays open only if it lives in the new view.
         if (Selected is { } open && open.Status != StatusFor(next)) selectedId = null;
+    }
+
+    private void OnProjectFilterChanged(string value)
+    {
+        value ??= "";
+        if (projectFilter == value) return;
+        projectFilter = value;
+        doneNote = null;
+        // Same rule as switching view: the open document stays open only if it is still listed.
+        if (Selected is { } open && IsFilteredByProject
+            && !string.Equals(open.ProjectIdHint, projectFilter, StringComparison.Ordinal))
+            selectedId = null;
     }
 
     private void Select(string itemId)
