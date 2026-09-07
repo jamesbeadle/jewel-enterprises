@@ -2,6 +2,7 @@ using Jewel.JPMS.Api.Cqrs;
 using Jewel.JPMS.Api.Data;
 using Jewel.JPMS.Api.Data.Entities;
 using Jewel.JPMS.Api.Features.Audit;
+using Jewel.JPMS.Api.Features.Closeout;
 using Jewel.JPMS.Api.Features.Drawings.Storage;
 using Jewel.JPMS.Api.Features.MailboxIntake.Compose;
 using Jewel.JPMS.Api.Features.MailboxIntake.Graph;
@@ -403,6 +404,7 @@ public sealed class SendMailboxEmailHandlerTests
                 new ComposeHtmlPipeline(),
                 new AuditTrail(Context, actor, NullLogger<AuditTrail>.Instance),
                 new TodoEmailActivityRecorder(Context, new TodoActivityRecorder(Context, actor), NullLogger<TodoEmailActivityRecorder>.Instance),
+                new DefectSupplierSendRecorder(Context, NullLogger<DefectSupplierSendRecorder>.Instance),
                 CreateRequest);
         }
 

@@ -31,6 +31,9 @@ public interface ITodoStore
     /// <summary>The items linked to one item — every other item sharing a tagged email with it,
     /// derived live from the same mail tags as <see cref="ListEmailsAsync"/>.</summary>
     Task<IReadOnlyList<TodoItem>> ListLinkedAsync(string todoItemId, CancellationToken cancellationToken = default);
+    /// <summary>The to-dos ABOUT one record (TodoItem.AboutRecordType/AboutRecordId) — a record
+    /// page's To-dos panel.</summary>
+    Task<IReadOnlyList<TodoItem>> ListAboutRecordAsync(RecordType recordType, string recordId, CancellationToken cancellationToken = default);
     Task<TodoItem> AddAsync(AddTodoItem command, CancellationToken cancellationToken = default);
     /// <summary>Add a general (company-wide, no-project) item from the /todos browser page.</summary>
     Task<TodoItem> AddGeneralAsync(AddGeneralTodoItem command, CancellationToken cancellationToken = default);

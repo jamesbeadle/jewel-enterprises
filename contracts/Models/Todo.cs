@@ -30,9 +30,19 @@ public sealed record TodoItem(
     // In progress: set by "Working on it", by logging a chase, or by sending an email from the
     // item's page; cleared when the item is reopened. Open = neither started nor complete.
     DateTimeOffset? StartedAt = null,
-    string? StartedByEmail = null)
+    string? StartedByEmail = null,
+    // The record this to-do is ABOUT (2026-09-07) — a defect today ("chase the tiler about
+    // DEF-0012"), any record type tomorrow: the record's page lists its to-dos and the to-do's
+    // page links back. Explicit and stored, unlike the linked-to-dos association, which rides
+    // on shared mail tags — a to-do raised from a record's page has no email to share. Null =
+    // not about any particular record. AboutRecordReference is resolved at read time
+    // ("DEF-0012"), never stored.
+    RecordType? AboutRecordType = null,
+    string? AboutRecordId = null,
+    string? AboutRecordReference = null)
 {
     public bool IsInProgress => !IsComplete && StartedAt is not null;
+    public bool IsAboutRecord => AboutRecordType is not null && !string.IsNullOrWhiteSpace(AboutRecordId);
 }
 
 // One assignee a to-do can be raised for (or moved to): a ROLE, optionally pinned to a named

@@ -13,6 +13,11 @@ public static class TodosRouteRegistration
             new QueryRoute("/api/projects/{projectId}/todos",
                 query => $"/api/projects/{((ListTodoItemsForProject)query).ProjectId}/todos"));
 
+        // The to-dos ABOUT one record — a record page's To-dos panel (a defect's first).
+        queries.Register<ListTodoItemsAboutRecord, IReadOnlyList<TodoItem>>(
+            new QueryRoute("/api/records/{recordType}/{recordId}/todos",
+                query => $"/api/records/{((ListTodoItemsAboutRecord)query).RecordType}/{((ListTodoItemsAboutRecord)query).RecordId}/todos"));
+
         queries.Register<ListTodoAssignableRoles, IReadOnlyList<Role>>(
             QueryRoute.Static("/api/todo-assignable-roles"));
 

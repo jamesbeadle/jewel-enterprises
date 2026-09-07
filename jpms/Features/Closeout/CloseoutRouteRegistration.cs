@@ -16,6 +16,11 @@ public static class CloseoutRouteRegistration
             new QueryRoute("/api/projects/{projectId}/defects",
                 query => $"/api/projects/{((ListDefectsForProject)query).ProjectId}/defects"));
 
+        // One defect for its own page (/projects/{projectId}/defects/{defectId}).
+        queries.Register<GetDefectById, Defect?>(
+            new QueryRoute("/api/defects/{defectId}",
+                query => $"/api/defects/{((GetDefectById)query).DefectId}"));
+
         queries.Register<GetSettlementForProject, SettlementRecord?>(
             new QueryRoute("/api/projects/{projectId}/settlement",
                 query => $"/api/projects/{((GetSettlementForProject)query).ProjectId}/settlement"));

@@ -1,0 +1,97 @@
+@namespace Jewel.JPMS.Features.Closeout.Detail
+@using Jewel.JPMS.Features.Triage.Panels
+@inject IQueryClient Queries
+
+@* The defect's communications: mail tagged "JPMS/@Defect.Reference" in the projects mailbox, read
+   live — tag or untag an email in the Control Centre and this list follows. The list itself is
+   the shared CorrespondenceThreadList (threads, full email on demand, attachments with
+   preview/download, tag chips, Reply/Forward) — the consistent widget wherever a communication
+   is listed. Sending happens here too, in the record-page shape: the composer opens above the
+   list — a reply/forward, a new email, or the page's "Send to supplier" / "Chase supplier"
+   (pre-addressed to the supplier, pre-written from the defect) — and the sent copy carries the
+   defect's tag, so it lands back in this list. Find & tag pulls in what was already exchanged.
+   Newest first — the latest exchange is what people come to check. *@
+
+<Panel Title="Communications" BodyClass="p-5" IsLoading="@loading">
+    <HeaderActions>
+        @if (!loading && failed is null && emails.Count > 0)
+        {
+            <span class="text-xs text-content-subtle">@emails.Count email@(emails.Count == 1 ? "" : "s")</span>
+        }
+        @* Search the whole mailbox and tag what belongs to this defect — the same Find & tag
+           affordance every other record page's correspondence header carries. *@
+        <EmailFinder Type="RecordType.Defect" RecordId="@Defect.DefectId"
+                     RecordReference="@Defect.Reference" ExcludeTag="@OwnTag"
+                     OnLinked="RefreshAsync" />
+        <Toolbar>
+            @if (CanSend)
+            {
+                <ToolbarButton Icon="email" Label="New email — a fresh outbound thread filed to this defect"
+                               Disabled="@(loading || composingNew || replyingTo is not null)" OnClick="StartNewEmail" />
+            }
+            <ToolbarButton Icon="refresh" Label="Refresh — re-read the tagged mail from the mailbox"
+                           Busy="@refreshing" Disabled="@loading" OnClick="RefreshAsync" />
+        </Toolbar>
+    </HeaderActions>
+    <ChildContent>
+        @if (failed is not null)
+        {
+            <Notice Tone="Tone.Negative" Class="mb-3">@failed</Notice>
+        }
+
+        @if (sentNote is not null)
+        {
+            <Notice Tone="Tone.Positive" Class="mb-3">
+                <p class="text-sm font-medium text-positive">@sentNote</p>
+                @if (sentNoteWebLink is not null)
+                {
+                    <a href="@sentNoteWebLink" target="_blank" rel="noopener"
+                       class="text-xs text-accent hover:underline underline-offset-2">Open it in Outlook</a>
+                }
+            </Notice>
+        }
+
+        @if (composingNew)
+        {
+            <div class="mb-4">
+                @if (composeLabel is not null)
+                {
+                    <p class="text-sm text-content-muted mb-2">@composeLabel</p>
+                }
+                <DefectEmailComposer @key="@composeKey" Defect="@Defect" Prefill="@prefill" Projects="@Projects"
+                                     OnSent="HandleSent" OnCancel="CloseComposer" />
+            </div>
+        }
+
+        @if (replyingTo is { } replyAnchor)
+        {
+            <div class="mb-3 space-y-2">
+                <p class="text-sm text-content-muted">
+                    @(composeIsForward ? "Forwarding" : "Replying to") <span class="text-content font-medium">@(string.IsNullOrWhiteSpace(replyAnchor.FromName) ? replyAnchor.FromEmail : replyAnchor.FromName)</span> —
+                    <span class="italic">@replyAnchor.Subject</span>
+                </p>
+                <DefectEmailComposer @key="@($"{replyAnchor.Id}:{composeIsForward}")" Defect="@Defect" ReplyTo="@replyAnchor" Forward="@composeIsForward"
+                                     Projects="@Projects" OnSent="HandleSent" OnCancel="CloseComposer" />
+            </div>
+        }
+
+        @if (failed is null && emails.Count == 0 && !composingNew)
+        {
+            <p class="text-sm text-content-subtle italic">
+                No emails are linked to this defect yet.
+                @if (CanSend && !string.IsNullOrWhiteSpace(Defect.SupplierEmail))
+                {
+                    <text>"Send to supplier" above writes the first one — the supplier's reply files itself back here. </text>
+                }
+                Mail is also linked with Find &amp; tag emails above, or by tagging it
+                <span class="font-mono">JPMS/@Defect.Reference</span> in the Control Centre.
+            </p>
+        }
+        else if (emails.Count > 0)
+        {
+            <CorrespondenceThreadList Emails="emails" ExcludeTag="@OwnTag"
+                                      OnReply="@ReplyCallback" OnForward="@ForwardCallback"
+                                      OnUntagged="_ => RefreshAsync()" />
+        }
+    </ChildContent>
+</Panel>

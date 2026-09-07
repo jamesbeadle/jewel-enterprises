@@ -10,6 +10,10 @@ public static class TodosFeatureRegistration
     public static IServiceCollection AddTodosFeature(this IServiceCollection services)
     {
         services.AddScoped<IQueryHandler<ListTodoItemsForProject, IReadOnlyList<TodoItem>>, ListTodoItemsForProjectHandler>();
+        // The record page's "to-dos about this record" read (a defect's first), and the
+        // record-type-agnostic verify/resolve helper the handlers share.
+        services.AddScoped<IQueryHandler<ListTodoItemsAboutRecord, IReadOnlyList<TodoItem>>, ListTodoItemsAboutRecordHandler>();
+        services.AddScoped<TodoAboutRecords>();
         services.AddScoped<IQueryHandler<ListTodoAssignableRoles, IReadOnlyList<Role>>, ListTodoAssignableRolesHandler>();
 
         // The person half of the assignee pickers: directory holders of the assignable roles, one

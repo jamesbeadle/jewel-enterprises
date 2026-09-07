@@ -34,17 +34,18 @@ public partial class ProjectVariationDetail
     private void StartRename()
     {
         renameTitle = order?.Title ?? "";
-        // Open on a clean slate: a banner left over from an earlier failed save reads as a fresh
+        // Open on a clean slate: a refusal left over from an earlier failed save reads as a fresh
         // refusal of the edit that has only just been started.
-        error = null;
+        renameError = null;
         renamingOrder = true;
     }
 
     private void CancelRename()
     {
+        if (busy) return;
         renamingOrder = false;
-        // The banner belongs to the edit being abandoned — it must not outlive it.
-        error = null;
+        // The message belongs to the edit being abandoned — it must not outlive it.
+        renameError = null;
     }
 
 }

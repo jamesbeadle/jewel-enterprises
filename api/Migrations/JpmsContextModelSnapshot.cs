@@ -1794,8 +1794,19 @@ namespace Jewel.JPMS.Api.Migrations
                     b.Property<DateTimeOffset?>("ResolvedAt")
                         .HasColumnType("datetimeoffset");
 
+                    b.Property<DateTimeOffset?>("SentToSupplierAt")
+                        .HasColumnType("datetimeoffset");
+
+                    b.Property<string>("SentToSupplierByEmail")
+                        .HasMaxLength(256)
+                        .HasColumnType("nvarchar(256)");
+
                     b.Property<int>("Status")
                         .HasColumnType("int");
+
+                    b.Property<string>("SubcontractorId")
+                        .HasMaxLength(64)
+                        .HasColumnType("nvarchar(64)");
 
                     b.HasKey("DefectId");
 
@@ -6010,6 +6021,13 @@ namespace Jewel.JPMS.Api.Migrations
                         .HasMaxLength(64)
                         .HasColumnType("nvarchar(64)");
 
+                    b.Property<string>("AboutRecordId")
+                        .HasMaxLength(64)
+                        .HasColumnType("nvarchar(64)");
+
+                    b.Property<int?>("AboutRecordType")
+                        .HasColumnType("int");
+
                     b.Property<string>("AssigneePersonEmail")
                         .HasMaxLength(256)
                         .HasColumnType("nvarchar(256)");
@@ -6060,6 +6078,9 @@ namespace Jewel.JPMS.Api.Migrations
                         .HasColumnType("nvarchar(256)");
 
                     b.HasKey("TodoItemId");
+
+                    b.HasIndex("AboutRecordId")
+                        .HasDatabaseName("IX_TodoItems_AboutRecordId");
 
                     b.HasIndex("ProjectId")
                         .HasDatabaseName("IX_TodoItems_ProjectId");

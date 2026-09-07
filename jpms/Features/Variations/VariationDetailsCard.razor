@@ -3,27 +3,17 @@
 
 @* The record's facts in the sidebar. One panel, one arrival: the selected sub's name comes from
    the subcontractor directory, so the rows wait for it rather than showing a raw id first. The
-   estimate editor is the card's own — the figure is free-standing only while the order is
-   pre-approval and nothing else owns it (a staged build-up's total IS the estimate; an approved
-   order's figure is the contract value). Blank or zero = currently unpriced — the valuation
-   export's Pending tab then leaves the order out. *@
+   estimate editor is the card's own but opens from the page's Actions menu (bound
+   EditingEstimate; the card carries no button) — the figure is free-standing only while the
+   order is pre-approval and nothing else owns it (a staged build-up's total IS the estimate; an
+   approved order's figure is the contract value). Blank or zero = currently unpriced — the
+   valuation export's Pending tab then leaves the order out. *@
 <div class="panel p-5 space-y-3 text-sm">
     <LoadGate IsLoading="@(!DetailsLoaded)" Label="Loading details">
     <div class="flex justify-between"><span class="text-content-subtle">Reference</span><span class="font-mono">@Order.Reference</span></div>
     <div class="flex justify-between"><span class="text-content-subtle">Status</span><span>@Order.Status.DisplayName()</span></div>
-    <div class="flex justify-between items-center gap-2">
-        <span class="text-content-subtle">Estimated value</span>
-        <span class="flex items-center gap-1.5">
-            @(Order.EstimatedValue is null ? "—" : Money(Order.EstimatedValue.Value))
-            @if (CanEditEstimate && !editingEstimate)
-            {
-                <button type="button" class="btn-secondary text-xs px-2 py-0.5 shrink-0"
-                        title="Edit the estimate — blank or zero marks the order unpriced, taking it off the export's Pending tab"
-                        disabled="@Busy" @onclick="StartEditEstimate">Edit</button>
-            }
-        </span>
-    </div>
-    @if (editingEstimate)
+    <div class="flex justify-between"><span class="text-content-subtle">Estimated value</span><span>@(Order.EstimatedValue is null ? "—" : Money(Order.EstimatedValue.Value))</span></div>
+    @if (EditingEstimate && CanEditEstimate)
     {
         <div class="space-y-2">
             <FormField Label="Estimate £" Value="@estimateText" OnChange="v => estimateText = v" />
@@ -37,7 +27,7 @@
             }
             <div class="flex gap-2">
                 <button type="button" class="btn-primary text-xs px-2 py-1" disabled="@(Busy || saving)" @onclick="SaveEstimateAsync">Save estimate</button>
-                <button type="button" class="btn-neutral text-xs px-2 py-1" disabled="@(Busy || saving)" @onclick="() => editingEstimate = false">Cancel</button>
+                <button type="button" class="btn-neutral text-xs px-2 py-1" disabled="@(Busy || saving)" @onclick="CancelAsync">Cancel</button>
             </div>
         </div>
     }
@@ -66,22 +56,35 @@
     /// <summary>Pre-approval, manager, and no staged build-up owning the figure.</summary>
     [Parameter] public bool CanEditEstimate { get; set; }
     [Parameter] public bool Busy { get; set; }
+    /// <summary>Bound: the page's Actions menu opens the estimate editor.</summary>
+    [Parameter] public bool EditingEstimate { get; set; }
+    [Parameter] public EventCallback<bool> EditingEstimateChanged { get; set; }
     /// <summary>The record as the server returned it after a save — the page swaps its copy.</summary>
     [Parameter] public EventCallback<VariationOrder> OnSaved { get; set; }
 
     // The house date, from the record's UTC stamps — local day, em-dash for none.
     private static string Day(DateTimeOffset? stamp) => DateText(stamp?.LocalDateTime);
 
-    private bool editingEstimate;
+    private bool wasEditing;
     private bool saving;
     private string estimateText = "";
     private string? estimateError;
 
-    private void StartEditEstimate()
+    // Each opening seeds the draft from the record — a cancelled edit leaves nothing behind.
+    protected override void OnParametersSet()
     {
-        estimateText = Order.EstimatedValue?.ToString("0.##") ?? "";
+        if (EditingEstimate && !wasEditing)
+        {
+            estimateText = Order.EstimatedValue?.ToString("0.##") ?? "";
+            estimateError = null;
+        }
+        wasEditing = EditingEstimate;
+    }
+
+    private async Task CancelAsync()
+    {
         estimateError = null;
-        editingEstimate = true;
+        await EditingEstimateChanged.InvokeAsync(false);
     }
 
     private async Task SaveEstimateAsync()
@@ -100,7 +103,7 @@
         {
             saving = true;
             var saved = await Variations.SetEstimateAsync(Order.VariationOrderId, estimate);
-            editingEstimate = false;
+            await EditingEstimateChanged.InvokeAsync(false);
             await OnSaved.InvokeAsync(saved);
         }
         catch (CommandFailedException ex) { estimateError = ex.Message; }

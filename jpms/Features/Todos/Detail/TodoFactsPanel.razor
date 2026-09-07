@@ -16,6 +16,26 @@
                            MoveOptions="@MoveOptions" Busy="@Busy" Move="@Move" />
             <TodoAssigneeFact Item="@Item" CanReassign="@CanReassign"
                               Options="@AssigneeOptions" Busy="@Busy" Reassign="@Reassign" />
+            @if (Item.IsAboutRecord)
+            {
+                @* The record this to-do is about — set when it was raised from that record's page
+                   (a defect's "New to-do") or by the connector; the link goes to the record. *@
+                <div>
+                    <dt class="eyebrow">About</dt>
+                    <dd class="text-content mt-0.5">
+                        @if (Jewel.JPMS.Features.Triage.Panels.ExplorerRecordTypes.FullPageHref(Item.AboutRecordType!.Value, Item.ProjectId, Item.AboutRecordId!) is { } aboutHref)
+                        {
+                            <a href="@aboutHref" class="text-accent hover:underline underline-offset-2">
+                                @(Item.AboutRecordReference ?? Item.AboutRecordType.Value.ToString()) →
+                            </a>
+                        }
+                        else
+                        {
+                            @(Item.AboutRecordReference ?? Item.AboutRecordType.Value.ToString())
+                        }
+                    </dd>
+                </div>
+            }
             <div>
                 <dt class="eyebrow">Due</dt>
                 <dd class="mt-0.5 @(IsOverdue ?"text-negative font-medium" : "text-content")">

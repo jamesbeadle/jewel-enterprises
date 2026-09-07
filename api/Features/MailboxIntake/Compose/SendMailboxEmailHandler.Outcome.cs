@@ -67,6 +67,10 @@ public sealed partial class SendMailboxEmailHandler
         await todoActivity.RecordSentAsync(
             compose.WorkflowStamp, compose.Subject,
             compose.ToAddresses, compose.SenderEmail, cancellationToken);
+        // Every defect the sent copy is filed under, when the email went to its supplier, records
+        // its first "sent to supplier" and moves Open → In progress (DefectSupplierSendRecorder).
+        await defectSends.RecordSentAsync(
+            compose.WorkflowStamp, compose.ToAddresses, compose.SenderEmail, cancellationToken);
         await OpenRaisedRequestAsync(compose, cancellationToken);
 
         return compose.Outcome(sent: true, sentWebLink, threadHandled, failureNote: null);

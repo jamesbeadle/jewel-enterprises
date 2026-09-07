@@ -4,59 +4,73 @@
 @* Originating request: repair the missing link on the record itself. Seeded (historic)
    variations predate the request link, so the lineage bar shows "No request". This is where
    the missing RFI/request gets attached — one deliberate pick on the record, not squeezed into
-   the register. The pick is the panel's own; the page reloads once the link lands. *@
-<div class="panel p-5">
-    <h3 class="eyebrow mb-2">Originating request</h3>
-    @if (CanManage)
-    {
-        <p class="text-sm text-content-muted mb-3">
+   the register. A dialog opened from the page's Actions menu (bound IsOpen); the page shows a
+   Notice while the link is missing and reloads once it lands. *@
+<Modal IsOpen="IsOpen"
+       Title="Link originating request"
+       ConfirmLabel="@(linking ? "Linking…" : "Link request")"
+       ConfirmDisabled="@(linking || string.IsNullOrWhiteSpace(targetRequestId))"
+       OnCancel="CancelAsync"
+       OnConfirm="LinkAsync"
+       Class="max-w-xl">
+    <div class="space-y-3">
+        @if (error is not null)
+        {
+            <Notice Tone="Tone.Negative">@error</Notice>
+        }
+        <p class="text-sm text-content-muted">
             This variation isn't linked to the request (RFI) it was raised from — its history
             can't be traced yet. Pick the right one to complete the chain; the lineage bar
-            above fills in as soon as it's linked.
+            fills in as soon as it's linked.
         </p>
-        <div class="flex flex-wrap items-center gap-2">
+        <FormField Label="Request" Required="true">
             <SearchSelect Options="@Candidates"
                           Value="@targetRequestId"
                           ValueChanged="v => targetRequestId = v"
                           Placeholder="Choose a request…"
-                          WidthClass="w-full sm:w-96"
+                          WidthClass="w-full"
                           InputClass="bg-surface border border-line px-3 py-2"
                           Disabled="@linking" />
-            <button type="button" class="btn-primary"
-                    disabled="@(linking || string.IsNullOrWhiteSpace(targetRequestId))"
-                    @onclick="LinkAsync">
-                @(linking ? "Linking…" : "Link request")
-            </button>
-        </div>
-        @if (error is not null)
-        {
-            <p class="text-xs text-negative mt-2">@error</p>
-        }
-        <p class="text-xs text-content-subtle mt-3">
+        </FormField>
+        <p class="text-xs text-content-subtle">
             RFIs are listed first — the stage a variation order is normally raised from. Requests
             already carrying a variation order aren't offered (a request has at most one).
         </p>
-    }
-    else
-    {
-        <p class="text-sm text-content-subtle italic">
-            This variation isn't linked to an originating request. A project manager or QS can
-            attach the right RFI here.
-        </p>
-    }
-</div>
+    </div>
+</Modal>
 
 @code {
     [Parameter, EditorRequired] public string VariationOrderId { get; set; } = "";
-    [Parameter] public bool CanManage { get; set; }
     /// <summary>RFIs first, then the rest of the register, minus requests already carrying an order.</summary>
     [Parameter] public IReadOnlyList<SearchSelect.Option> Candidates { get; set; } = Array.Empty<SearchSelect.Option>();
+    /// <summary>Bound: the page's Actions menu opens the dialog.</summary>
+    [Parameter] public bool IsOpen { get; set; }
+    [Parameter] public EventCallback<bool> IsOpenChanged { get; set; }
     /// <summary>The link landed — the page re-reads so the lineage bar fills in.</summary>
     [Parameter] public EventCallback OnLinked { get; set; }
 
+    private bool wasOpen;
     private string targetRequestId = "";
     private bool linking;
     private string? error;
+
+    // Each opening starts clean — a cancelled dialog leaves nothing behind.
+    protected override void OnParametersSet()
+    {
+        if (IsOpen && !wasOpen)
+        {
+            targetRequestId = "";
+            error = null;
+        }
+        wasOpen = IsOpen;
+    }
+
+    private async Task CancelAsync()
+    {
+        if (linking) return;
+        error = null;
+        await IsOpenChanged.InvokeAsync(false);
+    }
 
     private async Task LinkAsync()
     {
@@ -67,6 +81,7 @@
             linking = true;
             await Variations.LinkToRequestAsync(VariationOrderId, targetRequestId);
             targetRequestId = "";
+            await IsOpenChanged.InvokeAsync(false);
             await OnLinked.InvokeAsync();
         }
         catch (CommandFailedException ex) { error = ex.Message; }

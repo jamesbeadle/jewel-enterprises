@@ -4,8 +4,17 @@ namespace Jewel.JPMS.Api.Features.Closeout;
 
 internal static class CloseoutEntityMapping
 {
-    public static Defect ToModel(this DefectEntity entity) =>
-        new(entity.DefectId, entity.ProjectId, entity.Description, entity.Location, entity.AssignedToEmail, (DefectStatus)entity.Status, entity.RaisedAt, entity.ResolvedAt, entity.Reference);
+    /// <summary>The defect as the portal sees it. The supplier's name and contact email come from
+    /// the directory record the defect names (DefectSupplierLookup resolves them per read); an
+    /// unresolved id — the record deleted or consolidated away — reads as no supplier picked.</summary>
+    public static Defect ToModel(this DefectEntity entity, SubcontractorEntity? supplier = null) =>
+        new(entity.DefectId, entity.ProjectId, entity.Description, entity.Location, entity.AssignedToEmail,
+            (DefectStatus)entity.Status, entity.RaisedAt, entity.ResolvedAt, entity.Reference,
+            SubcontractorId: supplier?.SubcontractorId ?? entity.SubcontractorId,
+            SubcontractorName: supplier?.CompanyName,
+            SentToSupplierAt: entity.SentToSupplierAt,
+            SentToSupplierByEmail: entity.SentToSupplierByEmail,
+            SupplierContactEmail: supplier?.ContactEmail ?? "");
 
     public static SettlementRecord ToModel(this SettlementRecordEntity entity) =>
         new(entity.SettlementRecordId, entity.ProjectId, entity.FinalContractValue, entity.FinalCost, entity.FinalMargin, entity.AgreedAt, entity.IsClientSigned);

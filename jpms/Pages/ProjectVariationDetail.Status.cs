@@ -39,7 +39,6 @@ public partial class ProjectVariationDetail
     // between Quoting, Issued and Awaiting AI moves directly.
     private async Task ChangeStatus(VariationOrderStatus target)
     {
-        orderStatusMenuOpen = false;
         if (busy || order is null || target == order.Status) return;
         error = null;
 
@@ -172,6 +171,15 @@ public partial class ProjectVariationDetail
         catch (CommandFailedException ex) { error = ex.Message; }
         catch { error = "Couldn't return the variation order to quoting. Please try again."; }
         finally { busy = false; }
+    }
+
+    // The menu's "Revise value…": the editor is inline in the approved-figures panel, so scroll
+    // there and flash it — the same landing as the Reject / Return-to-quoting confirms.
+    private async Task OpenReviseValue()
+    {
+        if (busy || ApprovedOrder is null) return;
+        revisingValue = true;
+        await FocusVariationOrderPanel();
     }
 
     // Answers whether the revision took — the panel keeps its editor open on a refusal.

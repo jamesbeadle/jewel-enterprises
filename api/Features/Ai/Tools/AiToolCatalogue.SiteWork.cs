@@ -55,6 +55,13 @@ public static partial class AiToolCatalogue
                         .Take(100)
                         .ToListAsync(ct);
 
+                    var supplierIds = defects.Select(row => row.SubcontractorId).Where(id => id != null).Distinct().ToList();
+                    var suppliers = supplierIds.Count == 0
+                        ? new Dictionary<string, Jewel.JPMS.Api.Data.Entities.SubcontractorEntity>()
+                        : await context.Db.Subcontractors.AsNoTracking()
+                            .Where(s => supplierIds.Contains(s.SubcontractorId))
+                            .ToDictionaryAsync(s => s.SubcontractorId, ct);
+
                     return Serialise(new
                     {
                         ok = true,
@@ -65,7 +72,10 @@ public static partial class AiToolCatalogue
                         note = defectTotal > defects.Count
                             ? $"Only the newest {defects.Count} of {defectTotal} matching defects are listed. "
                               + "Pass search to narrow instead of calling again blind."
-                            : "read_record_emails record_type defect (with the defectId) reads a defect's tagged mail.",
+                            : "read_record_emails record_type defect (with the defectId) reads a defect's tagged mail; "
+                              + "list_todos aboutRecordId (the defectId) lists the to-dos about it; add_todo "
+                              + "aboutRecordType Defect raises one. Sending the defect to its supplier happens "
+                              + "on the defect's page (route) — no connector action yet.",
                         defects = defects.Select(row => new
                         {
                             row.DefectId,
@@ -73,10 +83,15 @@ public static partial class AiToolCatalogue
                             status = ((DefectStatus)row.Status).ToString(),
                             description = row.Description,
                             location = row.Location,
+                            supplier = row.SubcontractorId is { } supplierId && suppliers.TryGetValue(supplierId, out var supplier)
+                                ? new { supplier.SubcontractorId, supplier.CompanyName, supplier.ContactEmail }
+                                : null,
                             assignedTo = string.IsNullOrWhiteSpace(row.AssignedToEmail) ? null : row.AssignedToEmail,
+                            sentToSupplierAt = row.SentToSupplierAt,
+                            sentToSupplierBy = row.SentToSupplierByEmail,
                             raisedAt = row.RaisedAt,
                             resolvedAt = row.ResolvedAt,
-                            route = $"/projects/{project.ProjectId}/defects"
+                            route = $"/projects/{project.ProjectId}/defects/{row.DefectId}"
                         })
                     });
                 }),
@@ -90,7 +105,8 @@ public static partial class AiToolCatalogue
                     ("projectId", "string",
                         "Limit to one project. Omit for every project plus company-wide items.", false),
                     ("status", "string", "Optional filter: Open, InProgress or Done. Defaults to all.", false),
-                    ("search", "string", "Text matched against item titles and notes.", false)),
+                    ("search", "string", "Text matched against item titles and notes.", false),
+                    ("aboutRecordId", "string", "Only the items ABOUT one record — a defectId from list_defects, say. The record's page lists the same.", false)),
                 AiToolKind.Read,
                 readers,
                 async (context, input, ct) =>
@@ -100,6 +116,10 @@ public static partial class AiToolCatalogue
                     var todoProjectId = AiToolSchema.Text(input, "projectId")?.Trim();
                     if (!string.IsNullOrWhiteSpace(todoProjectId))
                         query = query.Where(row => row.ProjectId == todoProjectId);
+
+                    var aboutRecordId = AiToolSchema.Text(input, "aboutRecordId")?.Trim();
+                    if (!string.IsNullOrWhiteSpace(aboutRecordId))
+                        query = query.Where(row => row.AboutRecordId == aboutRecordId);
 
                     var statusText = AiToolSchema.Text(input, "status")?.Trim().ToLowerInvariant();
                     query = statusText switch
@@ -147,6 +167,9 @@ public static partial class AiToolCatalogue
                                   + (string.IsNullOrWhiteSpace(row.AssigneePersonEmail) ? "" : $" — {row.AssigneePersonEmail}")
                                 : "Unassigned",
                             due = row.DueAt,
+                            aboutRecord = row.AboutRecordType is { } aboutType
+                                ? new { type = ((RecordType)aboutType).ToString(), recordId = row.AboutRecordId }
+                                : null,
                             project = string.IsNullOrWhiteSpace(row.ProjectId)
                                 ? "company-wide"
                                 : todoProjects.TryGetValue(row.ProjectId, out var todoProject) ? todoProject : row.ProjectId,

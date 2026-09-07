@@ -37,6 +37,9 @@ public sealed class HttpTodoStore : ITodoStore
     public Task<IReadOnlyList<TodoItem>> ListLinkedAsync(string todoItemId, CancellationToken cancellationToken = default) =>
         queries.AskAsync(new ListLinkedTodoItems(todoItemId), cancellationToken);
 
+    public Task<IReadOnlyList<TodoItem>> ListAboutRecordAsync(RecordType recordType, string recordId, CancellationToken cancellationToken = default) =>
+        queries.AskAsync(new ListTodoItemsAboutRecord(recordType, recordId), cancellationToken);
+
     public Task<TodoItem> AddAsync(AddTodoItem command, CancellationToken cancellationToken = default) =>
         commands.SendAsync(command, cancellationToken);
 

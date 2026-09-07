@@ -89,11 +89,24 @@ internal static class AiWriteTools
                     ("notes", "string", "Optional detail — say which record or email it concerns.", false),
                     ("assigneeRole", "string", "The role it is assigned to, exactly as the portal names it — e.g. \"ProjectManager\", \"QuantitySurveyor\". Omit for unassigned.", false),
                     ("assigneeEmail", "string", "Pin to one holder of that role — their portal email. Only with assigneeRole.", false),
-                    ("due", "string", "Due date, yyyy-MM-dd. Omit for none.", false)),
+                    ("due", "string", "Due date, yyyy-MM-dd. Omit for none.", false),
+                    ("aboutRecordType", "string", "Make the item ABOUT a record on that project — the record type as the portal names it (\"Defect\"). Project items only; give aboutRecordId too.", false),
+                    ("aboutRecordId", "string", "The record's id (list_defects / find_by_reference give it). Only with aboutRecordType.", false)),
                 AiToolKind.Write,
                 TodoRoles.AllowedToManageTodos,
                 async (context, input, ct) =>
                 {
+                    RecordType? aboutType = null;
+                    var aboutTypeText = AiToolSchema.Text(input, "aboutRecordType");
+                    if (!string.IsNullOrWhiteSpace(aboutTypeText))
+                    {
+                        if (!Enum.TryParse<RecordType>(aboutTypeText, ignoreCase: true, out var parsedAbout))
+                            return Fail($"\"{aboutTypeText}\" is not a record type. Types: "
+                                        + string.Join(", ", Enum.GetNames<RecordType>()) + ".");
+                        aboutType = parsedAbout;
+                    }
+                    var aboutId = AiToolSchema.Text(input, "aboutRecordId");
+
                     Role? assigneeRole = null;
                     var roleText = AiToolSchema.Text(input, "assigneeRole");
                     if (!string.IsNullOrWhiteSpace(roleText))
@@ -118,6 +131,9 @@ internal static class AiWriteTools
                     var assigneeEmail = AiToolSchema.Text(input, "assigneeEmail");
                     var projectId = AiToolSchema.Text(input, "projectId");
 
+                    if ((aboutType is not null || !string.IsNullOrWhiteSpace(aboutId)) && string.IsNullOrWhiteSpace(projectId))
+                        return Fail("A to-do about a record is a project item — pass the record's projectId.");
+
                     TodoItem created;
                     if (string.IsNullOrWhiteSpace(projectId))
                     {
@@ -134,7 +150,8 @@ internal static class AiWriteTools
                     else
                     {
                         var command = new AddTodoItem(projectId!, title, notes, assigneeRole, assigneeEmail, due,
-                            CreatedByEmail: context.User.Email);
+                            CreatedByEmail: context.User.Email,
+                            AboutRecordType: aboutType, AboutRecordId: aboutId);
                         var authorisation = context.Services.GetRequiredService<AddTodoItemAuthorisation>();
                         if (!authorisation.Allows(context.User, command)) return Refused();
                         var validation = context.Services.GetRequiredService<AddTodoItemValidation>().Check(command);
@@ -148,7 +165,7 @@ internal static class AiWriteTools
                         $"Added the to-do \"{title}\" via the AI connector.",
                         projectId: projectId, recordType: RecordType.Todo, recordId: created.TodoItemId, ct: ct);
 
-                    return Serialise(new { ok = true, created.TodoItemId, created.Title, created.DueAt });
+                    return Serialise(new { ok = true, created.TodoItemId, created.Reference, created.Title, created.DueAt, aboutRecord = created.AboutRecordReference });
                 }),
 
             new(

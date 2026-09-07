@@ -1,35 +1,29 @@
 @namespace Jewel.JPMS.Features.Variations
 
-@* Wrong variation? Pre-approval only: nothing is on the Valuation Report yet, so no commercial
-   records change — but it can't be undone, so it arms before it deletes. *@
-<div class="panel p-5">
-    @if (!armed)
-    {
-        <button type="button" class="w-full text-xs text-content-subtle hover:text-negative underline underline-offset-2"
-                disabled="@Busy" @onclick="() => armed = true">
-            Wrong variation? Delete it…
-        </button>
-    }
-    else
-    {
-        <p class="text-xs text-content-subtle mb-2">
-            Permanently deletes <span class="font-mono">@Reference</span>. Bid packages are their own
-            records and are not deleted with it. Nothing is on the Valuation Report yet, so no commercial
-            records change — but this can't be undone.
-        </p>
-        <div class="flex gap-2">
-            <button type="button" class="btn-neutral w-full text-negative" disabled="@Busy" @onclick="() => OnDelete.InvokeAsync()">
-                @(Busy ? "Deleting…" : "Confirm — delete variation")
-            </button>
-            <button type="button" class="btn-neutral" disabled="@Busy" @onclick="() => armed = false">Keep</button>
-        </div>
-    }
-</div>
+@* Wrong variation? Not-yet-approved only: nothing is on the Valuation Report, so no commercial
+   records change — but it can't be undone, so it asks first. A ConfirmDialog opened from the
+   page's Actions menu (bound IsOpen); the armed "Delete it…" link that used to sit at the foot
+   of the sidebar is gone — the bar is where actions live. (The file keeps its historic name so
+   nothing needs removing from the tree.) *@
+<ConfirmDialog IsOpen="IsOpen"
+               Title="@($"Delete {Reference}?")"
+               ConfirmLabel="Delete variation"
+               BusyLabel="Deleting…"
+               CancelLabel="Keep it"
+               Danger="true"
+               Busy="@Busy"
+               OnConfirm="() => OnDelete.InvokeAsync()"
+               OnCancel="() => IsOpenChanged.InvokeAsync(false)">
+    Permanently deletes <span class="font-mono text-content">@Reference</span>. Bid packages are their own
+    records and are not deleted with it. Nothing is on the Valuation Report, so no commercial records
+    change — but this can't be undone.
+</ConfirmDialog>
 
 @code {
     [Parameter] public string Reference { get; set; } = "";
     [Parameter] public bool Busy { get; set; }
+    /// <summary>Bound: the page's Actions menu opens the confirm.</summary>
+    [Parameter] public bool IsOpen { get; set; }
+    [Parameter] public EventCallback<bool> IsOpenChanged { get; set; }
     [Parameter] public EventCallback OnDelete { get; set; }
-
-    private bool armed;
 }

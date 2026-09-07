@@ -255,9 +255,9 @@ public static partial class AiToolCatalogue
                                             status = ((DefectStatus)row.Status).ToString(),
                                             project = projects.TryGetValue(row.ProjectId, out var defectProject) ? defectProject : row.ProjectId,
                                             projectId = row.ProjectId,
-                                            route = $"/projects/{row.ProjectId}/defects"
+                                            route = $"/projects/{row.ProjectId}/defects/{row.DefectId}"
                                         }),
-                                        note = "read_record_emails record_type defect reads its tagged mail."
+                                        note = "read_record_emails record_type defect reads its tagged mail; list_todos aboutRecordId lists the to-dos about it."
                                     });
                                 }
                                 break;

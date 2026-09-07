@@ -5,8 +5,8 @@
 @inject SessionService Session
 @inject NavigationManager Nav
 @inject DefectsReadModel Defects
+@inject ISubcontractorStore Directory
 @inject ICommandSender Commands
-@inject IQueryClient Queries
 @implements IDisposable
 
 <PageTitle>Defects · JPMS</PageTitle>
@@ -14,9 +14,11 @@
 @*
     The project's defect register. A defect is raised here directly or from a subcontractor email
     in the Control Centre (System Tags → Subcontractor → Create new → Defect); either way it
-    carries a sequential DEF-#### reference, which is also its mailbox tag stem — so every email
-    filed to the defect reads back live under it here, exactly like a work order or bid package.
-    Status walks Open → In progress → Resolved → Verified (UpdateDefect stamps ResolvedAt).
+    carries a sequential DEF-#### reference, which is also its mailbox tag stem. It is raised WITH
+    a supplier — a directory record, the way a work order names its supplier — and each row opens
+    the defect's own page (2026-09-07), where it is sent to that supplier, its correspondence is
+    read and answered, and the to-dos about it live. Status walks Open → In progress → Resolved →
+    Verified (UpdateDefect stamps ResolvedAt; sending to the supplier moves Open → In progress).
 *@
 
 <Page>
@@ -48,23 +50,38 @@
                             </FormField>
                         </div>
                         <div>
-                            <FormField Label="Assigned to">
-                            <input type="text" class="field" maxlength="256" placeholder="Who the fix is chased with — an email address"
-                                   value="@newAssignedTo" @oninput="e => newAssignedTo = e.Value?.ToString() ?? string.Empty" />
+                            <FormField Label="Supplier" Hint="The company the defect is raised with, from the directory — its contact email is where the defect is sent from the defect's page.">
+                            <SearchSelect Options="@SupplierOptions" Value="@newSubcontractorId"
+                                          ValueChanged="v => newSubcontractorId = v"
+                                          Placeholder="@(Directory.IsLoaded ? "Pick a supplier…" : "Loading the directory…")"
+                                          Disabled="@(!Directory.IsLoaded)"
+                                          WidthClass="w-full" InputClass="field" />
                             </FormField>
                         </div>
                     </div>
+                    @if (string.IsNullOrWhiteSpace(newSubcontractorId))
+                    {
+                        <div>
+                            <FormField Label="Contact email (if not in the directory)" Hint="A stop-gap for a supplier not yet on the directory — add them there to pick them properly.">
+                            <input type="email" class="field" maxlength="256" placeholder="someone@supplier.co.uk"
+                                   value="@newAssignedTo" @oninput="e => newAssignedTo = e.Value?.ToString() ?? string.Empty" />
+                            </FormField>
+                        </div>
+                    }
                     <div>
                         <FormField Label="Description" Required>
                         <textarea class="field" rows="3" maxlength="1024" placeholder="What's wrong and what putting it right needs"
                                   value="@newDescription" @oninput="e => newDescription = e.Value?.ToString() ?? string.Empty"></textarea>
                         </FormField>
                     </div>
-                    <button type="button" class="btn-primary"
-                            disabled="@(string.IsNullOrWhiteSpace(newDescription) || busy)"
-                            @onclick="RaiseAsync">
-                        Raise defect
-                    </button>
+                    <div class="flex items-center gap-3">
+                        <button type="button" class="btn-primary"
+                                disabled="@(string.IsNullOrWhiteSpace(newDescription) || busy)"
+                                @onclick="RaiseAsync">
+                            Raise defect
+                        </button>
+                        <p class="text-xs text-content-subtle">Raising doesn't email anyone — send it to the supplier from the defect's page, which opens next.</p>
+                    </div>
                 </div>
             </section>
         }
@@ -89,7 +106,8 @@
                         <th>Ref</th>
                         <th>Location</th>
                         <th>Description</th>
-                        <th>Assigned to</th>
+                        <th>Supplier</th>
+                        <th>Sent</th>
                         <th>Raised</th>
                         <th>Status</th>
                         <th></th>
@@ -98,14 +116,35 @@
                 <tbody>
                     @foreach (var defect in Rows)
                     {
-                        var isExpanded = expandedDefectId == defect.DefectId;
+                        var href = $"/projects/{ProjectId}/defects/{defect.DefectId}";
                         <tr @key="defect.DefectId" class="border-b border-line last:border-0 align-top">
-                            <td class="font-mono text-xs whitespace-nowrap">@defect.Reference</td>
+                            <td class="font-mono text-xs whitespace-nowrap">
+                                <a href="@href" class="text-accent hover:underline underline-offset-2" title="Open the defect's page">@defect.Reference</a>
+                            </td>
                             <td class="text-content">@defect.Location</td>
                             <td class="max-w-md">
-                                <span title="@defect.Description">@defect.Description</span>
+                                <a href="@href" class="hover:underline underline-offset-2" title="@defect.Description">@defect.Description</a>
                             </td>
-                            <td>@defect.AssignedToEmail</td>
+                            <td class="max-w-xs">
+                                @if (string.IsNullOrWhiteSpace(defect.SupplierLabel))
+                                {
+                                    <span class="text-content-subtle italic">Not assigned</span>
+                                }
+                                else
+                                {
+                                    <span title="@defect.SupplierEmail">@defect.SupplierLabel</span>
+                                }
+                            </td>
+                            <td class="whitespace-nowrap">
+                                @if (defect.SentToSupplierAt is { } sentAt)
+                                {
+                                    <span title="@SentTitle(defect)">@DateText(sentAt)</span>
+                                }
+                                else
+                                {
+                                    <span class="text-content-subtle italic">Not sent</span>
+                                }
+                            </td>
                             <td class="whitespace-nowrap" title="@DateTimeText(defect.RaisedAt.ToLocalTime())">
                                 @DateText(defect.RaisedAt)
                             </td>
@@ -119,21 +158,9 @@
                                 </select>
                             </td>
                             <td class="whitespace-nowrap text-right">
-                                <button type="button" class="text-xs font-medium text-content-subtle hover:text-content underline underline-offset-4"
-                                        @onclick="() => ToggleEmailsAsync(defect.DefectId)">
-                                    @(isExpanded ? "Hide emails" : "Emails")
-                                </button>
+                                <a href="@href" class="text-xs font-medium text-content-subtle hover:text-content underline underline-offset-4">Open</a>
                             </td>
                         </tr>
-                        @if (isExpanded)
-                        {
-                            <tr class="bg-surface-raised/50">
-                                <td colspan="7">
-                                    <FiledEmailList Emails="@(emailsByDefect.TryGetValue(defect.DefectId, out var filedEmails) ? filedEmails : null)"
-                                        EmptyMessage="@($"No emails filed to {defect.Reference} yet — file one from the Control Centre (System Tags → Subcontractor → Defect).")" />
-                                </td>
-                            </tr>
-                        }
                     }
                 </tbody>
             </RecordsTable>
@@ -153,18 +180,22 @@
     private string newLocation = "";
     private string newDescription = "";
     private string newAssignedTo = "";
-
-    // One expanded defect at a time; its emails are read live by tag (ListRecordEmails) and cached
-    // for the visit so collapsing/expanding doesn't refetch.
-    private string? expandedDefectId;
-    private readonly Dictionary<string, IReadOnlyList<MailboxMessage>> emailsByDefect = new();
+    private string newSubcontractorId = "";
 
     private IReadOnlyList<Defect> Rows =>
         Defects.Current(ProjectId).OrderByDescending(d => d.Reference, StringComparer.Ordinal).ToList();
 
+    // The directory pool, read lazily by the store (All() kicks the fetch; OnChange re-renders).
+    private IReadOnlyList<SearchSelect.Option> SupplierOptions => DefectSuppliers.Options(Directory.All());
+
+    private static string SentTitle(Defect defect) =>
+        $"Sent {DateTimeText(defect.SentToSupplierAt!.Value.ToLocalTime())}"
+        + (string.IsNullOrWhiteSpace(defect.SentToSupplierByEmail) ? "" : $" by {defect.SentToSupplierByEmail}");
+
     protected override async Task OnInitializedAsync()
     {
         Defects.OnChanged += StateHasChanged;
+        Directory.OnChange += StateHasChanged;
         await Session.EnsureLoadedAsync();
         if (!Auth.IsSignedIn) { Nav.NavigateTo("/login", forceLoad: true); return; }
         sessionReady = true;
@@ -179,7 +210,6 @@
         // (and give a previously failed project a fresh chance).
         if (!sessionReady || loadedForProjectId == ProjectId) return;
         dataFailed = false;
-        expandedDefectId = null;
         raiseOpen = false;
         actionError = null;
         await LoadAsync();
@@ -199,11 +229,14 @@
         actionError = null;
         try
         {
-            await Commands.SendAsync(new RaiseDefect(
-                ProjectId, newDescription.Trim(), newLocation.Trim(), newAssignedTo.Trim()), CancellationToken.None);
-            newLocation = ""; newDescription = ""; newAssignedTo = "";
+            var raised = await Commands.SendAsync(new RaiseDefect(
+                ProjectId, newDescription.Trim(), newLocation.Trim(), newAssignedTo.Trim(),
+                SubcontractorId: string.IsNullOrWhiteSpace(newSubcontractorId) ? null : newSubcontractorId), CancellationToken.None);
+            newLocation = ""; newDescription = ""; newAssignedTo = ""; newSubcontractorId = "";
             raiseOpen = false;
             await RefreshAfterWriteAsync();
+            // The new defect's page is where the next step (sending it to the supplier) lives.
+            Nav.NavigateTo($"/projects/{ProjectId}/defects/{raised.DefectId}");
         }
         catch (CommandFailedException ex) { actionError = ex.Message; }
         finally { busy = false; }
@@ -219,7 +252,8 @@
         try
         {
             await Commands.SendAsync(new UpdateDefect(
-                defect.DefectId, defect.Description, defect.Location, defect.AssignedToEmail, status), CancellationToken.None);
+                defect.DefectId, defect.Description, defect.Location, defect.AssignedToEmail, status,
+                SubcontractorId: defect.SubcontractorId), CancellationToken.None);
             await RefreshAfterWriteAsync();
         }
         catch (CommandFailedException ex) { actionError = ex.Message; }
@@ -235,22 +269,9 @@
         catch { }
     }
 
-    private async Task ToggleEmailsAsync(string defectId)
+    public void Dispose()
     {
-        if (expandedDefectId == defectId) { expandedDefectId = null; return; }
-        expandedDefectId = defectId;
-        if (emailsByDefect.ContainsKey(defectId)) return;
-        try
-        {
-            var emails = await Queries.AskAsync(new ListRecordEmails(RecordType.Defect, defectId), CancellationToken.None);
-            emailsByDefect[defectId] = emails;
-        }
-        catch
-        {
-            // The toast has the detail; an empty list is the honest fallback for this visit.
-            emailsByDefect[defectId] = Array.Empty<MailboxMessage>();
-        }
+        Defects.OnChanged -= StateHasChanged;
+        Directory.OnChange -= StateHasChanged;
     }
-
-    public void Dispose() => Defects.OnChanged -= StateHasChanged;
 }

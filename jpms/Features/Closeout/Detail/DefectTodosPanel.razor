@@ -1,0 +1,167 @@
+@namespace Jewel.JPMS.Features.Closeout.Detail
+@using Jewel.JPMS.Contracts.Todos
+@using Jewel.JPMS.Features.Todos
+@inject ITodoStore Todos
+
+@* The to-dos ABOUT this defect (TodoItem.AboutRecordType/AboutRecordId — the explicit, stored
+   link, read via ListTodoItemsAboutRecord): "chase the tiler", "book the re-inspection", "check
+   the grout has cured". Each row opens the item's own page; "New to-do" raises one here with the
+   project, the title and the link pre-filled — the same Add modal the To-do tab uses, minus the
+   project picker. Ticking off happens on the item's page, where the timeline and the
+   communications are. *@
+
+<Panel Title="To-dos" BodyClass="p-5" IsLoading="@loading" Prominent="false">
+    <HeaderActions>
+        @if (!loading && failed is null && items.Count > 0)
+        {
+            <span class="text-xs text-content-subtle">@items.Count(i => i.IsComplete) of @items.Count done</span>
+        }
+        @if (CanManage && !loading)
+        {
+            <button type="button" class="btn-secondary text-xs px-2.5 py-1.5" @onclick="OpenAdd">New to-do</button>
+        }
+    </HeaderActions>
+    <ChildContent>
+        @if (failed is not null)
+        {
+            <Notice Tone="Tone.Negative">@failed</Notice>
+        }
+        else if (items.Count == 0)
+        {
+            <p class="text-sm text-content-subtle italic">
+                Nothing to do about this defect yet@(CanManage ? " — \"New to-do\" raises an item linked to it." : ".")
+            </p>
+        }
+        else
+        {
+            <div class="space-y-2">
+                @foreach (var item in items)
+                {
+                    <a href="@($"/todos/{item.TodoItemId}")" @key="item.TodoItemId" title="Open this to-do"
+                       class="btn-secondary">
+                        <div class="flex items-center justify-between gap-2">
+                            <p class="truncate text-sm @(item.IsComplete ? "text-content-subtle line-through" : "text-content")">
+                                <span class="font-mono text-xs text-content-muted mr-2">@item.Reference</span>@item.Title
+                            </p>
+                            <Pill Tone="@TodoStatus.Tone(item)" Class="shrink-0">@TodoStatus.Label(item)</Pill>
+                        </div>
+                        <div class="mt-1 flex items-center gap-x-3 overflow-hidden text-xs text-content-subtle">
+                            @if (TodoAssigneePicker.Label(item) is string assigneeLabel)
+                            {
+                                <span class="truncate">@assigneeLabel</span>
+                            }
+                            @if (item.DueAt is not null)
+                            {
+                                <span class="whitespace-nowrap">Due @DateText(item.DueAt.Value)</span>
+                            }
+                        </div>
+                    </a>
+                }
+            </div>
+        }
+    </ChildContent>
+</Panel>
+
+<Modal IsOpen="@addOpen" Title="@($"New to-do about {Defect.Reference}")" ConfirmLabel="Add to-do item" CancelLabel="Cancel"
+       ConfirmDisabled="@busy" OnConfirm="AddAsync" OnCancel="CloseAdd">
+    <div class="space-y-3">
+        @if (addError is not null)
+        {
+            <Notice Tone="Tone.Negative">@addError</Notice>
+        }
+
+        <FormField Label="Title" Value="@newTitle" OnChange="v => newTitle = v" Required="true" />
+
+        <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
+            <div>
+                <FormField Label="Assigned to">
+                <TodoAssigneeSelect Options="@AssigneeOptions" Value="@newAssignee" ValueChanged="v => newAssignee = v" />
+                </FormField>
+            </div>
+            <FormField Label="Due" Value="@newDue" OnChange="v => newDue = v" InputType="date" />
+        </div>
+
+        <div>
+            <FormField Label="Notes">
+            <textarea class="field" rows="2" value="@newNotes" @oninput="e => newNotes = e.Value?.ToString() ?? string.Empty"></textarea>
+            </FormField>
+        </div>
+        <p class="text-xs text-content-subtle">The item is raised on this project, linked to @Defect.Reference — its page links back here.</p>
+    </div>
+</Modal>
+
+@code {
+    [Parameter, EditorRequired] public Defect Defect { get; set; } = default!;
+    /// <summary>Mirrors the API's TodoRoles.AllowedToManageTodos — who may raise an item.</summary>
+    [Parameter] public bool CanManage { get; set; }
+    /// <summary>The assignee pool (TodoAssigneePicker.BuildOptions), loaded by the page.</summary>
+    [Parameter] public IReadOnlyList<SearchSelect.Option> AssigneeOptions { get; set; } = Array.Empty<SearchSelect.Option>();
+
+    private bool loading = true;
+    private bool busy;
+    private string? failed;
+    private IReadOnlyList<TodoItem> items = Array.Empty<TodoItem>();
+
+    private bool addOpen;
+    private string? addError;
+    private string newTitle = "";
+    private string newNotes = "";
+    private string newAssignee = "";
+    private string newDue = "";
+
+    protected override async Task OnInitializedAsync()
+    {
+        await LoadAsync();
+        loading = false;
+    }
+
+    private async Task LoadAsync()
+    {
+        failed = null;
+        try { items = await Todos.ListAboutRecordAsync(RecordType.Defect, Defect.DefectId); }
+        catch { failed = "Couldn't read the to-dos about this defect. The reason is in the red bar above — reload to try again."; }
+    }
+
+    private void OpenAdd()
+    {
+        // The title leads with the defect so the item reads right on every to-do list; the
+        // assignee defaults to nobody, the due date to a week out (the to-do convention).
+        newTitle = $"{Defect.Reference} — {(string.IsNullOrWhiteSpace(Defect.Location) ? "defect" : Defect.Location)}: ";
+        newNotes = newAssignee = "";
+        newDue = DateTime.Today.AddDays(7).ToString("yyyy-MM-dd");
+        addError = null;
+        addOpen = true;
+    }
+
+    private void CloseAdd()
+    {
+        addOpen = false;
+        addError = null;
+    }
+
+    private async Task AddAsync()
+    {
+        if (busy) return;
+        if (string.IsNullOrWhiteSpace(newTitle)) { addError = "A title is required."; return; }
+        addError = null;
+        busy = true;
+        try
+        {
+            var assignee = TodoAssigneePicker.Parse(newAssignee);
+            await Todos.AddAsync(new AddTodoItem(
+                Defect.ProjectId,
+                newTitle.Trim(),
+                string.IsNullOrWhiteSpace(newNotes) ? null : newNotes.Trim(),
+                assignee?.Role,
+                assignee?.PersonEmail,
+                DateTimeOffset.TryParse(newDue, out var due) ? due : null,
+                AboutRecordType: RecordType.Defect,
+                AboutRecordId: Defect.DefectId));
+            CloseAdd();
+            await LoadAsync();
+        }
+        catch (CommandFailedException ex) { addError = ex.Message; }
+        catch (Exception ex) { addError = ex.Message; }
+        finally { busy = false; }
+    }
+}

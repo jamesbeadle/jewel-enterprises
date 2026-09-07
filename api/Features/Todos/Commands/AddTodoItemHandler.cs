@@ -7,7 +7,9 @@ public sealed class AddTodoItemHandler : ICommandHandler<AddTodoItem, TodoItem>
 {
     private readonly JpmsContext context;
     private readonly TodoActivityRecorder activity;
-    public AddTodoItemHandler(JpmsContext context, TodoActivityRecorder activity) { this.context = context; this.activity = activity; }
+    private readonly TodoAboutRecords aboutRecords;
+    public AddTodoItemHandler(JpmsContext context, TodoActivityRecorder activity, TodoAboutRecords aboutRecords)
+    { this.context = context; this.activity = activity; this.aboutRecords = aboutRecords; }
 
     public async Task<TodoItem> HandleAsync(AddTodoItem command, CancellationToken cancellationToken)
     {
@@ -17,6 +19,10 @@ public sealed class AddTodoItemHandler : ICommandHandler<AddTodoItem, TodoItem>
         // A pinned person must currently hold the assigned role in the directory.
         await TodoAssigneeGuard.EnsurePersonHoldsRoleAsync(
             context, command.AssigneeRole, command.AssigneePersonEmail, cancellationToken);
+
+        // The record the item is about (if any) must exist and sit on this project.
+        var about = await aboutRecords.VerifyAsync(
+            command.AboutRecordType, command.AboutRecordId, command.ProjectId, cancellationToken);
 
         var nextNumber = (await context.TodoItems.MaxAsync(t => (int?)t.Number, cancellationToken) ?? 0) + 1;
 
@@ -32,13 +38,18 @@ public sealed class AddTodoItemHandler : ICommandHandler<AddTodoItem, TodoItem>
             CreatedByEmail = command.CreatedByEmail,
             IsComplete = false,
             CreatedAt = DateTimeOffset.UtcNow,
-            DueAt = command.DueAt
+            DueAt = command.DueAt,
+            AboutRecordType = about is null ? null : (int)about.Type,
+            AboutRecordId = about?.RecordId
         };
 
         context.TodoItems.Add(entity);
         activity.Record(entity, TodoActivityKind.Created, TodoActivitySummaries.CreatedSummary(entity), command.CreatedByEmail);
         await context.SaveChangesAsync(cancellationToken);
-        return entity.ToModel(await context.PersonNamesForAsync(new[] { entity }, cancellationToken));
+        var aboutReferences = about is null
+            ? null
+            : new Dictionary<string, string> { [TodoAboutRecords.Key((int)about.Type, about.RecordId)] = about.Reference };
+        return entity.ToModel(await context.PersonNamesForAsync(new[] { entity }, cancellationToken), aboutReferences);
     }
 
     private static string Clamp(string value, int maxLength) =>

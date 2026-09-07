@@ -4,38 +4,70 @@
 
 @* The agreed tender: who the works will be instructed to if the variation is approved, and the
    value they agreed. Tendering itself happens on the project's bid packages (separate records
-   since 2026-08-12) — this simply records the outcome on the sales-side document. *@
-<div class="panel p-5 space-y-3">
-    <h3 class="eyebrow">Record agreed tender</h3>
-    @if (error is not null)
-    {
-        <p class="text-xs text-negative">@error</p>
-    }
-    <div>
-        <FormField Label="Subcontractor">
-        <select class="field" value="@subcontractorId" @onchange="e => subcontractorId = e.Value?.ToString() ?? string.Empty">
-            <option value="">— Choose —</option>
-            @foreach (var sub in Subcontractors.All())
-            {
-                <option value="@sub.SubcontractorId">@sub.CompanyName</option>
-            }
-        </select>
+   since 2026-08-12) — this simply records the outcome on the sales-side document. A dialog
+   opened from the page's Actions menu (bound IsOpen); the recorded sub and value then read on
+   the details card, so nothing needs to stay on show in the sidebar. *@
+<Modal IsOpen="IsOpen"
+       Title="Record agreed tender"
+       ConfirmLabel="@(recording ? "Recording…" : "Record agreed tender")"
+       ConfirmDisabled="@(Busy || recording || string.IsNullOrWhiteSpace(subcontractorId))"
+       OnCancel="CancelAsync"
+       OnConfirm="RecordAsync"
+       Class="max-w-md">
+    <div class="space-y-3">
+        @if (error is not null)
+        {
+            <Notice Tone="Tone.Negative">@error</Notice>
+        }
+        <p class="text-sm text-content-subtle">
+            Who the works will be instructed to if the variation is approved, and the value they agreed.
+        </p>
+        <FormField Label="Subcontractor" Required="true">
+            <select class="field" value="@subcontractorId" @onchange="e => subcontractorId = e.Value?.ToString() ?? string.Empty">
+                <option value="">— Choose —</option>
+                @foreach (var sub in Subcontractors.All())
+                {
+                    <option value="@sub.SubcontractorId">@sub.CompanyName</option>
+                }
+            </select>
         </FormField>
+        <FormField Label="Agreed value (£)" Value="@valueText" OnChange="v => valueText = v" InputType="number" />
     </div>
-    <FormField Label="Agreed value (£)" Value="@valueText" OnChange="v => valueText = v" InputType="number" />
-    <button type="button" class="btn-primary w-full" disabled="@(Busy || recording)" @onclick="RecordAsync">Record agreed tender</button>
-</div>
+</Modal>
 
 @code {
     [Parameter, EditorRequired] public string VariationOrderId { get; set; } = "";
     [Parameter] public bool Busy { get; set; }
+    /// <summary>Bound: the page's Actions menu opens the dialog.</summary>
+    [Parameter] public bool IsOpen { get; set; }
+    [Parameter] public EventCallback<bool> IsOpenChanged { get; set; }
     /// <summary>The record as the server returned it — the page swaps its copy and reloads.</summary>
     [Parameter] public EventCallback<VariationOrder> OnRecorded { get; set; }
 
+    private bool wasOpen;
     private string subcontractorId = "";
     private string valueText = "";
     private bool recording;
     private string? error;
+
+    // Each opening starts clean — a cancelled dialog leaves nothing behind.
+    protected override void OnParametersSet()
+    {
+        if (IsOpen && !wasOpen)
+        {
+            subcontractorId = "";
+            valueText = "";
+            error = null;
+        }
+        wasOpen = IsOpen;
+    }
+
+    private async Task CancelAsync()
+    {
+        if (recording) return;
+        error = null;
+        await IsOpenChanged.InvokeAsync(false);
+    }
 
     private async Task RecordAsync()
     {
@@ -47,8 +79,10 @@
         {
             recording = true;
             var recorded = await Variations.SelectTenderAsync(VariationOrderId, subcontractorId, value);
+            await IsOpenChanged.InvokeAsync(false);
             await OnRecorded.InvokeAsync(recorded);
         }
+        catch (CommandFailedException ex) { error = ex.Message; }
         catch { error = "Couldn't record the agreed tender. Please try again."; }
         finally { recording = false; }
     }

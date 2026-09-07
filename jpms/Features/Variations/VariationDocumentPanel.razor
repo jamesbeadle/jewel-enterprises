@@ -1,24 +1,19 @@
 @namespace Jewel.JPMS.Features.Variations
 @inject IVariationStore Variations
 
-@* Official document pane: the narrative sections and the document's own actions — the same
+@* Official document pane: the narrative sections, read and edited in place — the same
    arrangement as the request page's official form. The PDF is rendered fresh from the record on
-   every download, and the composer's System documents picker attaches the identical bytes at
-   send time. The section editor is the pane's own: wording only, at every stage — the same rule
-   as the retitle — so the draft never needs to be parked with anything else. *@
+   every download (Actions → Download Variation Order PDF), and the composer's System documents
+   picker attaches the identical bytes at send time. The editor opens from the page's Actions
+   menu (bound Editing) — this pane carries no button of its own. Wording only, at every stage —
+   the same rule as the retitle — so the draft never needs to be parked with anything else. *@
 <div class="panel p-5">
-    <div class="flex items-start justify-between gap-3 mb-3">
-        <div>
-            <h3 class="eyebrow">Official Variation Order document</h3>
-            <p class="text-xs text-content-subtle mt-0.5">
-                Scope, commercial basis, programme impact and exclusions, rendered on the issued PDF
-                with the cost breakdown. Attach it to an email from the Control Centre's System documents picker.
-            </p>
-        </div>
-        <Toolbar>
-            <ToolbarButton Icon="download" Label="Download the Variation Order PDF"
-                           Href="@DocumentHref" Download="true" />
-        </Toolbar>
+    <div class="mb-3">
+        <h3 class="eyebrow">Official Variation Order document</h3>
+        <p class="text-xs text-content-subtle mt-0.5">
+            Scope, commercial basis, programme impact and exclusions, rendered on the issued PDF
+            with the cost breakdown. Download it, or edit these sections, from Actions.
+        </p>
     </div>
 
     @if (error is not null)
@@ -26,7 +21,7 @@
         <Notice Tone="Tone.Negative" Class="mb-3">@error</Notice>
     }
 
-    @if (!editing)
+    @if (!Editing)
     {
         <div class="space-y-3">
             <div>
@@ -45,10 +40,6 @@
                 <h4 class="eyebrow mb-1">Exclusions</h4>
                 <p class="text-sm text-content-muted whitespace-pre-wrap leading-relaxed">@(string.IsNullOrWhiteSpace(Order.Exclusions) ? "—" : Order.Exclusions)</p>
             </div>
-            @if (CanManage)
-            {
-                <button type="button" class="btn-secondary" disabled="@Busy" @onclick="StartEdit">Edit sections</button>
-            }
         </div>
     }
     else
@@ -82,7 +73,7 @@
             </p>
             <div class="flex gap-2">
                 <button type="button" class="btn-primary" disabled="@(Busy || saving)" @onclick="SaveAsync">Save sections</button>
-                <button type="button" class="btn-neutral" disabled="@(Busy || saving)" @onclick="() => editing = false">Cancel</button>
+                <button type="button" class="btn-neutral" disabled="@(Busy || saving)" @onclick="CancelAsync">Cancel</button>
             </div>
         </div>
     }
@@ -96,9 +87,11 @@
     /// <summary>The record as the server returned it after a save — the page swaps its copy.</summary>
     [Parameter] public EventCallback<VariationOrder> OnSaved { get; set; }
 
-    private string DocumentHref => $"/api/variation-orders/{Order.VariationOrderId}/document";
+    /// <summary>Bound: the page's Actions menu opens the editor.</summary>
+    [Parameter] public bool Editing { get; set; }
+    [Parameter] public EventCallback<bool> EditingChanged { get; set; }
 
-    private bool editing;
+    private bool wasEditing;
     private bool saving;
     private string commercialBasis = "";
     private string programmeImpact = "";
@@ -106,25 +99,37 @@
     // Held here so it renders inside the pane being edited, next to the fields it is about.
     private string? error;
 
-    private void StartEdit()
+    // Each opening seeds the draft from the record — a cancelled edit leaves nothing behind.
+    protected override void OnParametersSet()
+    {
+        if (Editing && !wasEditing) Seed();
+        wasEditing = Editing;
+    }
+
+    private void Seed()
     {
         commercialBasis = Order.CommercialBasis ?? "";
         programmeImpact = Order.ProgrammeImpact ?? "";
         exclusions = Order.Exclusions ?? "";
         error = null;
-        editing = true;
+    }
+
+    private async Task CancelAsync()
+    {
+        error = null;
+        await EditingChanged.InvokeAsync(false);
     }
 
     private async Task SaveAsync()
     {
-        if (saving) return;
+        if (saving || !CanManage) return;
         error = null;
         try
         {
             saving = true;
             var saved = await Variations.UpdateNarrativesAsync(
                 Order.VariationOrderId, commercialBasis, programmeImpact, exclusions);
-            editing = false;
+            await EditingChanged.InvokeAsync(false);
             await OnSaved.InvokeAsync(saved);
         }
         catch (CommandFailedException ex) { error = ex.Message; }

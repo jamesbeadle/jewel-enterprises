@@ -23,12 +23,24 @@ public partial class ProjectVariationDetail
 
 
     // ---- Retitle -------------------------------------------------------------------------------
-    // Editing the title in place, at any stage. Held apart from the approve/revise flows on purpose:
-    // this moves the wording and nothing else, so it can never be the thing that quietly shifted a
-    // figure. Cancelling simply drops the draft — the record is untouched until Save.
+    // Editing the title in a dialog, at any stage. Held apart from the approve/revise flows on
+    // purpose: this moves the wording and nothing else, so it can never be the thing that quietly
+    // shifted a figure. Cancelling simply drops the draft — the record is untouched until Save.
     private bool renamingOrder;
-
     private string renameTitle = "";
+    // A refused save has to land inside the dialog — the page banner sits behind the overlay.
+    private string? renameError;
+
+    // ---- Open-flags for the editors and dialogs the Actions menu opens -------------------------
+    // The panels own their forms; the page owns whether they are open, so one menu can reach them
+    // all (and CloseOpenDialogs can drop them before the page moves on to another record).
+    private bool editingSections;   // VariationDocumentPanel's narrative editor
+    private bool editingEstimate;   // VariationDetailsCard's estimate editor
+    private bool revisingValue;     // ApprovedFiguresPanel's revise-value editor
+    private bool buildUpDialogOpen; // StagedBuildUpPanel's dialog
+    private bool recordingTender;   // RecordAgreedTenderPanel (a dialog)
+    private bool linkingRequest;    // OriginatingRequestRepair (a dialog)
+    private bool deletingOrder;     // DeleteVariationPanel (a confirm dialog)
 
     // The Architect's Instructions that cover this variation — the evidence behind its figures, and
     // the thing an Awaiting-AI variation is waiting for.
@@ -49,10 +61,7 @@ public partial class ProjectVariationDetail
                 line.CostCode, line.Description, line.Quantity, line.Rate, line.ValuationLineItemId))
             .ToList();
 
-    // Status pill dropdown — same dismiss pattern as the request page's Actions dropdown: every
-    // item closes it before running, the toggle is the dismiss.
-    private bool orderStatusMenuOpen;
-
+    // The status pill's choices, in ladder order — rendered by the shared DropdownMenu (see Menus.cs).
     private static readonly VariationOrderStatus[] OrderStatusOptions =
     {
         VariationOrderStatus.Quoting, VariationOrderStatus.Issued,

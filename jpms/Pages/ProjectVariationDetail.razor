@@ -56,88 +56,12 @@
                 </a>
             }
 
-            <div class="flex flex-wrap items-center gap-3 mb-1">
-                <span class="font-mono text-sm font-semibold text-content">@order.DisplayNumber</span>
-                @if (CanManage && order.Status != VariationOrderStatus.Rejected)
-                {
-                    @* The status pill doubles as the status control. Direct moves cover the
-                       side-effect-free stages (Quoting, Issued, Awaiting AI); the commercial transitions route to
-                       their real flows — Approved opens the approve panel (cost code + value), Rejected
-                       from Approved reverses the approval's writes, and leaving Approved for Quoting is
-                       the "return to quoting" repair. Rejected is terminal — no menu once reached. *@
-                    <div class="relative">
-                        <button type="button"
-                                class="inline-flex items-center gap-1 rounded-full px-2 py-0.5 text-xs font-medium bg-surface-raised text-content-muted"
-                                title="Change status"
-                                disabled="@busy"
-                                @onclick="() => orderStatusMenuOpen = !orderStatusMenuOpen">
-                            @order.Status.DisplayName() <span class="text-xs" aria-hidden="true">▾</span>
-                        </button>
-                        @if (orderStatusMenuOpen)
-                        {
-                            <div class="absolute left-0 mt-2 w-64 rounded border border-line bg-surface z-20 overflow-hidden">
-                                <ul class="divide-y divide-line">
-                                    @foreach (var option in OrderStatusOptions)
-                                    {
-                                        var status = option;
-                                        var isCurrent = status == order.Status;
-                                        var blocked = order.Status == VariationOrderStatus.Approved && status == VariationOrderStatus.Issued;
-                                        var selectable = !isCurrent && !blocked;
-                                        <li>
-                                            <button type="button"
-                                                    class="w-full text-left px-3 py-2 text-sm transition @(selectable ?"text-content hover:bg-surface-raised" : "text-content-subtle cursor-default")"
-                                                    disabled="@(busy || !selectable)"
-                                                    title="@PillOptionTitle(status)"
-                                                    @onclick="() => ChangeStatus(status)">
-                                                @PillOptionLabel(status)@(isCurrent ? " ✓" : "")
-                                            </button>
-                                        </li>
-                                    }
-                                </ul>
-                            </div>
-                        }
-                    </div>
-                }
-                else
-                {
-                    <Pill Tone="Tone.Muted">@order.Status.DisplayName()</Pill>
-                }
-            </div>
-            @* ---- Title, editable in place ------------------------------------------------------
-                   Retitling is allowed at EVERY stage, approved ones included: a badly worded title is
-                   worth fixing whenever it is spotted, and it is the number — not the wording — that the
-                   client's paperwork is keyed to. What has already been claimed keeps the wording it was
-                   issued with (the handler rewrites nothing downstream), which is exactly what the note
-                   under the field promises on an approved record. *@
-            @if (renamingOrder)
-            {
-                <div class="mb-5 max-w-2xl space-y-2">
-                    <FormField Label="Title" Value="@renameTitle" OnChange="v => renameTitle = v" Required="true" />
-                    @if (order.Status == VariationOrderStatus.Approved)
-                    {
-                        <p class="text-xs text-content-subtle">
-                            Valuation lines and CVR entries already written for
-                            <span class="font-mono">@order.VariationRef</span> keep the title they were issued with —
-                            this record and anything written from here on read the new one.
-                        </p>
-                    }
-                    <div class="flex gap-2">
-                        <button type="button" class="btn-primary" disabled="@busy" @onclick="SaveTitle">Save title</button>
-                        <button type="button" class="btn-neutral" disabled="@busy" @onclick="CancelRename">Cancel</button>
-                    </div>
-                </div>
-            }
-            else
-            {
-                <div class="flex items-start gap-2 mb-5">
-                    <h2 class="text-xl font-semibold text-content">@order.Title</h2>
-                    @if (CanManage)
-                    {
-                        <button type="button" class="btn-secondary text-xs px-2 py-1 shrink-0 mt-0.5"
-                                title="Edit the title" disabled="@busy" @onclick="StartRename">Edit</button>
-                    }
-                </div>
-            }
+            @* Everything that acts on the variation is in this bar — the status pill, the one
+               primary button and the Actions menu (the PDF download first). The panels below hold
+               the record's facts and the editors / dialogs the menu opens; none carries a button. *@
+            <VariationHeaderBar Order="order" Busy="busy"
+                                StatusMenuItems="StatusMenuItems" ActionMenuItems="ActionMenuItems"
+                                PrimaryLabel="@PrimaryLabel" OnPrimary="RunPrimary" />
 
             @* The same tab bar as the request page: the chain's documents as tabs, this record active.
                The Request / RFI tabs land back on the containing request page (the RFI tab straight
@@ -149,6 +73,16 @@
             @if (error is not null)
             {
                 <Notice Tone="Tone.Negative" Class="mb-4">@error</Notice>
+            }
+
+            @* Seeded (historic) variations predate the request link — say so here, and let the
+               menu's "Link originating request…" repair it on the record. *@
+            @if (string.IsNullOrWhiteSpace(order.RequestId))
+            {
+                <Notice Tone="Tone.Warning" Class="mb-4">
+                    This variation isn't linked to the request (RFI) it was raised from, so its history can't be traced yet.
+                    @(CanManage ? "Link it from Actions to complete the chain." : "A project manager or QS can attach the right RFI from Actions.")
+                </Notice>
             }
 
             @* A variation at Awaiting AI is, by definition, waiting for a document — so say whether it
@@ -186,21 +120,12 @@
             <div class="grid grid-cols-1 lg:grid-cols-3 gap-5">
                 <div class="lg:col-span-2 space-y-5">
                     <VariationDocumentPanel Order="order" CanManage="CanManage" Busy="busy"
+                                            @bind-Editing="editingSections"
                                             OnSaved="saved => order = saved" />
 
                     @if (ApprovedOrder is not null && VariationLines.Count > 0)
                     {
                         <VariationLinesTable Lines="VariationLines" VariationRef="@ApprovedOrder!.VariationRef" />
-                    }
-
-                    @* ---- Originating request: seeded (historic) variations predate the request link —
-                           the missing RFI/request gets attached here, on the record. ---- *@
-                    @if (string.IsNullOrWhiteSpace(order.RequestId))
-                    {
-                        <OriginatingRequestRepair VariationOrderId="@VariationOrderId"
-                                                  CanManage="CanManage"
-                                                  Candidates="@LinkCandidateOptions"
-                                                  OnLinked="ReloadAsync" />
                     }
 
                     @* ---- Conversation: the typed record — internal notes plus the shared thread the
@@ -232,6 +157,7 @@
                                           SelectedSubName="@SelectedSubName()"
                                           CanEditEstimate="CanEditEstimate"
                                           Busy="busy"
+                                          @bind-EditingEstimate="editingEstimate"
                                           OnSaved="saved => order = saved" />
 
                     @if (ApprovedOrder is not null)
@@ -244,8 +170,7 @@
                                               ValuationLinesReady="ValuationLinesReady"
                                               CostCentres="ApprovedCostCentres"
                                               LineCount="VariationLines.Count"
-                                              OnIssueWorkOrder="IssueWorkOrder"
-                                              OnEditLines="OpenEditLines"
+                                              @bind-Revising="revisingValue"
                                               ReviseValue="ReviseVoValue"
                                               @bind-ReturningToQuoting="returningToQuoting"
                                               OnReturnToQuoting="ReturnToQuoting"
@@ -253,7 +178,7 @@
                                               OnReject="RejectOrder" />
 
                         <Modal IsOpen="editLinesModalOpen"
-                               Title="@($"Edit lines — {order.Reference}")"
+                               Title="@($"Edit lines — {order.DisplayNumber}")"
                                ShowFooter="false"
                                OnCancel="CloseEditLines"
                                Class="max-w-3xl">
@@ -266,27 +191,70 @@
                                                    OnApprove="SaveLinesEdit" />
                         </Modal>
                     }
-                    else if (CanManage && order.Status is VariationOrderStatus.Quoting or VariationOrderStatus.Issued or VariationOrderStatus.AwaitingArchitectInstruction)
+                    else if (CanManage && order.Status.IsPreApproval())
                     {
+                        @* The staged build-up stays on show (it IS the estimate); its dialog, the
+                           approve modal and the tender dialog open from the bar. *@
+                        <StagedBuildUpPanel @key="VariationOrderId" Order="order" Busy="busy"
+                                            @bind-DialogOpen="buildUpDialogOpen"
+                                            OnStaged="OnBuildUpStaged" />
                         <VariationApproveOffer Order="order" Busy="busy"
                                                @bind-ModalOpen="approveModalOpen"
                                                OnApprove="ApproveWithLines" />
-                        <StagedBuildUpPanel @key="VariationOrderId" Order="order" Busy="busy"
-                                            OnStaged="OnBuildUpStaged" />
-                    }
-
-                    @if (CanManage && ApprovedOrder is null)
-                    {
                         <RecordAgreedTenderPanel VariationOrderId="@VariationOrderId" Busy="busy"
+                                                 @bind-IsOpen="recordingTender"
                                                  OnRecorded="OnTenderRecorded" />
-                        <DeleteVariationPanel Reference="@order.Reference" Busy="busy" OnDelete="DeleteOrder" />
                     }
                 </div>
             </div>
+
+            @* ---- Dialogs the bar opens ------------------------------------------------------------ *@
+
+            @* Retitling is allowed at EVERY stage, approved ones included: a badly worded title is
+               worth fixing whenever it is spotted, and it is the number — not the wording — that the
+               client's paperwork is keyed to. What has already been claimed keeps the wording it was
+               issued with (the handler rewrites nothing downstream). *@
+            <Modal IsOpen="renamingOrder"
+                   Title="@($"Edit title — {order.DisplayNumber}")"
+                   ConfirmLabel="Save title"
+                   ConfirmDisabled="@(busy || string.IsNullOrWhiteSpace(renameTitle))"
+                   OnCancel="CancelRename"
+                   OnConfirm="SaveTitle"
+                   Class="max-w-xl">
+                <div class="space-y-3">
+                    @if (renameError is not null)
+                    {
+                        <Notice Tone="Tone.Negative">@renameError</Notice>
+                    }
+                    <FormField Label="Title" Value="@renameTitle" OnChange="v => renameTitle = v" Required="true" />
+                    @if (order.Status == VariationOrderStatus.Approved)
+                    {
+                        <p class="text-xs text-content-subtle">
+                            Valuation lines and CVR entries already written for
+                            <span class="font-mono">@order.VariationRef</span> keep the title they were issued with —
+                            this record and anything written from here on read the new one.
+                        </p>
+                    }
+                </div>
+            </Modal>
+
+            @if (CanManage && string.IsNullOrWhiteSpace(order.RequestId))
+            {
+                <OriginatingRequestRepair VariationOrderId="@VariationOrderId"
+                                          Candidates="@LinkCandidateOptions"
+                                          @bind-IsOpen="linkingRequest"
+                                          OnLinked="ReloadAsync" />
+            }
+
+            @if (CanManage && ApprovedOrder is null)
+            {
+                <DeleteVariationPanel Reference="@order.DisplayNumber" Busy="busy"
+                                      @bind-IsOpen="deletingOrder"
+                                      OnDelete="DeleteOrder" />
+            }
 
             <DeclineVariationModal Order="order" @bind-IsOpen="decliningOrder" Busy="busy" Error="@error"
                                    OnConfirm="RejectOrder" />
         </ProjectPageShell>
     }
 </Page>
-

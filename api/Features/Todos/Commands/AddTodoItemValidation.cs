@@ -15,6 +15,10 @@ public sealed class AddTodoItemValidation
         // holds the role is the handler's directory check; this is the shape rule.
         if (!string.IsNullOrWhiteSpace(command.AssigneePersonEmail) && command.AssigneeRole is null)
             errors.Add("A to-do can only be pinned to a person together with their role.");
+        // About-a-record is both halves or neither; that the record exists on the project is the
+        // handler's check (TodoAboutRecords).
+        if ((command.AboutRecordType is null) != string.IsNullOrWhiteSpace(command.AboutRecordId))
+            errors.Add("A to-do about a record needs both the record type and the record id.");
         if (errors.Count == 0) return ValidationOutcome.Passed;
         return new ValidationOutcome(errors);
     }

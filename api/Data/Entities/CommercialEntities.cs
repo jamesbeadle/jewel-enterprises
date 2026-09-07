@@ -228,6 +228,18 @@ public sealed class DefectEntity
     public DateTimeOffset RaisedAt { get; set; }
     public DateTimeOffset? ResolvedAt { get; set; }
 
+    // The supplier the defect is raised with — a directory record id (SubcontractorEntity; the
+    // Subcontractor / Supplier categories), the way a work order names its supplier. Loose string
+    // id, no FK, house style. Null = no company picked (pre-2026-09-07 rows carry only the
+    // free-typed AssignedToEmail). Added by AddDefectSupplierAndTodoAboutRecord.
+    [MaxLength(64)] public string? SubcontractorId { get; set; }
+
+    // First time the defect was SENT to the supplier from its page (the compose pipeline stamps
+    // it when a sent email carries this defect's tag and goes to the supplier's address), and by
+    // whom. Null = never sent. Later sends are chases — visible in the correspondence, not here.
+    public DateTimeOffset? SentToSupplierAt { get; set; }
+    [MaxLength(256)] public string? SentToSupplierByEmail { get; set; }
+
     // Sequential, human-readable defect number (rendered as DEF-0001). Global — like to-do and
     // work-order numbers — so the tag stem is unique across the flat JPMS mailbox-category space.
     // Minted by RaiseDefectHandler; the AddDefectNumbers migration backfilled existing rows.

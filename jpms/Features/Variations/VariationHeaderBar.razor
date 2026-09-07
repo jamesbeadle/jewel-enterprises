@@ -1,0 +1,67 @@
+@namespace Jewel.JPMS.Features.Variations
+
+@* Everything that acts on this variation is up here with the record it acts on — the same bar
+   the request page wears: identity and status on the left, one primary action plus a single
+   Actions menu on the right. No panel below carries a button on the record any more (the PDF
+   download, the section / estimate / title editors, the build-up, tender, work-order, revise,
+   reject and delete flows all used to be scattered down the page, so finding the export meant
+   scanning every panel). The page builds both menus, because it owns the commands they fire. *@
+<header class="panel px-5 py-4 mb-5">
+    <div class="flex flex-wrap items-start justify-between gap-4">
+        <div class="min-w-0">
+            <div class="flex flex-wrap items-center gap-2.5 mb-1.5">
+                @* One number for one document (V72 at every stage); the historic quoting reference
+                   is secondary context — it is the stem emails are tagged to in mailbox triage. *@
+                <span class="font-mono text-base font-semibold text-content" title="Variation number">@Order.DisplayNumber</span>
+                @if (!string.IsNullOrWhiteSpace(Order.Reference) && Order.Reference != Order.DisplayNumber)
+                {
+                    <span class="font-mono text-sm text-content-muted" title="Quoting reference — the tag emails about this variation carry in mailbox triage">@Order.Reference</span>
+                }
+                <span class="text-content-subtle text-xs">Variation Order</span>
+
+                <span class="h-4 w-px bg-line" aria-hidden="true"></span>
+
+                @if (StatusMenuItems.Count > 0)
+                {
+                    @* The status pill doubles as the status control: click it, pick the new status.
+                       The commercial moves (Approved, Rejected, back to Quoting from Approved) route
+                       through their own confirms — everything else applies directly. *@
+                    <DropdownMenu AlignLeft="true" WidthClass="w-64" Disabled="@Busy"
+                                  ToggleTitle="Change status"
+                                  ToggleClass="@Pill.ClassesFor(Order.Status.ToTone())"
+                                  Items="StatusMenuItems">
+                        <ToggleContent><span>@Order.Status.DisplayName()</span></ToggleContent>
+                    </DropdownMenu>
+                }
+                else
+                {
+                    <Pill Tone="@Order.Status.ToTone()">@Order.Status.DisplayName()</Pill>
+                }
+            </div>
+            <h2 class="text-xl font-semibold text-content leading-snug">@Order.Title</h2>
+        </div>
+
+        <div class="flex flex-wrap items-center gap-2 shrink-0">
+            @if (PrimaryLabel is not null)
+            {
+                <button type="button" class="btn-primary" disabled="@(Busy || PrimaryDisabled)" @onclick="() => OnPrimary.InvokeAsync()">@PrimaryLabel</button>
+            }
+            <DropdownMenu Label="Actions" WidthClass="w-72" Items="ActionMenuItems" />
+        </div>
+    </div>
+</header>
+
+@code {
+    [Parameter, EditorRequired] public VariationOrder Order { get; set; } = default!;
+    [Parameter] public bool Busy { get; set; }
+    /// <summary>The status pill's choices — empty renders a plain pill (no permission, or a
+    /// terminal status).</summary>
+    [Parameter] public List<DropdownMenu.Item> StatusMenuItems { get; set; } = new();
+    /// <summary>The Actions menu — the complete list of what can be done to this record.</summary>
+    [Parameter] public List<DropdownMenu.Item> ActionMenuItems { get; set; } = new();
+    /// <summary>The ONE green button on the page — null when the record has no next step
+    /// (rejected, or the user can't manage it).</summary>
+    [Parameter] public string? PrimaryLabel { get; set; }
+    [Parameter] public bool PrimaryDisabled { get; set; }
+    [Parameter] public EventCallback OnPrimary { get; set; }
+}

@@ -4,7 +4,10 @@ namespace Jewel.JPMS.Api.Features.Todos;
 
 internal static class TodosEntityMapping
 {
-    public static TodoItem ToModel(this TodoItemEntity entity, IReadOnlyDictionary<string, string>? personNames = null) =>
+    public static TodoItem ToModel(
+        this TodoItemEntity entity,
+        IReadOnlyDictionary<string, string>? personNames = null,
+        IReadOnlyDictionary<string, string>? aboutReferences = null) =>
         new(entity.TodoItemId,
             entity.ProjectId,
             entity.Reference,
@@ -20,7 +23,12 @@ internal static class TodosEntityMapping
             entity.DueAt,
             entity.CompletedAt,
             entity.StartedAt,
-            entity.StartedByEmail);
+            entity.StartedByEmail,
+            AboutRecordType: entity.AboutRecordType is int aboutType ? (RecordType?)aboutType : null,
+            AboutRecordId: entity.AboutRecordId,
+            AboutRecordReference: entity.AboutRecordId is string aboutId && aboutReferences is not null
+                && aboutReferences.TryGetValue(TodoAboutRecords.Key(entity.AboutRecordType, aboutId), out var aboutReference)
+                ? aboutReference : null);
 
     public static TodoActivity ToModel(this TodoItemActivityEntity entity) =>
         new(entity.TodoItemActivityId,

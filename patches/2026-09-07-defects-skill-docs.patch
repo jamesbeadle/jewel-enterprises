@@ -1,0 +1,70 @@
+diff --git a/.claude/skills/jpms-operator/SKILL.md b/.claude/skills/jpms-operator/SKILL.md
+index 6651b00..d2f8bd6 100644
+--- a/.claude/skills/jpms-operator/SKILL.md
++++ b/.claude/skills/jpms-operator/SKILL.md
+@@ -84,7 +84,7 @@ specific tab. Full page-by-page detail: `references/site-map.md`.
+ | Raise / approve a work order | Work Orders tab — "Add work order", two-click Approve (mints WO number, emails the PO) |
+ | Pay-side reconciliation | Xero Cost Allocation (code purchase lines to project + cost centre; allocating a draft bill fully approves it in Xero) then WO Allocation (tie lines to work orders) |
+ | Approve the week's labour | Project Labour tab — tick and bulk-approve; only approved time posts to Financials |
+-| Raise / progress a defect | Defects register (DEF-#### = its mailbox tag) or from a sub's email in Control Centre |
++| Raise / progress a defect | Defects register (DEF-#### = its mailbox tag; raised WITH a directory supplier) or from a sub's email in Control Centre; **send it to the supplier**, chase, tag emails and raise to-dos about it on the defect's own page `/projects/{p}/defects/{id}` |
+ | Delay events, NOD / EOT / LADs | Programme tab → Claims sub-tab |
+ | Chase money answers | Aged Receivables / Aged Payables (include drafts Xero's own reports can't see); Cash Forecast for the months ahead; Profit Summary for margin |
+ | Plan the next 13 weeks' payments — who gets paid which week | Weekly Cashflow (`/finance/weekly-cashflow`): move entries with ‹ ›, group suppliers into one line, park with ⊘, add manual items; the Excel export is the grid one line per supplier. Over the connector, `get_weekly_cashflow_grid` reads the same grid |
+diff --git a/.claude/skills/jpms-operator/references/lifecycles.md b/.claude/skills/jpms-operator/references/lifecycles.md
+index 0404025..556f9c6 100644
+--- a/.claude/skills/jpms-operator/references/lifecycles.md
++++ b/.claude/skills/jpms-operator/references/lifecycles.md
+@@ -99,7 +99,10 @@ without changing order value. An order can never be invoiced past its value.
+ ## Defects
+ 
+ `DEF-####` sequential reference, which is also the mailbox tag stem. Status
+-walks Open → In progress → Resolved → Verified.
++walks Open → In progress → Resolved → Verified. Raised WITH a supplier (a
++directory record); the first email sent to that supplier from the defect's page
++stamps SentToSupplierAt and moves Open → In progress automatically; Resolved /
++Verified stamp ResolvedAt. To-dos can be ABOUT a defect (TodoItem.AboutRecord).
+ 
+ ## Projects
+ 
+diff --git a/.claude/skills/jpms-operator/references/site-map.md b/.claude/skills/jpms-operator/references/site-map.md
+index 6a08350..69baecc 100644
+--- a/.claude/skills/jpms-operator/references/site-map.md
++++ b/.claude/skills/jpms-operator/references/site-map.md
+@@ -154,11 +154,31 @@ added/deleted; two-click deletes.
+ 
+ ### Defects — `/projects/{project}/defects`
+ Defect register — each defect's sequential **DEF-####** reference is also its
+-mailbox tag stem, so tagged mail reads back live under it. "Raise defect"
+-inline form (location, assigned-to email, description); Status dropdown walks
+-Open → In progress → Resolved → Verified; "Emails" expands a row to its tagged
+-correspondence. Also raised from a subcontractor email in the Control Centre
+-(System Tags → Create new → Defect); further tagging happens there too.
++mailbox tag stem, so tagged mail reads back live under it. A defect is raised
++WITH a supplier: a directory record (Subcontractor / Supplier category) picked
++from the list, like a work order's supplier; a free-typed contact email is the
++stop-gap for a company not yet in the directory. "Raise defect" inline form
++(location, supplier, description) then opens the defect's page; columns include
++Supplier and Sent (first emailed to the supplier, or "Not sent"); Status
++dropdown walks Open → In progress → Resolved → Verified. Also raised from a
++subcontractor email in the Control Centre (System Tags → Create new → Defect).
++Raising emails nobody.
++
++### Defect detail — `/projects/{project}/defects/{defectId}`
++One defect's page (2026-09-07). Facts (supplier + contact, sent, raised,
++resolved), Edit modal (location, supplier, contact email, description), status
++dropdown. **"Send to supplier"** (primary, until the first send) opens the
++shared composer pre-addressed to the supplier's directory email and pre-written
++from the defect — edit, then Send from the projects mailbox; the sent copy
++carries JPMS/DEF-#### so the supplier's replies file themselves back into
++Communications, and the server stamps Sent and moves Open → In progress. After
++that the button reads **"Chase supplier"**. Communications = the shared thread
++list with Find & tag emails, Reply/Forward, New email. **To-dos** panel = the
++to-dos ABOUT this defect (an explicit link on the to-do); "New to-do" raises
++one on the project with the title and link pre-filled; the to-do's page shows
++"About: DEF-####" linking back. Connector: list_defects / find_by_reference
++route here; list_todos aboutRecordId; add_todo aboutRecordType Defect. No
++connector action sends the defect — that is done on this page.
+ 
+ ### Communications — `/projects/{project}/communications`
+ Roll-up of ALL correspondence tagged to this project's records, read live,

@@ -37,6 +37,14 @@ public sealed class TodoItemEntity
     public DateTimeOffset? StartedAt { get; set; }
     [MaxLength(256)] public string? StartedByEmail { get; set; }
 
+    // The record this item is ABOUT (a Models.RecordType stored as int + the record's id) — set
+    // when the item is raised from a record's page (a defect's "New to-do") or by the connector.
+    // Both or neither. Loose string id, no FK (house style); the record's page lists the items
+    // about it via ListTodoItemsAboutRecord. Distinct from TodoItemLinks (to-do ↔ to-do) and from
+    // the mail-tag association. Added by AddDefectSupplierAndTodoAboutRecord (2026-09-07).
+    public int? AboutRecordType { get; set; }
+    [MaxLength(64)] public string? AboutRecordId { get; set; }
+
     // Sequential, human-readable item number (rendered as TODO-0001). Global — like request and bid
     // package numbers — so the tag stem is unique across the flat JPMS mailbox-category space.
     public int Number { get; set; }

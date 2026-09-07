@@ -21,9 +21,9 @@ internal sealed partial class SiteAndProgressActions
         new AiAction(
             Name: "raise_defect",
             Area: "Closeout & defects",
-            Description: "Raises a defect on a project (description, location, assignee email). "
-                + "It is numbered from the global defect sequence (DEF-####) and opens in Open "
-                + "status.",
+            Description: "Raises a defect on a project (description, location, the supplier it is "
+                + "raised with). It is numbered from the global defect sequence (DEF-####) and "
+                + "opens in Open status.",
             CommandType: typeof(RaiseDefect),
             ResultType: typeof(Defect),
             AuthorisationType: typeof(RaiseDefectAuthorisation),
@@ -31,8 +31,12 @@ internal sealed partial class SiteAndProgressActions
             VisibleTo: DefectRaisers,
             EmailStamps: Array.Empty<string>(),
             NameStamps: Array.Empty<string>(),
-            Notes: "assignedToEmail is who should fix it — usually a subcontractor's portal "
-                + "email, not the signed-in user."),
+            Notes: "subcontractorId is the DIRECTORY record of the supplier who should fix it "
+                + "(search_directory resolves a company name) — the way a work order names its "
+                + "supplier; assignedToEmail is the older free-typed contact, still accepted and "
+                + "promoted to the matching directory record when one has that contact email. "
+                + "Sending the defect to the supplier is done on the defect's page "
+                + "(/projects/{projectId}/defects/{defectId}); raising it does not email anyone."),
 
         new AiAction(
             Name: "create_defect_from_message",
@@ -53,8 +57,9 @@ internal sealed partial class SiteAndProgressActions
         new AiAction(
             Name: "update_defect",
             Area: "Closeout & defects",
-            Description: "Updates a defect's description, location, assignee and status. Moving "
-                + "it to Resolved or Verified for the first time stamps the resolution time.",
+            Description: "Updates a defect's description, location, supplier (subcontractorId) "
+                + "and status. Moving it to Resolved or Verified for the first time stamps the "
+                + "resolution time.",
             CommandType: typeof(UpdateDefect),
             ResultType: typeof(Defect),
             AuthorisationType: typeof(UpdateDefectAuthorisation),

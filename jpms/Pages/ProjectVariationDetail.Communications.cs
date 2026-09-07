@@ -86,9 +86,28 @@ public partial class ProjectVariationDetail
         if (order is not null && order.VariationOrderId != VariationOrderId)
         {
             orderLoaded = false;
-            editLinesModalOpen = false;
+            CloseOpenDialogs();
             await ReloadAsync();
         }
+    }
+
+    // Drops every dialog, editor and inline confirm the bar can open. Used when the page is about
+    // to show a different record, so nothing opened against the old one hangs over the new.
+    private void CloseOpenDialogs()
+    {
+        editLinesModalOpen = false;
+        approveModalOpen = false;
+        renamingOrder = false;
+        editingSections = false;
+        editingEstimate = false;
+        revisingValue = false;
+        buildUpDialogOpen = false;
+        recordingTender = false;
+        linkingRequest = false;
+        deletingOrder = false;
+        decliningOrder = false;
+        rejectingOrder = false;
+        returningToQuoting = false;
     }
 
     // Scrolls to and flashes the approved-figures panel. The lineage bar no longer needs this —

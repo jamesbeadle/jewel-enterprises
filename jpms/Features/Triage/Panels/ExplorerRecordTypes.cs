@@ -32,6 +32,11 @@ public static class ExplorerRecordTypes
         _ => type.ToString()
     };
 
+    /// <summary>The same by bare type + ids — for a reference held on another record (a to-do's
+    /// "about" record) where no LinkableRecord projection is to hand.</summary>
+    public static string? FullPageHref(RecordType type, string projectId, string recordId) =>
+        FullPageHref(new LinkableRecord(type, recordId, projectId, "", "", ""));
+
     /// <summary>Where a record's own full page lives — the explorer reads, the page edits.</summary>
     public static string? FullPageHref(LinkableRecord record) => record.Type switch
     {
@@ -39,7 +44,7 @@ public static class ExplorerRecordTypes
         RecordType.Variation or RecordType.VariationQuote => $"/projects/{record.ProjectId}/variations/{record.RecordId}",
         RecordType.BidPackageInvite => $"/projects/{record.ProjectId}/bid-package-invites/{record.RecordId}",
         RecordType.WorkOrder => $"/projects/{record.ProjectId}/work-orders",
-        RecordType.Defect => $"/projects/{record.ProjectId}/defects",
+        RecordType.Defect => $"/projects/{record.ProjectId}/defects/{record.RecordId}",
         RecordType.Inventory => $"/projects/{record.ProjectId}/inventory",
         RecordType.SiteInstruction => $"/projects/{record.ProjectId}/site-instructions",
         RecordType.Scheduling or RecordType.Lad => $"/projects/{record.ProjectId}/programme",

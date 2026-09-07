@@ -1,0 +1,185 @@
+@page "/projects/{ProjectId}/defects/{DefectId}"
+@using Jewel.JPMS.Contracts.Closeout
+@using Jewel.JPMS.Features.Closeout
+@using Jewel.JPMS.Features.Closeout.Detail
+@inject AuthService Auth
+@inject SessionService Session
+@inject NavigationManager Nav
+@inject IQueryClient Queries
+@inject ICommandSender Commands
+@inject ISubcontractorStore Directory
+@inject ITodoStore TodoStore
+@inject Jewel.JPMS.Features.Projects.ProjectListReadModel Projects
+@implements IDisposable
+
+<PageTitle>@(defect is null ? "Defect" : defect.Reference) · JPMS</PageTitle>
+
+@*
+    One defect's own page (2026-09-07) — the to-do page's shape applied to a defect. Everything
+    about it in one place: its facts (with the Edit dialog), the supplier it is raised with, and
+    the two things that make a defect move: SENDING it to that supplier — the shared composer,
+    pre-addressed and pre-written, edited then sent from the projects mailbox with the defect's
+    JPMS/DEF-#### tag so the supplier's replies file themselves back here — and the to-dos ABOUT
+    it. Communications is the shared CorrespondenceThreadList with Find & tag, Reply/Forward and
+    a new email, all filed to the defect. The first send stamps "Sent" and moves Open → In
+    progress server-side; later sends are chases.
+*@
+
+<Page>
+    <ProjectPageShell ProjectId="@ProjectId" ActiveTab="defects">
+        <a href="/projects/@ProjectId/defects" class="text-xs text-content-subtle hover:text-content underline underline-offset-2">← Defects</a>
+
+        <LoadGate IsLoading="@loading" Prominent="true" Label="Loading the defect">
+        @if (loadFailed)
+        {
+            <p class="mt-4 text-sm text-negative">Couldn't load this defect. The reason is in the red bar above — reload to try again.</p>
+        }
+        else if (defect is null)
+        {
+            <div class="mt-4">
+                <PageHeader Title="This defect is gone" />
+                <p class="text-content-muted">It may have been deleted. The <a class="underline underline-offset-2" href="/projects/@ProjectId/defects">Defects register</a> has everything current.</p>
+            </div>
+        }
+        else
+        {
+            <PageHeader Eyebrow="@defect.Reference" Class="mt-2">
+                <TitleContent>
+                    <span>@(string.IsNullOrWhiteSpace(defect.Location) ? "Defect" : defect.Location)</span>
+                    <Pill Tone="@defect.Status.ToTone()" Class="shrink-0 ml-3 align-middle">@defect.Status.DisplayName()</Pill>
+                </TitleContent>
+                <SubtitleContent>
+                    <span class="text-content-muted">@defect.Description</span>
+                </SubtitleContent>
+                <Actions>
+                    @if (CanEdit)
+                    {
+                        <button type="button" class="btn-secondary" disabled="@busy" @onclick="OpenEdit">Edit</button>
+                        <select class="field py-1" value="@((int)defect.Status)" disabled="@busy" title="Status"
+                                @onchange="SetStatusAsync">
+                            @foreach (var status in Enum.GetValues<DefectStatus>())
+                            {
+                                <option value="@((int)status)">@status.DisplayName()</option>
+                            }
+                        </select>
+                    }
+                </Actions>
+                <Primary>
+                    @if (CanSend)
+                    {
+                        @if (string.IsNullOrWhiteSpace(defect.SupplierEmail))
+                        {
+                            <button type="button" class="btn-primary" disabled="@busy" title="Pick the supplier first — Edit"
+                                    @onclick="OpenEdit">Send to supplier</button>
+                        }
+                        else if (!defect.HasBeenSentToSupplier)
+                        {
+                            <button type="button" class="btn-primary" disabled="@busy" @onclick="() => StartSupplierEmail(chase: false)">Send to supplier</button>
+                        }
+                        else
+                        {
+                            <button type="button" class="btn-primary" disabled="@busy" @onclick="() => StartSupplierEmail(chase: true)">Chase supplier</button>
+                        }
+                    }
+                </Primary>
+            </PageHeader>
+
+            @if (error is not null)
+            {
+                <Notice Tone="Tone.Negative" Class="mb-4">@error</Notice>
+            }
+
+            <div class="grid grid-cols-1 lg:grid-cols-3 gap-6 items-start">
+                <div class="lg:col-span-2">
+                    <DefectCommunicationsPanel @ref="communications" Defect="@defect" Project="@Project" Supplier="@Supplier"
+                                               CanSend="@CanSend" Projects="@ProjectPool" OnSent="ReloadAfterSendAsync" />
+                </div>
+                <div class="space-y-6">
+                    <Panel Title="Detail" BodyClass="p-5">
+                        <dl class="grid grid-cols-1 gap-y-3 text-sm">
+                            <div>
+                                <dt class="eyebrow">Supplier</dt>
+                                <dd class="text-content mt-0.5">
+                                    @if (Supplier is { } supplier)
+                                    {
+                                        <a href="/directory/@supplier.SubcontractorId" class="hover:underline underline-offset-2">@supplier.CompanyName</a>
+                                        @if (!string.IsNullOrWhiteSpace(supplier.ContactName) || !string.IsNullOrWhiteSpace(supplier.ContactEmail))
+                                        {
+                                            <span class="block text-xs text-content-subtle">@supplier.ContactName @(string.IsNullOrWhiteSpace(supplier.ContactEmail) ? "" : $"· {supplier.ContactEmail}")</span>
+                                        }
+                                    }
+                                    else if (!string.IsNullOrWhiteSpace(defect.AssignedToEmail))
+                                    {
+                                        <span>@defect.AssignedToEmail</span>
+                                        <span class="block text-xs text-content-subtle">Not a directory record — Edit to pick one.</span>
+                                    }
+                                    else
+                                    {
+                                        <span class="text-content-subtle italic">Not assigned — Edit to pick the supplier.</span>
+                                    }
+                                </dd>
+                            </div>
+                            <div>
+                                <dt class="eyebrow">Sent to supplier</dt>
+                                <dd class="text-content mt-0.5">
+                                    @if (defect.SentToSupplierAt is { } sentAt)
+                                    {
+                                        @DateText(sentAt)@(string.IsNullOrWhiteSpace(defect.SentToSupplierByEmail) ? "" : $" by {defect.SentToSupplierByEmail}")
+                                    }
+                                    else
+                                    {
+                                        <span class="text-content-subtle italic">Not yet</span>
+                                    }
+                                </dd>
+                            </div>
+                            <div>
+                                <dt class="eyebrow">Raised</dt>
+                                <dd class="text-content mt-0.5">@DateText(defect.RaisedAt)</dd>
+                            </div>
+                            @if (defect.ResolvedAt is { } resolvedAt)
+                            {
+                                <div>
+                                    <dt class="eyebrow">Resolved</dt>
+                                    <dd class="text-content mt-0.5">@DateText(resolvedAt)</dd>
+                                </div>
+                            }
+                        </dl>
+                    </Panel>
+                    <DefectTodosPanel Defect="@defect" CanManage="@CanManageTodos" AssigneeOptions="@assigneeOptions" />
+                </div>
+            </div>
+
+            <Modal IsOpen="@editOpen" Title="@($"Edit {defect.Reference}")" ConfirmLabel="Save changes" CancelLabel="Cancel"
+                   ConfirmDisabled="@(string.IsNullOrWhiteSpace(editDescription) || busy)"
+                   OnConfirm="SaveEditAsync" OnCancel="CloseEdit">
+                <div class="space-y-3">
+                    @if (editError is not null)
+                    {
+                        <Notice Tone="Tone.Negative">@editError</Notice>
+                    }
+                    <FormField Label="Location" Value="@editLocation" OnChange="v => editLocation = v" />
+                    <div>
+                        <FormField Label="Supplier" Hint="The company the defect is raised with — its contact email is where it is sent.">
+                        <SearchSelect Options="@SupplierOptions" Value="@editSubcontractorId"
+                                      ValueChanged="v => editSubcontractorId = v"
+                                      Placeholder="@(Directory.IsLoaded ? "Pick a supplier…" : "Loading the directory…")"
+                                      Disabled="@(!Directory.IsLoaded)"
+                                      WidthClass="w-full" InputClass="field" />
+                        </FormField>
+                    </div>
+                    @if (string.IsNullOrWhiteSpace(editSubcontractorId))
+                    {
+                        <FormField Label="Contact email (if not in the directory)" Value="@editAssignedTo" OnChange="v => editAssignedTo = v" InputType="email" />
+                    }
+                    <div>
+                        <FormField Label="Description" Required>
+                        <textarea class="field" rows="4" maxlength="1024" value="@editDescription"
+                                  @oninput="e => editDescription = e.Value?.ToString() ?? string.Empty"></textarea>
+                        </FormField>
+                    </div>
+                </div>
+            </Modal>
+        }
+        </LoadGate>
+    </ProjectPageShell>
+</Page>

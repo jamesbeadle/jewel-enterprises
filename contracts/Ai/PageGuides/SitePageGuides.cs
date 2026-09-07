@@ -128,13 +128,37 @@ public static class SitePageGuides
 
         new("/projects/{project}/defects", "Defects",
             "The project's defect register — each defect carries a sequential DEF-#### reference "
-            + "which is also its mailbox tag stem, so every email filed to it reads back live under "
-            + "it here. Manually: \"Raise defect\" opens an inline form (location, assigned-to "
-            + "email, description); each row's Status dropdown walks Open → In progress → Resolved "
-            + "→ Verified; \"Emails\" expands a row to its tagged correspondence, fetched live. A "
-            + "defect can also be raised from a subcontractor email in the Control Centre (System "
-            + "Tags → Create new → Defect), and tagging further emails to one happens there "
-            + "(stage_triage_tag) — not on this page."),
+            + "which is also its mailbox tag stem. A defect is raised WITH a supplier: a directory "
+            + "record (Subcontractor / Supplier category) picked from the list, the way a work order "
+            + "names its supplier; a free-typed contact email is the stop-gap for a company not yet "
+            + "in the directory. Manually: \"Raise defect\" opens an inline form (location, "
+            + "supplier, description) and then opens the new defect's own page; the register shows "
+            + "Supplier and Sent (when the defect was first emailed to the supplier, or \"Not "
+            + "sent\"); each row's Status dropdown walks Open → In progress → Resolved → Verified; "
+            + "the reference, description and \"Open\" go to the defect's page, where sending, "
+            + "correspondence and to-dos live. A defect can also be raised from a subcontractor "
+            + "email in the Control Centre (System Tags → Create new → Defect). Raising a defect "
+            + "emails nobody. Assistant: list_defects, raise_defect (subcontractorId from "
+            + "search_directory), update_defect."),
+
+        new("/projects/{project}/defects/{defectId}", "Defect detail",
+            "One defect's own page — its facts (supplier as a directory record with contact, sent "
+            + "to supplier, raised, resolved), Edit (location, supplier, contact email, "
+            + "description — a modal), the status dropdown, and the two things that move a defect. "
+            + "\"Send to supplier\" (primary button, shown until the first send) opens the shared "
+            + "composer pre-addressed to the supplier's directory email and pre-written from the "
+            + "defect; the user edits and sends from the projects mailbox; the sent copy carries "
+            + "JPMS/DEF-#### so the supplier's replies file themselves back into this page's "
+            + "Communications, and the server stamps Sent and moves Open → In progress. After that "
+            + "the button reads \"Chase supplier\" (a reminder, same composer). Communications is "
+            + "the shared thread list with Find & tag emails, Reply/Forward and New email, all "
+            + "filed to the defect. The To-dos panel lists the to-dos ABOUT this defect (an "
+            + "explicit link on the to-do, not a mail tag) and \"New to-do\" raises one on this "
+            + "project with the title and link pre-filled; each opens the to-do's page, which "
+            + "links back. Assistant: list_defects / find_by_reference (this route), "
+            + "update_defect, list_todos aboutRecordId = the defectId, add_todo aboutRecordType "
+            + "Defect + aboutRecordId; sending/chasing the supplier has no connector action — it "
+            + "is done here."),
 
         new("/projects/{project}/building-control", "Building Control",
             "The project's building control — the statutory sign-off trail. The case panel holds "

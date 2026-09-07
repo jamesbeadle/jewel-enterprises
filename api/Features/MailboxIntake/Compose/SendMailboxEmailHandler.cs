@@ -1,4 +1,5 @@
 using Jewel.JPMS.Api.Features.Audit;
+using Jewel.JPMS.Api.Features.Closeout;
 using Jewel.JPMS.Api.Features.Drawings.Storage;
 using Jewel.JPMS.Api.Features.MailboxIntake.Graph;
 using Jewel.JPMS.Api.Features.MailboxIntake.Sharing;
@@ -51,6 +52,7 @@ public sealed partial class SendMailboxEmailHandler : ICommandHandler<SendMailbo
     private readonly ComposeHtmlPipeline pipeline;
     private readonly AuditTrail audit;
     private readonly TodoEmailActivityRecorder todoActivity;
+    private readonly DefectSupplierSendRecorder defectSends;
     private readonly ICommandHandler<CreateRequestFromMessage, Request> createRequest;
 
     public SendMailboxEmailHandler(
@@ -65,9 +67,11 @@ public sealed partial class SendMailboxEmailHandler : ICommandHandler<SendMailbo
         ComposeHtmlPipeline pipeline,
         AuditTrail audit,
         TodoEmailActivityRecorder todoActivity,
+        DefectSupplierSendRecorder defectSends,
         ICommandHandler<CreateRequestFromMessage, Request> createRequest)
     {
         this.todoActivity = todoActivity;
+        this.defectSends = defectSends;
         this.context = context;
         this.graph = graph;
         this.reader = reader;

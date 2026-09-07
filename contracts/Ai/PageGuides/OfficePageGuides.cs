@@ -24,8 +24,11 @@ public static class OfficePageGuides
             + "Centre, not here."),
 
         new("/todos/{todoItemId}", "To-do detail",
-            "One to-do item's own page — its full facts, multiline notes, its Timeline, the to-dos "
-            + "linked to it by shared tagged mail, and its communications: the item's tagged emails "
+            "One to-do item's own page — its full facts (including \"About\": the record the item "
+            + "is about, e.g. DEF-0012, linking to that record's page — set when it was raised from "
+            + "the record's page or by add_todo aboutRecordType/aboutRecordId), multiline notes, "
+            + "its Timeline, the to-dos linked to it by shared tagged mail, and its communications: "
+            + "the item's tagged emails "
             + "read live, each answerable here, plus a new outbound email filed to the item. The "
             + "item is Open, In progress or Done: \"Working on it\" moves Open to In progress; so "
             + "does \"Log a chase\" in the Timeline panel (a chase or a note with words — for chases "

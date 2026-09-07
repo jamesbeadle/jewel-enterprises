@@ -1,25 +1,15 @@
 @namespace Jewel.JPMS.Features.Variations
 
-@* Approval runs from either pre-approved status. With a recorded tender (a subcontractor and
-   agreed value) this is the normal end of the pipeline; without one it is a MANUAL approval —
-   the route for historic (seeded) and client-instructed variations that never tendered. The
-   write-through (Valuation Report, CVR, cost-centre budgets) is identical either way. The
-   build-up itself is captured in a modal (VariationApprovePanel) — the sidebar is too narrow
-   for the line table — and the modal's open flag is bound, because the status pill's
-   "Approved…" pick opens it too. *@
-<div class="panel p-5 space-y-3">
-    <h3 class="eyebrow">@(IsManual ? "Approve manually & raise Variation Order" : "Approve & raise Variation Order")</h3>
-    <p class="text-xs text-content-subtle">
-        Build the variation up from priced lines — one per cost centre — then approve. Each line writes onto
-        the Valuation Report and commits its own cost centre's budget.
-    </p>
-    <button type="button" class="btn-primary w-full" disabled="@Busy" @onclick="() => ModalOpenChanged.InvokeAsync(true)">
-        @(IsManual ? "Approve manually & raise VO…" : "Approve & raise VO…")
-    </button>
-</div>
-
+@* The approve dialog. Approval runs from any pre-approved status. With a recorded tender (a
+   subcontractor and agreed value) this is the normal end of the pipeline; without one it is a
+   MANUAL approval — the route for historic (seeded) and client-instructed variations that never
+   tendered. The write-through (Valuation Report, CVR, cost-centre budgets) is identical either
+   way. The build-up is captured in a modal (VariationApprovePanel) — the sidebar is too narrow
+   for the line table — and the open flag is bound, because it is opened from the page's bar: the
+   primary button, the Actions menu and the status pill's "Approved…" pick all land here. (The
+   sidebar panel that used to carry the button is gone — the bar is where actions live.) *@
 <Modal IsOpen="ModalOpen"
-       Title="@($"Approve {Order.Reference} — {Order.Title}")"
+       Title="@($"{(IsManual ? "Approve manually" : "Approve")} {Order.DisplayNumber} — {Order.Title}")"
        ShowFooter="false"
        OnCancel="() => ModalOpenChanged.InvokeAsync(false)"
        Class="max-w-3xl">
@@ -37,7 +27,7 @@
 @code {
     [Parameter, EditorRequired] public VariationOrder Order { get; set; } = default!;
     [Parameter] public bool Busy { get; set; }
-    /// <summary>Bound: the page's status pill opens the same modal.</summary>
+    /// <summary>Bound: the page's bar (primary button, Actions menu, status pill) opens it.</summary>
     [Parameter] public bool ModalOpen { get; set; }
     [Parameter] public EventCallback<bool> ModalOpenChanged { get; set; }
     /// <summary>The build-up to approve with — the page writes it through.</summary>

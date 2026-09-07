@@ -213,6 +213,10 @@ public sealed partial class JpmsContext
         modelBuilder.Entity<TodoItemEntity>()
             .HasIndex(row => row.ProjectId)
             .HasDatabaseName("IX_TodoItems_ProjectId");
+        // The record page's "to-dos about this record" read (ListTodoItemsAboutRecord).
+        modelBuilder.Entity<TodoItemEntity>()
+            .HasIndex(row => row.AboutRecordId)
+            .HasDatabaseName("IX_TodoItems_AboutRecordId");
         modelBuilder.Entity<UsefulInformationNoteEntity>()
             .HasIndex(row => row.ProjectId)
             .HasDatabaseName("IX_UsefulInformationNotes_ProjectId");

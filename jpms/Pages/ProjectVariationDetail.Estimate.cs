@@ -16,9 +16,9 @@ public partial class ProjectVariationDetail
     private async Task SaveTitle()
     {
         if (busy || order is null) return;
-        error = null;
+        renameError = null;
         var title = renameTitle.Trim();
-        if (title.Length == 0) { error = "A title is required."; return; }
+        if (title.Length == 0) { renameError = "A title is required."; return; }
         // An unchanged title is a cancel by another name — no round-trip, no audit noise.
         if (string.Equals(title, order.Title, StringComparison.Ordinal)) { renamingOrder = false; return; }
         try
@@ -27,8 +27,8 @@ public partial class ProjectVariationDetail
             order = await Variations.RenameAsync(VariationOrderId, title);
             renamingOrder = false;
         }
-        catch (CommandFailedException ex) { error = ex.Message; }
-        catch { error = "Couldn't save the new title. Please try again."; }
+        catch (CommandFailedException ex) { renameError = ex.Message; }
+        catch { renameError = "Couldn't save the new title. Please try again."; }
         finally { busy = false; }
     }
 

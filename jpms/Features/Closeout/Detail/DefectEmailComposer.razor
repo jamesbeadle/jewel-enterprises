@@ -1,0 +1,44 @@
+@namespace Jewel.JPMS.Features.Closeout.Detail
+@using Jewel.JPMS.Features.Triage
+
+@* The defect's composer, in the shapes the Control Centre sends: a REPLY inside a linked email's
+   conversation, a FORWARD of a linked email, or a brand-new outbound email filed to this defect —
+   which is how the defect is SENT to its supplier (pre-addressed and pre-written by
+   DefectSuppliers, edited here, sent from the projects mailbox). Either way the sent copy
+   carries the defect's "JPMS/DEF-####" tag, so it appears in this same communications list and,
+   when it went to the supplier's address, the server stamps the defect as sent. The widget
+   itself is the shared MailReplyComposer in send mode; this wrapper only supplies the defect's
+   filing and phrasing. *@
+
+<MailReplyComposer ReplyTo="ReplyTo"
+                   Forward="Forward"
+                   Prefill="Prefill"
+                   Projects="Projects"
+                   ProjectId="@Defect.ProjectId"
+                   MarkThreadHandled="false"
+                   LinkRecordType="@(IsReply ? (RecordType?)null : RecordType.Defect)"
+                   LinkRecordId="@(IsReply ? null : Defect.DefectId)"
+                   FooterNote="@(Forward && IsReply
+                       ? "The sent forward stays in this thread and files itself under this defect, so it appears in this list."
+                       : IsReply
+                       ? "The sent reply joins this thread and files itself under this defect, so it appears in this list."
+                       : $"The sent email files itself under {Defect.Reference}, so it appears in this list — and the supplier's reply will too.")"
+                   OnSent="OnSent"
+                   OnCancel="OnCancel" />
+
+@code {
+    [Parameter, EditorRequired] public Defect Defect { get; set; } = default!;
+    /// <summary>The linked email being replied to — null composes a brand-new outbound email.</summary>
+    [Parameter] public MailboxMessage? ReplyTo { get; set; }
+    /// <summary>Forward the linked email instead of replying to it (only meaningful with
+    /// <see cref="ReplyTo"/>).</summary>
+    [Parameter] public bool Forward { get; set; }
+    /// <summary>A new email's starting envelope — the send-to-supplier / chase draft.</summary>
+    [Parameter] public ComposePrefill? Prefill { get; set; }
+    /// <summary>Project pool for the attachment picker's drawing / photo sources.</summary>
+    [Parameter] public IReadOnlyList<Project> Projects { get; set; } = Array.Empty<Project>();
+    [Parameter] public EventCallback<Jewel.JPMS.Contracts.MailboxCompose.ComposeOutcome> OnSent { get; set; }
+    [Parameter] public EventCallback OnCancel { get; set; }
+
+    private bool IsReply => ReplyTo is not null;
+}

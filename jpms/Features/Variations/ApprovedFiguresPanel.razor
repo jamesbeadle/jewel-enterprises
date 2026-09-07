@@ -1,9 +1,10 @@
 @namespace Jewel.JPMS.Features.Variations
 
 @* The approved-state section of this one record — not a second document. The id anchors the
-   pill's Reject / Return-to-quoting routes, which scroll here and flash the panel
-   (jpmsFocusElement) so the click lands visibly; those two confirms are therefore page-bound,
-   because the pill opens them. The revise-value editor is the panel's own. *@
+   Reject / Return-to-quoting routes (the status pill and the Actions menu), which scroll here and
+   flash the panel (jpmsFocusElement) so the click lands visibly; those two confirms are
+   therefore page-bound. The revise-value editor is the panel's own, opened from Actions (bound
+   Revising). Issue work order and Edit lines live on the bar too — this panel carries no button. *@
 <div id="variation-order" class="panel p-5 space-y-3">
     <h3 class="eyebrow">Approved figures</h3>
     <div class="text-sm text-content flex items-center">
@@ -26,71 +27,43 @@
         <p class="text-xs text-content-subtle">Added to the Valuation Report and committed to the cost centre.</p>
     }
     </LoadGate>
-    @if (CanManage)
+    @* Re-pricing against no loaded line would move the CVR and the budget with no line to show
+       for it — the menu only offers Revise value once the report lines are in and there is
+       one line at most; more than one goes through Edit lines. *@
+    @if (CanManage && Revising && ValuationLinesReady && LineCount <= 1)
     {
-        <button type="button" class="btn-secondary w-full" disabled="@Busy" @onclick="() => OnIssueWorkOrder.InvokeAsync()">Issue work order</button>
-        @* Add / edit / remove the priced lines without un-approving — the report,
-           CVR and per-centre budgets move by the difference. *@
-        @* Held shut until the report lines are in: the dialog seeds itself from
-           them, so opening it early would offer an empty build-up and saving
-           that would read as "the user deleted every line". *@
-        <button type="button" class="btn-secondary w-full"
-                disabled="@(Busy || !ValuationLinesReady)" @onclick="() => OnEditLines.InvokeAsync()">Edit lines</button>
-    }
-    @* Same reason as Edit lines: before the report lines land, "one line" is
-       indistinguishable from "none loaded yet", and revising against none would
-       move the CVR and the budget with no line to show for it. *@
-    @if (CanManage && ValuationLinesReady && LineCount <= 1)
-    {
-        @if (!revising)
-        {
-            <button type="button" class="btn-secondary w-full" disabled="@Busy" @onclick="StartRevise">Revise value</button>
-        }
-        else
-        {
-            <div class="pt-3 border-t border-line space-y-3">
-                <FormField Label="Revised value (£)" Value="@reviseText" OnChange="v => reviseText = v" InputType="number" Required="true" />
-                <p class="text-xs text-content-subtle">
-                    Re-prices the @Ref line on the Valuation Report, records the
-                    difference on the CVR and moves the committed cost-centre budget.
-                </p>
-                @if (reviseError is not null)
-                {
-                    <p class="text-xs text-negative">@reviseError</p>
-                }
-                <div class="flex gap-2">
-                    <button type="button" class="btn-primary" disabled="@Busy" @onclick="SubmitReviseAsync">Save revised value</button>
-                    <button type="button" class="btn-neutral" disabled="@Busy" @onclick="() => revising = false">Cancel</button>
-                </div>
+        <div class="pt-3 border-t border-line space-y-3">
+            <FormField Label="Revised value (£)" Value="@reviseText" OnChange="v => reviseText = v" InputType="number" Required="true" />
+            <p class="text-xs text-content-subtle">
+                Re-prices the @Ref line on the Valuation Report, records the
+                difference on the CVR and moves the committed cost-centre budget.
+            </p>
+            @if (reviseError is not null)
+            {
+                <p class="text-xs text-negative">@reviseError</p>
+            }
+            <div class="flex gap-2">
+                <button type="button" class="btn-primary" disabled="@Busy" @onclick="SubmitReviseAsync">Save revised value</button>
+                <button type="button" class="btn-neutral" disabled="@Busy" @onclick="CancelRevise">Cancel</button>
             </div>
-        }
+        </div>
     }
-    @if (CanManage)
+    @if (CanManage && ReturningToQuoting)
     {
         <div class="pt-3 border-t border-line space-y-2">
-            @if (!ReturningToQuoting)
-            {
-                <button type="button" class="w-full text-xs text-content-subtle hover:text-negative underline underline-offset-2"
-                        disabled="@Busy" @onclick="() => ReturningToQuotingChanged.InvokeAsync(true)">
-                    Approved in error? Return to quoting…
+            <p class="text-xs text-content-subtle">
+                Un-approves this variation: <span class="font-mono">@Ref</span> is removed
+                (its number is freed for a future approval), its value comes off the Valuation Report,
+                CVR and cost-centre budget, and @Reference returns to <span class="font-medium text-content">Quoting</span>.
+                For approvals that shouldn't have happened — a real rejection should use Reject so
+                the record stays on the register. Blocked once work orders instruct it or value has been claimed.
+            </p>
+            <div class="flex gap-2">
+                <button type="button" class="btn-neutral w-full text-negative" disabled="@Busy" @onclick="() => OnReturnToQuoting.InvokeAsync()">
+                    @(Busy ? "Returning…" : "Confirm — return to quoting")
                 </button>
-            }
-            else
-            {
-                <p class="text-xs text-content-subtle">
-                    Un-approves this variation: <span class="font-mono">@Ref</span> is removed
-                    (its number is freed for a future approval), its value comes off the Valuation Report,
-                    CVR and cost-centre budget, and @Reference returns to <span class="font-medium text-content">Quoting</span>.
-                    For approvals that shouldn't have happened — a real rejection should use Reject so
-                    the record stays on the register. Blocked once work orders instruct it or value has been claimed.
-                </p>
-                <div class="flex gap-2">
-                    <button type="button" class="btn-neutral w-full text-negative" disabled="@Busy" @onclick="() => OnReturnToQuoting.InvokeAsync()">
-                        @(Busy ? "Returning…" : "Confirm — return to quoting")
-                    </button>
-                    <button type="button" class="btn-neutral" disabled="@Busy" @onclick="() => ReturningToQuotingChanged.InvokeAsync(false)">Keep</button>
-                </div>
-            }
+                <button type="button" class="btn-neutral" disabled="@Busy" @onclick="() => ReturningToQuotingChanged.InvokeAsync(false)">Keep</button>
+            </div>
         </div>
     }
     @if (CanManage && RejectingOrder)
@@ -125,8 +98,9 @@
     [Parameter] public IReadOnlyList<string> CostCentres { get; set; } = Array.Empty<string>();
     [Parameter] public int LineCount { get; set; }
 
-    [Parameter] public EventCallback OnIssueWorkOrder { get; set; }
-    [Parameter] public EventCallback OnEditLines { get; set; }
+    /// <summary>Bound: the page's Actions menu opens the revise-value editor.</summary>
+    [Parameter] public bool Revising { get; set; }
+    [Parameter] public EventCallback<bool> RevisingChanged { get; set; }
     /// <summary>The revised value, parsed — the page re-prices and reloads, answering whether it took
     /// (a refused revision keeps the editor open with the figure still in it).</summary>
     [Parameter, EditorRequired] public Func<decimal, Task<bool>> ReviseValue { get; set; } = default!;
@@ -141,15 +115,25 @@
 
     private string Ref => Approved.VariationRef ?? Approved.DisplayNumber;
 
-    private bool revising;
+    private bool wasRevising;
     private string reviseText = "";
     private string? reviseError;
 
-    private void StartRevise()
+    // Each opening seeds the editor from the current value — a cancelled edit leaves nothing behind.
+    protected override void OnParametersSet()
     {
-        reviseText = Approved.Value.ToString(System.Globalization.CultureInfo.InvariantCulture);
+        if (Revising && !wasRevising)
+        {
+            reviseText = Approved.Value.ToString(System.Globalization.CultureInfo.InvariantCulture);
+            reviseError = null;
+        }
+        wasRevising = Revising;
+    }
+
+    private async Task CancelRevise()
+    {
         reviseError = null;
-        revising = true;
+        await RevisingChanged.InvokeAsync(false);
     }
 
     private async Task SubmitReviseAsync()
@@ -160,6 +144,6 @@
             reviseError = "Enter a valid revised value.";
             return;
         }
-        if (await ReviseValue(value)) revising = false;
+        if (await ReviseValue(value)) await RevisingChanged.InvokeAsync(false);
     }
 }

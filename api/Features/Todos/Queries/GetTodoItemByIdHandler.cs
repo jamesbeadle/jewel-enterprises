@@ -7,8 +7,9 @@ namespace Jewel.JPMS.Api.Features.Todos.Queries;
 public sealed class GetTodoItemByIdHandler : IQueryHandler<GetTodoItemById, TodoItem?>
 {
     private readonly JpmsContext context;
+    private readonly TodoAboutRecords aboutRecords;
 
-    public GetTodoItemByIdHandler(JpmsContext context) { this.context = context; }
+    public GetTodoItemByIdHandler(JpmsContext context, TodoAboutRecords aboutRecords) { this.context = context; this.aboutRecords = aboutRecords; }
 
     public async Task<TodoItem?> HandleAsync(GetTodoItemById query, CancellationToken cancellationToken)
     {
@@ -17,6 +18,7 @@ public sealed class GetTodoItemByIdHandler : IQueryHandler<GetTodoItemById, Todo
         if (entity is null) return null;
 
         var personNames = await context.PersonNamesForAsync(new[] { entity }, cancellationToken);
-        return entity.ToModel(personNames);
+        var aboutReferences = await aboutRecords.ReferencesForAsync(new[] { entity }, cancellationToken);
+        return entity.ToModel(personNames, aboutReferences);
     }
 }

@@ -4,7 +4,8 @@
 @* The agreed build-up, STAGED before approval: the client-agreed priced lines (from the agreed
    spreadsheet, the client's email — or the assistant reading them) captured now so the estimate
    reads the agreed figure and approval opens pre-seeded. Nothing reaches the Valuation Report
-   until approval. The dialog, its narrative drafts and its error are the panel's own — key the
+   until approval. The dialog, its narrative drafts and its error are the panel's own, but it is
+   OPENED from the page's Actions menu (bound DialogOpen) — the panel carries no button. Key the
    panel by the record so a different variation gets a fresh one. *@
 <div class="panel p-5 space-y-3">
     <h3 class="eyebrow">Agreed build-up (staged)</h3>
@@ -29,16 +30,13 @@
     else
     {
         <p class="text-xs text-content-subtle">
-            Nothing staged yet. Capture the client-agreed lines here — the total becomes the estimate
-            and the approve modal opens with them filled in.
+            Nothing staged yet. Capture the client-agreed lines from Actions — the total becomes the
+            estimate and the approve dialog opens with them filled in.
         </p>
     }
-    <button type="button" class="btn-secondary w-full" disabled="@Busy" @onclick="Open">
-        @(Order.DraftLines is { Count: > 0 } ? "Edit staged build-up…" : "Stage agreed build-up…")
-    </button>
 </div>
 
-<Modal IsOpen="modalOpen"
+<Modal IsOpen="DialogOpen"
        Title="@($"Agreed build-up — {Order.DisplayNumber}")"
        ShowFooter="false"
        OnCancel="Close"
@@ -81,11 +79,14 @@
     [Parameter] public bool Busy { get; set; }
     /// <summary>The record as the server returned it after staging — the page swaps its copy and reloads.</summary>
     [Parameter] public EventCallback<VariationOrder> OnStaged { get; set; }
+    /// <summary>Bound: the page's Actions menu opens the dialog.</summary>
+    [Parameter] public bool DialogOpen { get; set; }
+    [Parameter] public EventCallback<bool> DialogOpenChanged { get; set; }
 
     private static readonly System.Globalization.CultureInfo Gb = System.Globalization.CultureInfo.GetCultureInfo("en-GB");
     private static string Pennies(decimal value) => value.ToString("C2", Gb);
 
-    private bool modalOpen;
+    private bool wasOpen;
     private bool staging;
     private bool narrativesOpen;
     private string? error;
@@ -93,7 +94,14 @@
     private string programmeImpact = "";
     private string exclusions = "";
 
-    private void Open()
+    // Each opening seeds the narrative drafts from the record — a cancelled dialog leaves nothing behind.
+    protected override void OnParametersSet()
+    {
+        if (DialogOpen && !wasOpen) Seed();
+        wasOpen = DialogOpen;
+    }
+
+    private void Seed()
     {
         error = null;
         commercialBasis = Order.CommercialBasis ?? "";
@@ -102,13 +110,12 @@
         narrativesOpen = !string.IsNullOrWhiteSpace(commercialBasis)
                          || !string.IsNullOrWhiteSpace(programmeImpact)
                          || !string.IsNullOrWhiteSpace(exclusions);
-        modalOpen = true;
     }
 
-    private void Close()
+    private async Task Close()
     {
-        modalOpen = false;
         error = null;
+        await DialogOpenChanged.InvokeAsync(false);
     }
 
     private async Task StageAsync(VariationApprovePanel.ApproveRequest request)
@@ -120,7 +127,7 @@
             staging = true;
             var staged = await Variations.StageBuildUpAsync(
                 Order.VariationOrderId, request.Lines, commercialBasis, programmeImpact, exclusions);
-            modalOpen = false;
+            await DialogOpenChanged.InvokeAsync(false);
             await OnStaged.InvokeAsync(staged);
         }
         // The endpoint answers a refused staging with 400 and its own words (no toast, by
