@@ -28,6 +28,9 @@ public partial class ValuationInvoicesSection
             await ReloadAsync();
             if (newIsHistoric) await OnCertifiedChanged.InvokeAsync();
         }
+        // A refused raise (the claim is still a draft, or already has a live invoice) arrives as
+        // the server's own sentence — print it, not the generic retry line.
+        catch (CommandFailedException refusal) { error = refusal.Message; }
         catch { error = "Couldn't add the valuation invoice. Please try again."; }
         finally { busy = false; }
     }
