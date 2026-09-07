@@ -56,7 +56,10 @@ public sealed record ErrorReport(
     {
         var text = new StringBuilder();
         text.AppendLine($"JPMS error {Reference}");
-        text.AppendLine($"When:   {OccurredAt.ToLocalTime():dd MMM yyyy, HH:mm:ss} ({TimeZoneInfo.Local.StandardName})");
+        // Local time with its real offset, then the UTC clock — StandardName says "GMT" all year,
+        // which in summer mislabels a BST time by an hour for anyone matching it against Azure logs.
+        var local = OccurredAt.ToLocalTime();
+        text.AppendLine($"When:   {local:dd MMM yyyy, HH:mm:ss} (UTC{local:zzz}) · {OccurredAt.ToUniversalTime():HH:mm:ss} UTC");
         if (!string.IsNullOrWhiteSpace(User)) text.AppendLine($"Who:    {User}");
         if (!string.IsNullOrWhiteSpace(Page)) text.AppendLine($"Page:   {Page}");
         text.AppendLine($"What:   {Summary}");

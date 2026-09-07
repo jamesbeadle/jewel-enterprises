@@ -49,13 +49,20 @@ public sealed class HttpQueryClient : IQueryClient
                 // Every query failure is worth reporting: unlike a command, a failed read has no dialog
                 // standing behind it to explain itself, and the page it feeds would otherwise just sit
                 // there looking empty — the exact "zeroes that never fill in" this is meant to end.
-                var status = requestFailure.StatusCode is HttpStatusCode code ? (int)code : (int?)null;
-                errors.ReportRequestFailure(operation, "GET", path, status, null, requestFailure);
+                // The one exception is a query that declares itself best-effort (IBestEffortQuery):
+                // it feeds decoration, its caller already treats "nothing" as the answer, and a red
+                // banner over an otherwise complete page would be the only thing the user noticed.
+                if (query is not IBestEffortQuery)
+                {
+                    var status = requestFailure.StatusCode is HttpStatusCode code ? (int)code : (int?)null;
+                    errors.ReportRequestFailure(operation, "GET", path, status, null, requestFailure);
+                }
                 throw;
             }
             catch (Exception failure)
             {
-                errors.ReportRequestFailure(operation, "GET", path, null, null, failure);
+                if (query is not IBestEffortQuery)
+                    errors.ReportRequestFailure(operation, "GET", path, null, null, failure);
                 throw;
             }
         }
@@ -114,12 +121,20 @@ public sealed class HttpQueryClient : IQueryClient
     ///
     /// A null status is the connection-level failure — DNS, refused, reset — which is the shape a
     /// host restart takes when it lands between the request and the response.
+    ///
+    /// A 500 is retried too. In principle it says "the query itself broke", but on this platform a
+    /// deploy landing under an open tab answers 500 as readily as 503 (2026-09-07: two unrelated
+    /// reads, /projects and /records/activity, each failed once within minutes of a push to main
+    /// and answered normally a minute later). Repeating a read costs nothing, and a 500 that is
+    /// really about the query still fails all three attempts and is reported as before — 800 ms
+    /// later than it would have been.
     /// </summary>
     private static bool IsWorthRetrying(HttpRequestException failure) =>
         failure.StatusCode switch
         {
             null => true,
             HttpStatusCode.RequestTimeout => true,
+            HttpStatusCode.InternalServerError => true,
             HttpStatusCode.BadGateway => true,
             HttpStatusCode.ServiceUnavailable => true,
             HttpStatusCode.GatewayTimeout => true,

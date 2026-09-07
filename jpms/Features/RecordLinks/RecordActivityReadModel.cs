@@ -55,6 +55,13 @@ public sealed class RecordActivityReadModel
             byProject[projectId] = summaries.ToDictionary(s => (s.Type, s.RecordId));
             OnChanged?.Invoke();
         }
-        catch { requested.Remove(projectId); }
+        catch
+        {
+            // Absence is the quiet answer (ListRecordActivity is best-effort, so nothing was
+            // reported either). The project deliberately STAYS in `requested`: dropping it would
+            // let the next render — any click on the page — fire the same failing request again,
+            // and a page re-renders far more often than a host recycles. The next page entry's
+            // Refresh(projectId) is the retry, which is the same cadence a success revalidates on.
+        }
     }
 }
