@@ -45,8 +45,10 @@ public partial class TriageQueue
             CreatedNowOnly: anchorEmail is not null && createdNowRecords.Count > 0);
     }
 
+    // StagedCreateReady on its own (no project yet) counts as work so the apply reaches the
+    // project gate's refusal rather than returning silently.
     private bool ApplyHasWork(ApplyPlan plan) =>
-        plan.Replying || plan.CreateReady || plan.RelevantEvent || plan.Discarding
+        plan.Replying || plan.CreateReady || StagedCreateReady || plan.RelevantEvent || plan.Discarding
         || plan.Drafts.Count > 0
         || plan.Picks.Count > 0
         || stagedSystemActions.Count > 0 || queuedReplies.Count > 0
@@ -71,13 +73,20 @@ public partial class TriageQueue
 
         if (DiscardRefusal(plan) is { } discardRefusal) return discardRefusal;
 
-        if (plan.RelevantEvent && string.IsNullOrWhiteSpace(triageProjectId))
-            return "To tag a Relevant Event for the Programme, set the email's Project first — or answer No.";
+        // Anything staged that files the email against a project needs the Project set — one
+        // list (ProjectNeeds: Relevant Event, Document Triage attachments, the thread's existing
+        // tags, picked project records, the staged create) shared with the button's hint.
+        if (plan.Anchor is not null && string.IsNullOrWhiteSpace(triageProjectId)
+            && ProjectNeeds() is { Count: > 0 } projectNeeds)
+            return $"To apply {AndJoin(projectNeeds.Select(need => need.What).ToList())}, set the email's Project first — or {AndJoin(projectNeeds.Select(need => need.Undo).Distinct().ToList())}.";
 
-        // Attachments bound for Document Triage without a project (decision 2026-08-28): an
-        // unassigned file in the queue is as good as discarded.
-        if (plan.Anchor is not null && stagedDocControlIds.Count > 0 && string.IsNullOrWhiteSpace(triageProjectId))
-            return "To send attachments to Document Triage, set the email's Project first — or untick them.";
+        // A picked record from ANOTHER project than the one the bar says: the picks are cleared
+        // whenever the project changes, so this should never happen — but a wrong-project filing
+        // is the one mistake worth a second guard.
+        if (plan.Anchor is not null && plan.Picks.FirstOrDefault(pick =>
+                !string.IsNullOrWhiteSpace(pick.ProjectId)
+                && !string.Equals(pick.ProjectId, triageProjectId, StringComparison.OrdinalIgnoreCase)) is { } strayPick)
+            return $"{strayPick.Reference} belongs to {ProjectNameOrId(strayPick.ProjectId)}, not {ProjectNameOrId(triageProjectId)} — unpick it, or change the email's Project.";
 
         if (StagedCreateRefusal(plan) is { } createRefusal) return createRefusal;
 
@@ -109,11 +118,10 @@ public partial class TriageQueue
 
     // A staged record that isn't complete yet (no subcontractor, no priced line, no
     // description…) — finish it or clear it, rather than let the server reject a half-built
-    // record after the to-dos have already been raised.
+    // record after the to-dos have already been raised. (A staged record with no project is
+    // the project gate's job above — ProjectNeeds lists it.)
     private string? StagedCreateRefusal(ApplyPlan plan)
     {
-        if (StagedCreateReady && !plan.CreateReady)
-            return "To create the record, set the email's Project first — or remove the staged record in the pathway pane's Actions.";
         if (!plan.CreateReady) return null;
         if (stagedCreate is { Kind: StagedRecordKind.WorkOrder } stagedOrder && stagedOrder.WorkOrderProblem is { } orderProblem)
             return $"The staged work order isn't ready — {orderProblem} Finish it in the pathway pane's Actions, or remove it.";

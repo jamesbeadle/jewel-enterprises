@@ -19,9 +19,22 @@ public partial class TriageQueue
         busyLabel = "Matching the thread's tags";
         var inherited = await Queries.AskAsync(
             new ResolveRecordTags(stems.Select(TriageEmailDisplay.TagLabel).ToList()), CancellationToken.None);
-        if (inherited.Count > 0) return inherited;
-        actionError = "The thread's existing tags couldn't be matched to records — pick this email's records by hand instead.";
-        return null;
+        if (inherited.Count == 0)
+        {
+            actionError = "The thread's existing tags couldn't be matched to records — pick this email's records by hand instead.";
+            return null;
+        }
+        // The tags' records must be the bar's project (2026-09-07): the gate already insists a
+        // project is set, but the stems only resolve here, so a thread tagged to another
+        // project's records — or to two projects', which is why the auto-match left the
+        // project blank — is caught with nothing filed. The triager picks by hand instead.
+        if (inherited.FirstOrDefault(record => !string.IsNullOrWhiteSpace(record.ProjectId)
+                && !string.Equals(record.ProjectId, triageProjectId, StringComparison.OrdinalIgnoreCase)) is { } stray)
+        {
+            actionError = $"The thread's existing tag {stray.Reference} belongs to {ProjectNameOrId(stray.ProjectId)}, not {ProjectNameOrId(triageProjectId)} — change the email's Project, or answer No to Use existing tags and pick this email's records by hand.";
+            return null;
+        }
+        return inherited;
     }
 
     // ---- Document Triage: ticked attachments copy out FIRST, so the files are safely in the

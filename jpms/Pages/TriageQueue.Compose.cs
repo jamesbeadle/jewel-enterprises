@@ -88,7 +88,10 @@ public partial class TriageQueue
                 parts.Add(stagedDocControlIds.Count == 1
                     ? "send 1 attachment to Document Triage"
                     : $"send {stagedDocControlIds.Count} attachments to Document Triage");
-            if (StagedCreateReady && !string.IsNullOrWhiteSpace(triageProjectId))
+            // Listed with or without a project: without one the amber hint beside the button
+            // says "set the Project first" — before (2026-09-07) the create simply vanished
+            // from this sentence and Apply sat disabled with no reason on show.
+            if (StagedCreateReady)
                 parts.Add(stagedCreate!.Kind switch
                 {
                     StagedRecordKind.BidPackage => "create the bid package from this email",
@@ -215,23 +218,52 @@ public partial class TriageQueue
     private IReadOnlyList<string> SelectedThreadTags =>
         selected?.ThreadTags is { Count: > 0 } tags ? tags : Array.Empty<string>();
 
-    // True while something staged NEEDS the email's project and none is picked. Two stagings
-    // require one: a Relevant Event for the Programme (a programme belongs to a project — with
-    // no project there is no programme to tag it into; reported 2026-09-03 as a UI bug: the
-    // pair took a Yes with "No project" picked and Apply lit up, only refusing on the click)
-    // and attachments ticked for Document Triage (decision 2026-08-28: a file landing in the
-    // queue with no project is as good as discarded). The triage bar — where the email says
-    // which job it is — is the cheapest place to set it. Same standing-hint treatment as the
-    // Yes/No pairs (2026-08-27: the disable reason stands next to the button), and the same
-    // refusals live in ApplyRefusal as belt-and-braces behind the disabled button.
+    // One staged thing that files the email against a PROJECT, by its on-screen name, and the
+    // way to back out of it instead of setting the project.
+    private sealed record ProjectNeed(string What, string Undo);
+
+    // Everything staged that NEEDS the email's project — the rule (2026-09-07): any filing that
+    // lands the email on a project's record, programme or queue is refused until the Project in
+    // the triage bar says which project. Before this the gate covered two cases by name (a
+    // Relevant Event, 2026-09-03; Document Triage attachments, 2026-08-28) and a triager
+    // answered Yes to "Use existing tags" with no project picked and applied — the thread's
+    // tags ARE a project's records, so the email was filed with the project decision never
+    // made. Now one list feeds both the amber hint next to Apply and the refusal inside
+    // DoApplyAll, exactly like MissingDecisionNames, so the two can never drift and a new
+    // project-bound staging is one line here. Record picks count only when the picked record
+    // carries a project (the record-less communication registers and company-wide to-dos don't
+    // — they file without one by design); the staged create is listed so its "needs a project"
+    // reads next to the button instead of leaving Apply silently disabled.
+    private List<ProjectNeed> ProjectNeeds()
+    {
+        var needs = new List<ProjectNeed>();
+        if (relevantEventStaged == true)
+            needs.Add(new("a Relevant Event for the Programme", "answer No to Relevant Event"));
+        if (stagedDocControlIds.Count > 0)
+            needs.Add(new(stagedDocControlIds.Count == 1 ? "an attachment for Document Triage" : "attachments for Document Triage", "untick them"));
+        if (useThreadTags == true && SelectedThreadTags.Count > 0)
+            needs.Add(new("the thread's existing tags", "answer No to Use existing tags"));
+        if (pickedRecords.Any(record => !string.IsNullOrWhiteSpace(record.ProjectId)))
+            needs.Add(new(pickedRecords.Count == 1 ? "the picked record" : "the picked records", "unpick them"));
+        if (StagedCreateReady)
+            needs.Add(new("the staged record", "remove it in the pathway pane's Actions"));
+        return needs;
+    }
+
+    // True while something staged NEEDS the email's project and none is picked. The triage bar
+    // — where the email says which job it is — is the cheapest place to set it. Same
+    // standing-hint treatment as the Yes/No pairs (2026-08-27: the disable reason stands next
+    // to the button), and the same refusal lives in ApplyRefusal as belt-and-braces behind the
+    // disabled button.
     private bool ProjectMissing =>
-        selected is not null && string.IsNullOrWhiteSpace(triageProjectId)
-        && (relevantEventStaged == true || stagedDocControlIds.Count > 0);
+        selected is not null && string.IsNullOrWhiteSpace(triageProjectId) && ProjectNeeds().Count > 0;
 
     private string ProjectMissingHint =>
-        relevantEventStaged == true
-            ? "Set the Project first — a Relevant Event goes on that project's programme (or answer No)"
-            : "Set the Project first — attachments can't go to Document Triage without one";
+        $"Set the Project first — {AndJoin(ProjectNeeds().Select(need => need.What).ToList())} can't file without one";
+
+    // The name a project shows under in a refusal — its name when the list knows it, else the id.
+    private string ProjectNameOrId(string projectId) =>
+        AllProjects.FirstOrDefault(project => project.ProjectId == projectId)?.Name ?? projectId;
 
     private string DecisionsMissingHint =>
         $"Answer {AndJoin(MissingDecisionNames())} — Yes or No — first";
@@ -246,7 +278,7 @@ public partial class TriageQueue
                 || relevantEventStaged == true
                 || stagedSystemActions.Count > 0
                 || stagedDocControlIds.Count > 0
-                || (StagedCreateReady && !string.IsNullOrWhiteSpace(triageProjectId));
+                || StagedCreateReady;
             var sendCount = (ReplyDraftPending ? 1 : 0) + queuedReplies.Count;
             if (sendCount > 0)
             {
