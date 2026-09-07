@@ -13,7 +13,10 @@
     @if (IsLoading)
     {
         <p class="text-xl font-medium text-content flex items-center h-5" role="status" aria-live="polite" aria-busy="true">
-            <JewelIcon Class="w-4 h-4 animate-jewel-pulse" />
+            @if (!AncestorSpeaks)
+            {
+                <JewelIcon Class="w-4 h-4 animate-jewel-pulse" />
+            }
             <span class="sr-only">@(LoadingLabel ?? $"Loading {Label.ToLowerInvariant()}")</span>
         </p>
     }
@@ -44,4 +47,8 @@
     /// <summary>The tile's hover text — what the figure is, for the reader who asks.</summary>
     [Parameter] public string? Title { get; set; }
     [Parameter] public string Class { get; set; } = "";
+
+    [CascadingParameter] private LoadScope? Ancestors { get; set; }
+
+    private bool AncestorSpeaks => Ancestors?.IsClaimed == true;
 }

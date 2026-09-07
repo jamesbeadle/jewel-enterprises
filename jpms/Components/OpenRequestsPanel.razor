@@ -32,11 +32,8 @@
         since issue counts as overdue.
     </p>
 
-    @if (Register.Current is null)
-    {
-        <JewelSpinner Class="py-6" Label="Loading" />
-    }
-    else if (Outstanding.Count == 0)
+    <LoadGate IsLoading="@(Register.Current is null)" Prominent="true" Label="Loading RFIs">
+    @if (Outstanding.Count == 0)
     {
         <p class="text-sm text-content-subtle italic">Nothing outstanding — every RFI has been closed.</p>
     }
@@ -72,6 +69,7 @@
             </p>
         }
     }
+    </LoadGate>
 </div>
 
 @code {

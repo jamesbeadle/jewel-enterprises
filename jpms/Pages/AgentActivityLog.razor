@@ -30,95 +30,93 @@
             <button type="button" @onclick="() => SetFilter(true)" class="@FilterClass(true)">Unattended only</button>
         </div>
 
-        @if (dataFailed)
-        {
-            <div class="panel p-5">
-                <p class="text-sm text-content-muted">
-                    The activity log could not be loaded. The error toast carries the reference.
-                </p>
-            </div>
-        }
-        else if (rows is null)
-        {
-            <LoadGate IsLoading="true" Prominent="true" Label="Loading activity" />
-        }
-        else if (rows.Count == 0)
-        {
-            <div class="panel p-5">
-                <p class="text-sm text-content-muted">
-                    @(autonomousOnly
-                        ? "Nothing has run unattended yet — no scheduled agents are live."
-                        : "No agent has run yet.")
-                </p>
-            </div>
-        }
-        else
-        {
-            <div class="panel overflow-hidden">
-                <div class="overflow-x-auto">
-                    <table class="data-table">
-                        <thead>
-                            <tr>
-                                <th>When</th>
-                                <th>Agent</th>
-                                <th>Ran as</th>
-                                <th>Action</th>
-                                <th>Outcome</th>
-                                <th>Tools</th>
-                                <th class="text-right">Took</th>
-                                <th class="text-right">Tokens</th>
-                                <th class="text-right">Cost</th>
-                            </tr>
-                        </thead>
-                        <tbody>
-                            @foreach (var row in rows)
-                            {
-                                <tr class="@(string.IsNullOrWhiteSpace(row.Route) ?"" : "is-clickable")"
-                                    @onclick="() => Open(row)">
-                                    <td class="whitespace-nowrap">@row.OccurredAt.ToLocalTime().ToString("dd MMM HH:mm")</td>
-                                    <td class="text-content">@row.AgentKey</td>
-                                    <td>
-                                        <span class="block truncate max-w-[14rem]" title="@row.ActorEmail">@row.ActorEmail</span>
-                                        @if (row.IsAutonomous)
-                                        {
-                                            <span class="mt-0.5 inline-block rounded bg-surface-raised border border-line px-1.5 py-0.5 text-xs text-content-subtle">unattended</span>
-                                        }
-                                    </td>
-                                    <td>
-                                        <span class="block text-content">@row.Action</span>
-                                        <span class="block truncate max-w-[22rem] text-xs text-content-subtle" title="@row.Summary">@row.Summary</span>
-                                    </td>
-                                    <td><span class="@OutcomeClass(row.Outcome)">@OutcomeLabel(row.Outcome)</span></td>
-                                    <td class="text-xs text-content-subtle">
-                                        <span class="block truncate max-w-[16rem]" title="@row.ToolsUsed">@(string.IsNullOrWhiteSpace(row.ToolsUsed) ? "—" : row.ToolsUsed)</span>
-                                    </td>
-                                    <td class="text-right whitespace-nowrap">@FormatDuration(row.DurationMs)</td>
-                                    <td class="text-right whitespace-nowrap">@row.TotalTokens.ToString("N0")</td>
-                                    <td class="text-right whitespace-nowrap">
-                                        @(row.CostPence > 0 ? row.CostDisplay : "—")
-                                    </td>
-                                </tr>
-                            }
-                        </tbody>
-                    </table>
+        <LoadGate IsLoading="@(rows is null && !dataFailed)" Prominent="true" Label="Loading activity">
+            @if (dataFailed)
+            {
+                <div class="panel p-5">
+                    <p class="text-sm text-content-muted">
+                        The activity log could not be loaded. The error toast carries the reference.
+                    </p>
                 </div>
-            </div>
+            }
+            else if (rows!.Count == 0)
+            {
+                <div class="panel p-5">
+                    <p class="text-sm text-content-muted">
+                        @(autonomousOnly
+                            ? "Nothing has run unattended yet — no scheduled agents are live."
+                            : "No agent has run yet.")
+                    </p>
+                </div>
+            }
+            else
+            {
+                <div class="panel overflow-hidden">
+                    <div class="overflow-x-auto">
+                        <table class="data-table">
+                            <thead>
+                                <tr>
+                                    <th>When</th>
+                                    <th>Agent</th>
+                                    <th>Ran as</th>
+                                    <th>Action</th>
+                                    <th>Outcome</th>
+                                    <th>Tools</th>
+                                    <th class="text-right">Took</th>
+                                    <th class="text-right">Tokens</th>
+                                    <th class="text-right">Cost</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                @foreach (var row in rows)
+                                {
+                                    <tr class="@(string.IsNullOrWhiteSpace(row.Route) ?"" : "is-clickable")"
+                                        @onclick="() => Open(row)">
+                                        <td class="whitespace-nowrap">@row.OccurredAt.ToLocalTime().ToString("dd MMM HH:mm")</td>
+                                        <td class="text-content">@row.AgentKey</td>
+                                        <td>
+                                            <span class="block truncate max-w-[14rem]" title="@row.ActorEmail">@row.ActorEmail</span>
+                                            @if (row.IsAutonomous)
+                                            {
+                                                <span class="mt-0.5 inline-block rounded bg-surface-raised border border-line px-1.5 py-0.5 text-xs text-content-subtle">unattended</span>
+                                            }
+                                        </td>
+                                        <td>
+                                            <span class="block text-content">@row.Action</span>
+                                            <span class="block truncate max-w-[22rem] text-xs text-content-subtle" title="@row.Summary">@row.Summary</span>
+                                        </td>
+                                        <td><span class="@OutcomeClass(row.Outcome)">@OutcomeLabel(row.Outcome)</span></td>
+                                        <td class="text-xs text-content-subtle">
+                                            <span class="block truncate max-w-[16rem]" title="@row.ToolsUsed">@(string.IsNullOrWhiteSpace(row.ToolsUsed) ? "—" : row.ToolsUsed)</span>
+                                        </td>
+                                        <td class="text-right whitespace-nowrap">@FormatDuration(row.DurationMs)</td>
+                                        <td class="text-right whitespace-nowrap">@row.TotalTokens.ToString("N0")</td>
+                                        <td class="text-right whitespace-nowrap">
+                                            @(row.CostPence > 0 ? row.CostDisplay : "—")
+                                        </td>
+                                    </tr>
+                                }
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
 
-            <div class="mt-4 flex flex-wrap items-center gap-6 text-xs text-content-subtle">
-                <span>@rows.Count runs</span>
-                <span>@rows.Sum(row => row.TotalTokens).ToString("N0") tokens</span>
-                @if (rows.Any(row => row.CostPence > 0))
-                {
-                    <span>@FormatPence(rows.Sum(row => row.CostPence)) total</span>
-                }
-                else
-                {
-                    <span title="Set Anthropic__InputPencePerMillion and Anthropic__OutputPencePerMillion">
-                        Cost rate not configured — token counts are exact
-                    </span>
-                }
-            </div>
-        }
+                <div class="mt-4 flex flex-wrap items-center gap-6 text-xs text-content-subtle">
+                    <span>@rows.Count runs</span>
+                    <span>@rows.Sum(row => row.TotalTokens).ToString("N0") tokens</span>
+                    @if (rows.Any(row => row.CostPence > 0))
+                    {
+                        <span>@FormatPence(rows.Sum(row => row.CostPence)) total</span>
+                    }
+                    else
+                    {
+                        <span title="Set Anthropic__InputPencePerMillion and Anthropic__OutputPencePerMillion">
+                            Cost rate not configured — token counts are exact
+                        </span>
+                    }
+                </div>
+            }
+        </LoadGate>
 </Page>
 
 @code {

@@ -31,12 +31,7 @@
         </div>
     </HeaderActions>
     <ChildContent>
-    @if (!loaded)
-    {
-        <JewelSpinner Class="py-6" Label="Loading" />
-    }
-    else
-    {
+    <LoadGate IsLoading="@(!loaded)" Prominent="true" Label="Loading conversation">
         @if (messages.Count == 0)
         {
             <p class="rounded border border-dashed border-line px-4 py-6 text-center text-sm text-content-subtle italic mb-5">
@@ -249,7 +244,7 @@
                 </button>
             </div>
         </div>
-    }
+    </LoadGate>
     </ChildContent>
 </Panel>
 

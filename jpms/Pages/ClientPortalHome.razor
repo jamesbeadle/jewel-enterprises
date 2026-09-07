@@ -41,19 +41,20 @@
             <Notice Tone="Tone.Negative">@loadError</Notice>
         }
 
-        <div>
-            <h2 class="text-base font-semibold text-content mb-3">Requests for information</h2>
-            <LoadGate IsLoading="@(requests is null && loadError is null)" Prominent="true" Label="Loading requests">
+        @* Both lists are fetched by the one page open, so they share a single gate: the page
+           arrives in one piece under one mark rather than as two halves filling in turn. *@
+        <LoadGate IsLoading="@(LoadState.UntilAllPresent(requests, orders) && loadError is null)"
+                  Prominent="true" Label="Loading your records">
+            <div>
+                <h2 class="text-base font-semibold text-content mb-3">Requests for information</h2>
                 <ClientRequestList Requests="@(requests ?? Array.Empty<ClientPortalRequest>())" />
-            </LoadGate>
-        </div>
+            </div>
 
-        <div>
-            <h2 class="text-base font-semibold text-content mb-3">Variation orders</h2>
-            <LoadGate IsLoading="@(orders is null && loadError is null)" Prominent="true" Label="Loading variation orders">
+            <div>
+                <h2 class="text-base font-semibold text-content mb-3">Variation orders</h2>
                 <ClientVariationList Orders="@(orders ?? Array.Empty<ClientPortalVariationOrder>())" />
-            </LoadGate>
-        </div>
+            </div>
+        </LoadGate>
     }
 </Page>
 
@@ -78,7 +79,7 @@
         }
         catch
         {
-            // A failed fetch must open the gates — the red bar says why.
+            // A failed fetch must open the gate — the red bar says why.
             loadError = "Couldn't load your projects' records. Reload to try again.";
         }
     }

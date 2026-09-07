@@ -1,26 +1,31 @@
+@namespace Jewel.JPMS.Components
+
 @*
-    The single loading primitive for in-page regions.
+    THE loading primitive for a region of a page, and the thing that keeps the screen to one mark.
 
-    House rule (DESIGN-SYSTEM.md → "Loading"): anything that will render figures, rows or an empty
-    state has to distinguish "no data yet" from "no data". A stat that shows 0 and silently becomes
-    47 a second later is worse than no stat at all — the reader has already believed the 0.
+    Two shapes, from the same question — is there anything on screen yet?
 
-    Wrap the region, pass one IsLoading that is true until EVERY store the region reads has landed
-    (LoadState.UntilAll composes them), and the gate shows the pulsing jewel in the region's own
-    space until the whole thing can be shown at once.
+      COVER (the default). Nothing to show: the gate holds the region's space and puts the jewel
+      in it. Used for a first load.
 
-    Use it sparingly. A gate is for a REGION that will definitely render something and takes up
-    real space — a table, a stat grid, a panel body. Not a filter or a picker (render those
-    `disabled` with a "Loading…" placeholder), not a single line of text (just do not render it
-    until the number is known), and not a panel that only exists when it has something to show
-    (its absence during the load is the same as its absence after). Three of these pulsing down
-    one page is worse than the zeros they replaced.
+      OVERLAY (Overlay="true"). A previous answer is on screen and is being replaced or acted on:
+      the gate keeps it in place, veils it and floats the mark over it. Used for a refresh — a
+      sort, a pager, a filter, a command in flight.
 
-    Prominent="true" for a main panel — anything occupying roughly a third of the screen or more —
-    which gets the larger jewel and a taller reserved space so the page does not jump when the
-    content arrives. Overlay="true" instead keeps already-rendered content in place and floats the
-    jewel over it, which is the right choice for a refresh (filters, pagination, tab switches)
-    where the previous answer is still meaningful.
+    RELATIONAL: a gate showing its mark cascades a claimed LoadScope, and every gate INSIDE it
+    goes quiet for as long as the claim holds — it still holds its space, it just does not add a
+    second jewel to a wait the reader is already watching. So a page cover silences the panels
+    beneath it, and a workspace-wide busy overlay silences the list refreshing under it, without
+    either of them knowing what is nested inside. When the outer gate lifts, the inner one is free
+    to speak for its own refresh again.
+
+    Siblings cannot see each other — nothing cascades sideways — so the one rule left to the call
+    site is: a screen with nothing to show gates ONCE, around the region the reader is waiting
+    for, not once per panel inside it.
+
+    Never gate a control (render it disabled with a "Loading…" placeholder), a single line of text
+    (just do not render it until it is known), or a panel that only exists when it has something
+    to show (its absence during the wait is its absence after).
 *@
 
 @if (Overlay)
@@ -30,24 +35,33 @@
        elements (the pdf.js canvases in PdfViewer) would be thrown away with them while the JS
        kept rendering into the detached nodes. That is exactly the "preview is just black" defect:
        the viewer reported ready, the toolbar worked, and the surface on screen was a fresh empty
-       div. Only the spinner may come and go; the wrapped content must never move. *@
-    <div class="relative">
-        @ChildContent
-        @if (IsLoading)
+       div. Only the mark may come and go; the wrapped content must never move. *@
+    <div class="relative @Class">
+        <CascadingValue Value="Scope">
+            @ChildContent
+        </CascadingValue>
+        @if (ShowsMark)
         {
-            <JewelSpinner Overlay="true" Size="@SpinnerSize" IconSize="@IconSize" Label="@Label" />
+            <JewelSpinner Overlay="true" Size="@SpinnerSize" IconSize="@IconSize" Label="@Label" Class="@OverlayClass" />
         }
     </div>
 }
 else if (!IsLoading)
 {
-    @ChildContent
+    <CascadingValue Value="Scope">
+        @ChildContent
+    </CascadingValue>
+}
+else if (ShowsMark)
+{
+    <div class="@MinHeight flex items-center justify-center @Class" role="status" aria-live="polite" aria-busy="true">
+        <JewelSpinner Size="@SpinnerSize" IconSize="@IconSize" Label="@Label" Class="py-0" />
+    </div>
 }
 else
 {
-    <div class="@MinHeight flex items-center justify-center" role="status" aria-live="polite" aria-busy="true">
-        <JewelSpinner Size="@SpinnerSize" IconSize="@IconSize" Label="@Label" Class="py-0" />
-    </div>
+    @* Loading, but an ancestor already speaks for this wait: hold the space, say nothing. *@
+    <div class="@MinHeight @Class" aria-hidden="true"></div>
 }
 
 @code {
@@ -57,8 +71,7 @@ else
     /// <summary>A main panel rather than an inline region: bigger jewel, taller reserved space.</summary>
     [Parameter] public bool Prominent { get; set; }
 
-    /// <summary>Float the indicator over the existing content instead of replacing it. Use when the
-    /// content on screen is a previous, still-useful answer being refreshed.</summary>
+    /// <summary>Veil the content already on screen instead of replacing it — the refresh shape.</summary>
     [Parameter] public bool Overlay { get; set; }
 
     /// <summary>Caption under the jewel. Keep it specific — "Loading valuations" beats "Loading".</summary>
@@ -67,7 +80,21 @@ else
     /// <summary>Override the reserved height when the incoming content has a known size.</summary>
     [Parameter] public string? Height { get; set; }
 
+    /// <summary>Extra classes for the gate's own wrapper (layout, not looks).</summary>
+    [Parameter] public string Class { get; set; } = "";
+
+    /// <summary>Extra classes for the veil — a stacking context, where the region has one.</summary>
+    [Parameter] public string OverlayClass { get; set; } = "";
+
     [Parameter] public RenderFragment? ChildContent { get; set; }
+
+    [CascadingParameter] private LoadScope? Ancestors { get; set; }
+
+    private bool AncestorSpeaks => Ancestors?.IsClaimed == true;
+
+    private bool ShowsMark => IsLoading && !AncestorSpeaks;
+
+    private LoadScope Scope => LoadScope.For(IsLoading || AncestorSpeaks);
 
     private string MinHeight => Height ?? (Prominent ? "min-h-[220px]" : "min-h-[96px]");
 

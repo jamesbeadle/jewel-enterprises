@@ -32,15 +32,12 @@
         <Notice Tone="Tone.Negative" Class="mb-3">@error</Notice>
     }
 
-    @if (notes is null)
-    {
-        <JewelSpinner Class="py-8" Label="Loading" />
-    }
-    else if (notes.Count == 0)
+    <LoadGate IsLoading="@(notes is null)" Prominent="true" Label="Loading notes">
+    @if (notes is { Count: 0 })
     {
         <EmptyState Message="No useful information on this project yet — add the first note." />
     }
-    else
+    else if (notes is not null)
     {
         @if (notes.Count > FilterThreshold)
         {
@@ -86,6 +83,7 @@
             </div>
         }
     }
+    </LoadGate>
 </div>
 
 @* One dialog for both shapes: empty for Add, pre-filled (with Delete in the footer) for an

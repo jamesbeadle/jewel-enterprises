@@ -55,11 +55,15 @@
                 <MatchedLinesBanner Count="FullyMatchedCount" Busy="isBusy" OnAllocate="AllocateMatchedAsync" />
             }
 
+            @* The bar's counts and the queue's lines come out of the same unallocated read and the
+               same masters, so opening the page is ONE wait and gets one gate around both — two
+               jewels pulsing side by side for a single fetch is exactly what this gate exists to
+               prevent. Every count in the bar is counted here, out of the unallocated queue and
+               the project list, so a bar drawn before those land would offer "Unallocated (0)" and
+               no project tabs at all. The queue keeps its own gate INSIDE this one — silent while
+               this one speaks — because a later tab switch reloads the lines and nothing else. *@
+            <LoadGate IsLoading="@(!TabBarReady)" Prominent="true" Label="Loading the allocation queue">
             <div class="mb-4 flex items-center justify-between gap-4 flex-wrap">
-                @* Every count in the bar is counted here, out of the unallocated queue and the
-                   project list — a bar drawn before those land offers "Unallocated (0)" and no
-                   project tabs at all. *@
-                <LoadGate IsLoading="@(!TabBarReady)" Height="min-h-[38px]" Label="Loading tabs">
                 <AllocationTabBar Active="activeTab"
                                   ActiveProjectId="@activeProjectId"
                                   LabourTab="labourTab"
@@ -74,7 +78,6 @@
                                   OnSwitchStatus="status => SwitchTab(status)"
                                   OnSwitchProject="projectId => SwitchTab(XeroAllocationStatus.Unallocated, projectId)"
                                   OnSwitchLabour="() => SwitchTab(XeroAllocationStatus.Unallocated, labour: true)" />
-                </LoadGate>
                 <div class="flex items-center gap-4">
                     <ExportToExcelButton FileName="Cost allocation"
                                          Disabled="@(Visible.Count == 0)"
@@ -260,6 +263,7 @@
                     </div>
                 }
             </div>
+            </LoadGate>
             </LoadGate>
         }
 

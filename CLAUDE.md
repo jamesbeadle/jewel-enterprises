@@ -110,19 +110,34 @@ finds drift.
 - **Never render a figure, a row count or an empty state from a store that has not loaded.** A `0`
   that silently becomes `47` a second later is worse than no number: the reader has already believed
   it. Stores expose `IsLoaded`; read models expose a nullable `Current` (null = no fetch has landed).
-- The pulsing jewel is the only loading mark. Three sizes, three places:
-  - `LoadingScreen` — whole page, nothing to show yet.
-  - `LoadGate` — a region or panel. `Prominent="true"` for a main panel (roughly a third of the
-    screen or more), `Overlay="true"` to float over content that is being refreshed rather than
-    replaced. `Panel` takes `IsLoading` and wraps its body in one.
-  - `Stat` / `MetricStat` — `IsLoading` swaps the figure for the jewel and keeps the label.
-- **A panel reveals itself in one piece.** If a panel reads several stores, gate it on all of them
-  at once with `LoadState.UntilAll(a.IsLoaded, b.IsLoaded)` (or `UntilAllPresent(x.Current, …)`)
-  rather than letting each half appear on its own.
-- **Restraint: one jewel per screen, near enough.** A gate is for a REGION that will definitely
-  render something and occupies real space. Three pulsing diamonds stacked down one page is worse
-  than the zeros they replaced — the eye is drawn to the waiting rather than the work. In
-  particular:
+- **The pulsing jewel is the only loading mark, and `LoadGate` is the only thing allowed to draw
+  it.** `JewelSpinner` is a private part of the gate — a view that renders one directly is a mark
+  no ancestor can silence, which is exactly how a screen ends up with two of them. `Panel`
+  (`IsLoading`) and `RecordsTable` (`IsLoading`) are gates too; they wrap one.
+- **Two shapes, and the question that picks between them is "is anything on screen yet?"**
+  - `<LoadGate IsLoading="…">` — the COVER. Nothing to show: the gate holds the region's space and
+    puts the jewel in it. `Prominent="true"` for a main panel (roughly a third of the screen or
+    more). This is a first load.
+  - `<LoadGate Overlay="true" IsLoading="…">` — the REFRESH. A previous answer is on screen and is
+    being replaced or acted on (a sort, a pager, a filter, a command in flight): the content stays
+    put, an opaque veil takes the clicks, and the mark rides in a chip that sticks to the visible
+    slab of the region — a 3,000px queue must not centre its spinner 1,500px down.
+- **One mark per wait — the gate is relational.** A gate showing its mark cascades a claimed
+  `LoadScope`; every gate INSIDE it holds its space and says nothing until the claim lifts. So a
+  page cover silences the panels beneath it and a workspace-wide busy overlay silences the list
+  refreshing under it, without either knowing what is nested inside. Nothing cascades sideways, so
+  the rule left to the call site is: **a screen with nothing to show gates ONCE**, around the region
+  the reader is waiting for — `LoadState.UntilAll(a.IsLoaded, b.IsLoaded)` composes the sources.
+  Two sibling panels that fill from the same page open share one gate around their container; they
+  keep their own only when one of them can load while the other is idle.
+- **The whole-page mark belongs to the boot, and lives in `wwwroot/index.html`.** It is a sibling
+  overlay of `#app` (not inside it, which is what made Blazor wipe it a beat too early), held up
+  until `ApprovedSessionGate` — or `LandingLayout`, for the routes outside it — takes it down
+  through `js/boot-screen.js`, with a failsafe that dismisses it anyway once the app has rendered.
+  There is no in-app full-page loader: `ApprovedSessionGate` reads `SessionService.IsLoaded`
+  synchronously, so an in-app navigation never flashes a session check nobody is waiting on.
+- **Restraint: one jewel per screen.** A gate is for a REGION that will definitely render something
+  and occupies real space. In particular:
   - **Never gate a control.** A filter, a picker, a form field: render it `disabled` with a
     "Loading…" placeholder option instead. That says "not ready" in the control's own language,
     holds the layout still, and cannot be used to make a wrong choice.
@@ -146,8 +161,6 @@ finds drift.
 - Signals to gate on: `IsLoaded` / `LoadedFor(key)` / `XxxLoadedFor(key)` on stores and read models,
   `AsyncQueryCache.Has(key)` underneath most of them, or `Current is not null` on a read model.
   If the signal you need is missing, add it — do not gate on a proxy that happens to correlate.
-- `wwwroot/index.html`'s boot screen mirrors `LoadingScreen.razor` exactly, so the handover from
-  static HTML to Blazor is invisible.
 
 ## Error reporting (jpms)
 

@@ -25,28 +25,34 @@
 
 <body>
     <!--
-        The boot screen: what fills the window between the first byte of HTML and Blazor taking
-        over. It deliberately mirrors LoadingScreen.razor exactly — same jewel, same ring, same
-        pulse — so the handover from static HTML to the app is invisible rather than a flicker
-        between two different "loading" designs.
+        Blazor's root. Empty on purpose: the boot screen is NOT in here. It used to be, which
+        meant Blazor wiped it the moment it rendered its first frame — before the session had even
+        been checked — so the user saw a big centred jewel, then the chrome snapping in around a
+        second smaller jewel somewhere else, then the page. Three states for one wait.
     -->
-    <div id="app">
-        <div class="min-h-dvh flex flex-col items-center justify-center gap-5 bg-canvas">
-            <div class="relative w-16 h-16 grid place-items-center">
-                <div class="absolute inset-0 rounded-full border-2 border-surface-field border-t-content/70 animate-spin"></div>
-                <svg class="w-6 h-6 animate-jewel-pulse" viewBox="0 0 530 460" fill="none" stroke="currentColor"
-                     stroke-width="34" stroke-linejoin="miter" stroke-linecap="butt"
-                     xmlns="http://www.w3.org/2000/svg" aria-hidden="true">
-                    <path d="M 140 30 L 390 30 L 510 175 L 265 430 L 20 175 Z" />
-                    <path d="M 55 175 L 475 175" />
-                    <path d="M 185 30 L 185 175" />
-                    <path d="M 345 30 L 345 175" />
-                    <path d="M 185 175 L 265 430" />
-                    <path d="M 345 175 L 265 430" />
-                </svg>
-            </div>
-            <p class="text-sm text-content-subtle">Loading JPMS</p>
+    <div id="app"></div>
+
+    <!--
+        The boot screen: a sibling overlay, held up until the app has something real to show and
+        then faded out by the app itself (js/boot-screen.js, called from ApprovedSessionGate and
+        LandingLayout). It mirrors the in-app jewel exactly — same ring, same pulse — so the
+        handover is a crossfade onto a drawn screen rather than a flicker between two designs.
+    -->
+    <div id="boot" class="fixed inset-0 z-50 flex flex-col items-center justify-center gap-5 bg-canvas">
+        <div class="relative w-16 h-16 grid place-items-center">
+            <div class="absolute inset-0 rounded-full border-2 border-surface-field border-t-content/70 animate-spin"></div>
+            <svg class="w-6 h-6 animate-jewel-pulse" viewBox="0 0 530 460" fill="none" stroke="currentColor"
+                 stroke-width="34" stroke-linejoin="miter" stroke-linecap="butt"
+                 xmlns="http://www.w3.org/2000/svg" aria-hidden="true">
+                <path d="M 140 30 L 390 30 L 510 175 L 265 430 L 20 175 Z" />
+                <path d="M 55 175 L 475 175" />
+                <path d="M 185 30 L 185 175" />
+                <path d="M 345 30 L 345 175" />
+                <path d="M 185 175 L 265 430" />
+                <path d="M 345 175 L 265 430" />
+            </svg>
         </div>
+        <p class="text-sm text-content-subtle">Loading JPMS</p>
     </div>
 
     <!--
@@ -60,6 +66,7 @@
         <a class="dismiss">🗙</a>
     </div>
 
+    <script src="js/boot-screen.js"></script>
     <script src="js/search-select.js"></script>
     <script src="js/recipient-input.js"></script>
     <script src="js/sticky-scroll.js"></script>
@@ -113,9 +120,7 @@
                     type === 'dotnetjs' ? defaultUri : fetchWithRetry(defaultUri, integrity)
             }).catch((error) => {
                 console.error('JPMS failed to boot', error);
-                const app = document.getElementById('app');
-                if (!app) return;
-                app.innerHTML =
+                window.jpmsBoot.fail(
                     '<div class="min-h-dvh flex flex-col items-center justify-center gap-5 bg-canvas px-6 text-center">' +
                         '<svg class="w-8 h-8 text-content-subtle" viewBox="0 0 530 460" fill="none" stroke="currentColor" stroke-width="34" stroke-linejoin="miter" stroke-linecap="butt" xmlns="http://www.w3.org/2000/svg" aria-hidden="true">' +
                             '<path d="M 140 30 L 390 30 L 510 175 L 265 430 L 20 175 Z" /><path d="M 55 175 L 475 175" /><path d="M 185 30 L 185 175" /><path d="M 345 30 L 345 175" /><path d="M 185 175 L 265 430" /><path d="M 345 175 L 265 430" />' +
@@ -125,7 +130,7 @@
                             '<p class="text-xs text-content-subtle">Usually a connection blip — trying again normally sorts it.</p>' +
                         '</div>' +
                         '<button type="button" onclick="location.reload()" class="rounded bg-accent hover:bg-accent-hover text-accent-ink px-4 py-2 text-sm font-medium transition">Try again</button>' +
-                    '</div>';
+                    '</div>');
             });
         })();
     </script>

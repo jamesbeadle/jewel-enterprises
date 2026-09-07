@@ -25,11 +25,11 @@
 
 <Page>
     <ProjectPageShell ProjectId="@ProjectId" ActiveTab="building-control">
-        @if (!BuildingControl.LoadedFor(ProjectId) && !dataFailed)
-        {
-            <LoadGate IsLoading="true" Prominent="true" Label="Loading inspection" />
-        }
-        else if (Inspection is null)
+        @* The stage record, its photos and its documents are one load, so they gate together.
+           The correspondence below keeps a gate of its own because it reloads on its own — a
+           reply sent, an email linked — and the cascade silences it while this one speaks. *@
+        <LoadGate IsLoading="@(!BuildingControl.LoadedFor(ProjectId) && !dataFailed)" Prominent="true" Label="Loading inspection">
+        @if (Inspection is null)
         {
             <p class="text-sm text-content-muted">
                 That inspection wasn't found on this project.
@@ -242,6 +242,7 @@
                 </LoadGate>
             </section>
         }
+        </LoadGate>
     </ProjectPageShell>
 </Page>
 

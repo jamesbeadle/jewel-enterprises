@@ -105,16 +105,16 @@
                     </span>
                 </div>
             }
-            else if (order.Status == VariationOrderStatus.AwaitingArchitectInstruction)
+            else if (order.Status == VariationOrderStatus.AwaitingArchitectInstruction && instructionsLoaded)
             {
-                @* "None is linked yet" is the one thing this page must not say before it has looked. *@
-                <LoadGate IsLoading="@(!instructionsLoaded)" Label="Loading instructions">
+                @* "None is linked yet" is the one thing this page must not say before it has
+                   looked, so the line waits for the fetch rather than being gated: a jewel in
+                   place of two lines of advice announces a wait nobody is watching for. *@
                 <div class="rounded bg-surface-raised border border-line px-3 py-2 mb-4 text-sm text-content-subtle">
                     Waiting on a formal Architect's Instruction. None is linked yet —
                     <a href="@($"/projects/{ProjectId}/architect-instructions")" class="text-accent hover:underline">file or link one</a>
                     when it arrives, then approve the variation to write the contract figures.
                 </div>
-                </LoadGate>
             }
 
             <div class="grid grid-cols-1 lg:grid-cols-3 gap-5">

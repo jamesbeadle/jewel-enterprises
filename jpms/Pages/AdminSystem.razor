@@ -47,106 +47,112 @@
         else
         {
             <div class="max-w-2xl">
-                <Panel Title="Announced version" IsLoading="@(!Store.IsLoaded)" LoadingLabel="Loading version">
-                    @if (Store.Current is { } announced)
-                    {
-                        <div class="flex items-baseline gap-3">
-                            <p class="text-3xl font-semibold text-content font-mono leading-none">v@(announced.Version)</p>
-                            <p class="text-xs text-content-subtle">what every tab is currently asked to run</p>
-                        </div>
-                        @if (!string.IsNullOrWhiteSpace(announced.PublishedBy))
+                @* The announced version and the stored terms document are both fetched by the page
+                   opening, so they wait behind one mark instead of pulsing at each other down the
+                   column. *@
+                <LoadGate IsLoading="@(LoadState.UntilAll(Store.IsLoaded, termsStatus is not null || termsFailed))"
+                          Prominent="true" Label="Loading system settings">
+                    <Panel Title="Announced version">
+                        @if (Store.Current is { } announced)
                         {
-                            <p class="text-xs text-content-subtle mt-2">
-                                Published @DateTimeText(announced.PublishedAt.ToLocalTime()) by @announced.PublishedBy
-                            </p>
-                        }
-
-                        <div class="border-t border-line mt-5 pt-5">
-                            @if (publishedMessage is not null)
+                            <div class="flex items-baseline gap-3">
+                                <p class="text-3xl font-semibold text-content font-mono leading-none">v@(announced.Version)</p>
+                                <p class="text-xs text-content-subtle">what every tab is currently asked to run</p>
+                            </div>
+                            @if (!string.IsNullOrWhiteSpace(announced.PublishedBy))
                             {
-                                <p class="text-sm text-content mb-4">@publishedMessage</p>
-                            }
-
-                            @if (!confirming)
-                            {
-                                <button type="button" class="btn-primary" @onclick="() => { confirming = true; publishedMessage = null; }">
-                                    Publish update
-                                </button>
                                 <p class="text-xs text-content-subtle mt-2">
-                                    Announces v@(announced.Version + 1) and asks every open tab to refresh.
-                                </p>
-                            }
-                            else
-                            {
-                                <p class="text-sm text-content mb-3">
-                                    Publish <span class="font-mono font-semibold">v@(announced.Version + 1)</span>?
-                                    Everyone signed in — on every open tab — will see the refresh bar until they switch over.
-                                </p>
-                                <div class="flex items-center gap-2">
-                                    <button type="button" class="btn-primary" disabled="@publishing" @onclick="PublishAsync">
-                                        @(publishing ? "Publishing…" : "Publish now")
-                                    </button>
-                                    <button type="button" class="btn-neutral" disabled="@publishing" @onclick="() => confirming = false">
-                                        Cancel
-                                    </button>
-                                </div>
-                            }
-                        </div>
-                    }
-                </Panel>
-
-                @* ---- The company's standard tender Terms & Conditions: ONE PDF, attached
-                     automatically to every tender-invite email on every project. ---- *@
-                <div class="mt-6">
-                    <Panel Title="Tender terms &amp; conditions" IsLoading="@(termsStatus is null && !termsFailed)" LoadingLabel="Checking the stored document">
-                        @if (termsFailed)
-                        {
-                            <p class="text-sm text-negative">The stored document couldn't be checked — the error banner above has the detail.</p>
-                        }
-                        else if (termsStatus is { } terms)
-                        {
-                            @if (terms.Exists)
-                            {
-                                <p class="text-sm text-content">
-                                    <a class="text-accent hover:underline font-medium" href="@TenderTerms.FileUrl" download>@terms.FileName</a>
-                                    <span class="text-content-subtle"> · @FormatTermsSize(terms.FileSizeBytes)@(terms.UploadedAt is { } at ? $" · uploaded {at.LocalDateTime:d MMM yyyy, HH:mm}" : "")</span>
-                                </p>
-                                <p class="text-xs text-content-subtle mt-1">
-                                    Attached automatically to every tender-invite email, on every project, alongside the pricing schedule.
-                                    Uploading a replacement changes what every invite sends from that moment on.
-                                </p>
-                            }
-                            else if (!terms.Configured)
-                            {
-                                <p class="text-sm text-content-muted">
-                                    No file storage is configured on the API, so a terms document can't be kept.
-                                    Set <span class="font-mono text-xs">CompanyDocumentsStorage:ConnectionString</span> (or rely on the drawings storage account) and reload.
-                                </p>
-                            }
-                            else
-                            {
-                                <p class="text-sm text-content-muted">
-                                    Nothing uploaded yet — tender invites currently go out without a terms document.
+                                    Published @DateTimeText(announced.PublishedAt.ToLocalTime()) by @announced.PublishedBy
                                 </p>
                             }
 
-                            @if (terms.Configured)
-                            {
-                                <div class="border-t border-line mt-4 pt-4">
-                                    @if (termsNote is not null)
-                                    {
-                                        <p class="text-sm text-content mb-3">@termsNote</p>
-                                    }
-                                    <label class="btn-secondary inline-flex items-center gap-2 cursor-pointer @(termsUploading ?"opacity-60 pointer-events-none" : "")">
-                                        @(termsUploading ? "Uploading…" : terms.Exists ? "Replace the document" : "Upload the document")
-                                        <InputFile OnChange="OnTermsFileSelected" accept=".pdf,application/pdf" class="hidden" disabled="@termsUploading" />
-                                    </label>
-                                    <p class="text-xs text-content-subtle mt-2">PDF only, up to 10&nbsp;MB. Directors and administrators can replace it.</p>
-                                </div>
-                            }
+                            <div class="border-t border-line mt-5 pt-5">
+                                @if (publishedMessage is not null)
+                                {
+                                    <p class="text-sm text-content mb-4">@publishedMessage</p>
+                                }
+
+                                @if (!confirming)
+                                {
+                                    <button type="button" class="btn-primary" @onclick="() => { confirming = true; publishedMessage = null; }">
+                                        Publish update
+                                    </button>
+                                    <p class="text-xs text-content-subtle mt-2">
+                                        Announces v@(announced.Version + 1) and asks every open tab to refresh.
+                                    </p>
+                                }
+                                else
+                                {
+                                    <p class="text-sm text-content mb-3">
+                                        Publish <span class="font-mono font-semibold">v@(announced.Version + 1)</span>?
+                                        Everyone signed in — on every open tab — will see the refresh bar until they switch over.
+                                    </p>
+                                    <div class="flex items-center gap-2">
+                                        <button type="button" class="btn-primary" disabled="@publishing" @onclick="PublishAsync">
+                                            @(publishing ? "Publishing…" : "Publish now")
+                                        </button>
+                                        <button type="button" class="btn-neutral" disabled="@publishing" @onclick="() => confirming = false">
+                                            Cancel
+                                        </button>
+                                    </div>
+                                }
+                            </div>
                         }
                     </Panel>
-                </div>
+
+                    @* ---- The company's standard tender Terms & Conditions: ONE PDF, attached
+                         automatically to every tender-invite email on every project. ---- *@
+                    <div class="mt-6">
+                        <Panel Title="Tender terms &amp; conditions">
+                            @if (termsFailed)
+                            {
+                                <p class="text-sm text-negative">The stored document couldn't be checked — the error banner above has the detail.</p>
+                            }
+                            else if (termsStatus is { } terms)
+                            {
+                                @if (terms.Exists)
+                                {
+                                    <p class="text-sm text-content">
+                                        <a class="text-accent hover:underline font-medium" href="@TenderTerms.FileUrl" download>@terms.FileName</a>
+                                        <span class="text-content-subtle"> · @FormatTermsSize(terms.FileSizeBytes)@(terms.UploadedAt is { } at ? $" · uploaded {at.LocalDateTime:d MMM yyyy, HH:mm}" : "")</span>
+                                    </p>
+                                    <p class="text-xs text-content-subtle mt-1">
+                                        Attached automatically to every tender-invite email, on every project, alongside the pricing schedule.
+                                        Uploading a replacement changes what every invite sends from that moment on.
+                                    </p>
+                                }
+                                else if (!terms.Configured)
+                                {
+                                    <p class="text-sm text-content-muted">
+                                        No file storage is configured on the API, so a terms document can't be kept.
+                                        Set <span class="font-mono text-xs">CompanyDocumentsStorage:ConnectionString</span> (or rely on the drawings storage account) and reload.
+                                    </p>
+                                }
+                                else
+                                {
+                                    <p class="text-sm text-content-muted">
+                                        Nothing uploaded yet — tender invites currently go out without a terms document.
+                                    </p>
+                                }
+
+                                @if (terms.Configured)
+                                {
+                                    <div class="border-t border-line mt-4 pt-4">
+                                        @if (termsNote is not null)
+                                        {
+                                            <p class="text-sm text-content mb-3">@termsNote</p>
+                                        }
+                                        <label class="btn-secondary inline-flex items-center gap-2 cursor-pointer @(termsUploading ?"opacity-60 pointer-events-none" : "")">
+                                            @(termsUploading ? "Uploading…" : terms.Exists ? "Replace the document" : "Upload the document")
+                                            <InputFile OnChange="OnTermsFileSelected" accept=".pdf,application/pdf" class="hidden" disabled="@termsUploading" />
+                                        </label>
+                                        <p class="text-xs text-content-subtle mt-2">PDF only, up to 10&nbsp;MB. Directors and administrators can replace it.</p>
+                                    </div>
+                                }
+                            }
+                        </Panel>
+                    </div>
+                </LoadGate>
             </div>
         }
     }

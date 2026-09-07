@@ -20,9 +20,13 @@
     </div>
     @if (IsLoading)
     {
+        @* The jewel only when nothing above is already showing one for this same wait. *@
         <p class="mt-2 text-2xl font-medium text-content flex items-center h-6"
            role="status" aria-live="polite" aria-busy="true">
-            <JewelIcon Class="w-6 h-6 animate-jewel-pulse" />
+            @if (!AncestorSpeaks)
+            {
+                <JewelIcon Class="w-6 h-6 animate-jewel-pulse" />
+            }
             <span class="sr-only">Loading @Label</span>
         </p>
     }
@@ -44,4 +48,8 @@
     [Parameter] public bool IsLoading { get; set; }
 
     private string DeltaClass => IsDeltaPositive ? "text-positive" : "text-negative";
+
+    [CascadingParameter] private LoadScope? Ancestors { get; set; }
+
+    private bool AncestorSpeaks => Ancestors?.IsClaimed == true;
 }

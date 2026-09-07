@@ -9,39 +9,37 @@
 <PageTitle>@(record?.VariationRef ?? record?.Reference ?? "Variation") · JPMS</PageTitle>
 
 <Page CanAccess="CanAccess" AccessDeniedMessage="This page is for client accounts.">
-    @if (!loaded)
-    {
-        <LoadGate IsLoading="true" Prominent="true" Label="Loading variation order" />
-    }
-    else if (record is null)
-    {
-        <PageHeader Title="Variation order not found" />
-        <p class="text-content-muted">This variation order isn't on one of your projects, or it no longer exists.</p>
-    }
-    else
-    {
-        <a href="/client" class="text-sm text-accent hover:underline">&larr; Your projects</a>
-        <PageHeader>
-            <TitleContent>
-                @record.Title
-            </TitleContent>
-            <EyebrowContent>
-                @(record.VariationRef ?? record.Reference) · Variation order · @record.ProjectName
-            </EyebrowContent>
-            <SubtitleContent>
-                @record.Status.DisplayName()@(ClientPortalDisplay.ValueLabel(record) is { } value ? $" · {value}" : "")@(record.ApprovedAt is { } approved ? $" · approved {approved.LocalDateTime:d MMM yyyy}" : "")
-            </SubtitleContent>
-        </PageHeader>
-
-        @if (!string.IsNullOrWhiteSpace(record.Description))
+    <LoadGate IsLoading="@(!loaded)" Prominent="true" Label="Loading variation order">
+        @if (record is null)
         {
-            <Panel Title="Detail" BodyClass="p-5">
-                <p class="text-sm text-content-muted whitespace-pre-wrap leading-relaxed">@record.Description</p>
-            </Panel>
+            <PageHeader Title="Variation order not found" />
+            <p class="text-content-muted">This variation order isn't on one of your projects, or it no longer exists.</p>
         }
+        else
+        {
+            <a href="/client" class="text-sm text-accent hover:underline">&larr; Your projects</a>
+            <PageHeader>
+                <TitleContent>
+                    @record.Title
+                </TitleContent>
+                <EyebrowContent>
+                    @(record.VariationRef ?? record.Reference) · Variation order · @record.ProjectName
+                </EyebrowContent>
+                <SubtitleContent>
+                    @record.Status.DisplayName()@(ClientPortalDisplay.ValueLabel(record) is { } value ? $" · {value}" : "")@(record.ApprovedAt is { } approved ? $" · approved {approved.LocalDateTime:d MMM yyyy}" : "")
+                </SubtitleContent>
+            </PageHeader>
 
-        <ClientConversationPanel Load="LoadMessagesAsync" Post="PostMessageAsync" />
-    }
+            @if (!string.IsNullOrWhiteSpace(record.Description))
+            {
+                <Panel Title="Detail" BodyClass="p-5">
+                    <p class="text-sm text-content-muted whitespace-pre-wrap leading-relaxed">@record.Description</p>
+                </Panel>
+            }
+
+            <ClientConversationPanel Load="LoadMessagesAsync" Post="PostMessageAsync" />
+        }
+    </LoadGate>
 </Page>
 
 @code {

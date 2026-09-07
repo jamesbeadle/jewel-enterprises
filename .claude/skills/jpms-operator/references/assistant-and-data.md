@@ -104,11 +104,14 @@ identifiers, and legacy statuses persist as pinned ints.
 
 ### UI conventions that answer "why does it look like that"
 
-- Loading: the pulsing jewel is the only loading mark (`LoadingScreen`,
-  `LoadGate`, `Stat IsLoading`); panels reveal in one piece
-  (`LoadState.UntilAll`); never gate a control, a single line of text, or a
-  conditional panel; a failed fetch must open the gate; nullable backing
-  fields, never `Array.Empty` as "not loaded".
+- Loading: the pulsing jewel is the only loading mark and `LoadGate` is the
+  only thing that draws it — as a cover (nothing to show yet) or as an
+  overlay veiling content being refreshed. A gate silences every gate nested
+  inside it, so a screen shows one jewel; the whole-page mark is the boot
+  screen in `index.html`. Panels reveal in one piece (`LoadState.UntilAll`);
+  never gate a control, a single line of text, or a conditional panel; a
+  failed fetch must open the gate; nullable backing fields, never
+  `Array.Empty` as "not loaded".
 - Errors: `ErrorReporter`/`ErrorToast`, one at a time, each with a copyable
   `JPMS-XXXXXX` reference; 400/409/422 stay in the calling dialog.
 - In-view actions are a `Toolbar` of icon buttons with hover text; the one

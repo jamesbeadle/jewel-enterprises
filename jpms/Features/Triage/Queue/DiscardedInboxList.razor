@@ -15,11 +15,7 @@
     }
     else
     {
-        <div class="relative space-y-2">
-            @if (ListLoading)
-            {
-                <JewelSpinner Overlay="true" Label="Loading" />
-            }
+        <LoadGate Overlay="true" IsLoading="ListLoading" Label="Loading" Class="space-y-2">
             @foreach (var item in Items)
             {
                 <TriageEmailRow Item="item"
@@ -33,7 +29,7 @@
                             HasNext="HasNext"
                             OnPrevious="OnPrevious"
                             OnNext="OnNext" />
-        </div>
+        </LoadGate>
     }
 </LoadGate>
 

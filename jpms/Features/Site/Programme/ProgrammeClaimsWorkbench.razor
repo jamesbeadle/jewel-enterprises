@@ -118,10 +118,14 @@ else if (openForm == Form.Lad)
     </div>
 }
 
+@* All three sections fill from the same page open — the request register carries the notices
+   and the extensions, and the page hands the LADs down — so the view waits once, around the lot.
+   A gate on each section would put three jewels on screen for what the reader experiences as a
+   single wait, and siblings cannot silence each other. *@
+<LoadGate IsLoading="@LoadState.UntilAll(RequestsReady, LadsLoaded)" Prominent="true" Label="Loading claims">
 <div class="space-y-6">
     <div>
         <h3 class="text-sm font-semibold text-content mb-2">Notices of Delay <span class="font-normal text-content-subtle">— raised by Jewel (JCT ICD 2024 cl. 2.19)</span></h3>
-        <LoadGate IsLoading="@(!RequestsReady)" Label="Loading notices">
         @if (Nods.Count == 0)
         {
             <div class="panel p-5 text-center"><p class="text-xs text-content-subtle">No Notices of Delay on this project.</p></div>
@@ -150,12 +154,10 @@ else if (openForm == Form.Lad)
                 }
             </ul>
         }
-        </LoadGate>
     </div>
 
     <div>
         <h3 class="text-sm font-semibold text-content mb-2">Extensions of Time <span class="font-normal text-content-subtle">— raised by Jewel (JCT ICD 2024 cl. 2.19/2.20)</span></h3>
-        <LoadGate IsLoading="@(!RequestsReady)" Label="Loading extensions">
         @if (Eots.Count == 0)
         {
             <div class="panel p-5 text-center"><p class="text-xs text-content-subtle">No Extensions of Time on this project.</p></div>
@@ -188,12 +190,10 @@ else if (openForm == Form.Lad)
                 }
             </ul>
         }
-        </LoadGate>
     </div>
 
     <div>
         <h3 class="text-sm font-semibold text-content mb-2">Liquidated Damages <span class="font-normal text-content-subtle">— claimed by the client against Jewel</span></h3>
-        <LoadGate IsLoading="@(!LadsLoaded)" Label="Loading LADs claims">
         @if (Lads.Count == 0)
         {
             @* Only when the fetch actually answered "none" — a failure says so above. *@
@@ -229,9 +229,9 @@ else if (openForm == Form.Lad)
                 }
             </ul>
         }
-        </LoadGate>
     </div>
 </div>
+</LoadGate>
 
 @code {
     [Parameter, EditorRequired] public string ProjectId { get; set; } = "";

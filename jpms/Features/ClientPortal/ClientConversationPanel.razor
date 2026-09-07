@@ -8,12 +8,7 @@
 
 <Panel Title="Conversation" BodyClass="p-5">
     <ChildContent>
-    @if (!loaded)
-    {
-        <JewelSpinner Class="py-6" Label="Loading" />
-    }
-    else
-    {
+    <LoadGate IsLoading="@(!loaded)" Prominent="true" Label="Loading conversation">
         @if (entries.Count == 0)
         {
             <p class="rounded border border-dashed border-line px-4 py-6 text-center text-sm text-content-subtle italic mb-5">
@@ -35,7 +30,7 @@
                               ReplyingToAuthor="@ReplyingToAuthor"
                               OnCancelReply="() => replyTo = null"
                               Placeholder="Write a message to the project team…" />
-    }
+    </LoadGate>
     </ChildContent>
 </Panel>
 

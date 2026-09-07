@@ -130,15 +130,16 @@
                                 AccrualToDateFor="AccrualToDateFor" />
         }
 
-        @if (!selectionInitialised || SelectedProjects.Count > 0)
-        {
-            <ProfitSummaryStrip Rows="@(TableReady && SelectedProjects.Count > 0 ? LoadedRows() : null)" />
-        }
-
         @* One gate for the bridge and the table together: every bar, row and total is the same
            arithmetic over the same sources, so the region waits for every selected project
            before showing any of it. *@
         <LoadGate IsLoading="@(!TableReady)" Prominent="true" Label="Loading profit figures">
+        @* The strip totals the very rows this gate is waiting for, so it waits with them rather
+           than pulsing its own figures above a pulsing table. *@
+        @if (!selectionInitialised || SelectedProjects.Count > 0)
+        {
+            <ProfitSummaryStrip Rows="@(TableReady && SelectedProjects.Count > 0 ? LoadedRows() : null)" />
+        }
         @if (SelectedProjects.Count == 0)
         {
             <div class="panel p-8 text-center">

@@ -5,14 +5,18 @@
 @*
     The admin home's headline figures. All three are held together until BOTH stores have landed:
     they are read as a set, and showing "12 users / 0 pending" while the requests fetch is still in
-    flight states something false with total confidence. One indicator, one reveal.
+    flight states something false with total confidence. One indicator, one reveal — so the gate
+    goes round the row rather than into each tile, which would put three jewels in a line pulsing
+    at each other over a single fetch.
 *@
 
-<div class="grid grid-cols-3 gap-3 md:gap-4 mb-8">
-    <StatTile Label="Approved users"   Value="@ApprovedUserCount"  IsLoading="@IsLoading" />
-    <StatTile Label="Pending requests" Value="@PendingRequestCount" IsLoading="@IsLoading" />
-    <StatTile Label="Roles in use"     Value="@DistinctRoleCount"   IsLoading="@IsLoading" />
-</div>
+<LoadGate IsLoading="@IsLoading" Label="Loading the figures" Height="min-h-[104px]" Class="mb-8">
+    <div class="grid grid-cols-3 gap-3 md:gap-4">
+        <StatTile Label="Approved users"   Value="@ApprovedUserCount" />
+        <StatTile Label="Pending requests" Value="@PendingRequestCount" />
+        <StatTile Label="Roles in use"     Value="@DistinctRoleCount" />
+    </div>
+</LoadGate>
 
 @code {
     private bool IsLoading => LoadState.UntilAll(UserDirectory.IsLoaded, Requests.IsLoaded);

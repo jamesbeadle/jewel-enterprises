@@ -241,20 +241,20 @@
             remembers where it was — data is gathered by jumping around windows, side by side, instead
             of through modals. On mobile there is one window; the icons still carry the full context.
         *@
-        <section class="px-3 md:px-4 pt-3 pb-4 h-[calc(100dvh-5.25rem)] min-h-[34rem] flex flex-col relative">
-            @* One busy overlay for the WHOLE workspace — bar and both windows. It used to sit on the
-               triage bar and the email detail panel only, so pressing "Create now" from a pathway
-               pane left the pane you'd just clicked (and everything else below the bar) uncovered —
-               only "the top bit" dimmed. Any in-flight action (Apply, Create now, discard, restore,
-               tag changes) covers everything the action might touch. *@
-            @if (busy)
-            {
-                @* z-30 wrapper: the inbox pane's sticky tab bar is z-10 (later in the DOM, so it
-                   would paint over a bare z-10 spinner) and the tag-filter dropdown is z-20. *@
-                <div class="absolute inset-0 z-30">
-                    <JewelSpinner Overlay="true" Label="@busyLabel" />
-                </div>
-            }
+        <section class="px-3 md:px-4 pt-3 pb-4 h-[calc(100dvh-5.25rem)] min-h-[34rem] flex flex-col">
+        @* One busy gate for the WHOLE workspace — bar and both windows. It used to sit on the
+           triage bar and the email detail panel only, so pressing "Create now" from a pathway
+           pane left the pane you'd just clicked (and everything else below the bar) uncovered —
+           only "the top bit" dimmed. Any in-flight action (Apply, Create now, discard, restore,
+           tag changes) covers everything the action might touch.
+
+           As a gate it also SILENCES every gate inside it: the inbox list refreshing its page, a
+           pathway pane reading its register, the Xero pane. One action, one jewel — not the three
+           that used to pulse at once while an Apply ran. z-30 because the inbox pane's sticky tab
+           bar is z-10 (later in the DOM, so it would paint over a bare z-10 veil) and the
+           tag-filter dropdown is z-20. *@
+        <LoadGate Overlay="true" IsLoading="busy" Label="@busyLabel"
+                  Class="flex-1 min-h-0 flex flex-col" OverlayClass="z-30">
             @* The selected email is global to both windows, so its bar sits above the split. *@
             @if (view == QueueView.Active && selected is not null)
             {
@@ -351,6 +351,7 @@
                 </OutboxContent>
             </PanelWorkspace>
             </div>
+        </LoadGate>
         </section>
 
         @if (RecentTriage.Count > 0)

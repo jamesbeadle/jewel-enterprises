@@ -84,7 +84,9 @@
         @* The stage, the hint and the stepper are read off the claim AND the invoices drawn
            against it, so the card waits for both — half the picture names the wrong next action,
            and "No claim selected" is a real answer that must not be shown as a guess. *@
-        <LoadGate IsLoading="@(!ClaimReady)" Prominent="true" Label="Loading the claim">
+        @* The card and the report table below it fill from the same page open, so they are one
+           wait: gated apart they put two jewels on a screen with nothing on it yet. *@
+        <LoadGate IsLoading="@LoadState.UntilAll(ClaimReady, ReportReady)" Prominent="true" Label="Loading the valuation report">
         <ClaimProgressDialog ProjectId="@ProjectId" IsOpen="claimProgressOpen" Claim="@Selected"
                              OnClose="CloseClaimProgress" OnSaved="ClaimProgressSaved" />
 
@@ -213,7 +215,6 @@
         {
             <p class="text-sm text-content-subtle italic mb-4">No claim selected. Build the bill below, then start a claim to value works complete.</p>
         }
-        </LoadGate>
 
         @* Whether lines can still be added is the selected claim's status — offer this before the
            claims land and it appears on a locked claim, then vanishes. *@
@@ -228,8 +229,7 @@
         }
 
         @* Every row is a valuation line priced against the cost-centre master and the claim's
-           entries, so the table holds until both masters are in. *@
-        <LoadGate IsLoading="@(!ReportReady)" Prominent="true" Label="Loading the valuation report">
+           entries — both are named in the gate above, so no row is ever priced half-loaded. *@
         <ValuationReportTable ProjectId="@ProjectId" SelectedClaim="@Selected" PreviousClaim="@PreviousClaim"
                               OnEditLine="StartEditLine" CertifiedToDate="@CertifiedToDateGross"
                               DepositCreditedToDate="@DepositCreditedToDate">
@@ -305,9 +305,9 @@
                     <label class="block text-sm font-medium text-content mb-1">Retention</label>
                     @* Read-only: the claim stamps its retention from the project's terms when it
                        starts — the completion date decides whether the release % applies. *@
-                    @* "No terms recorded" is advice to go and record some, so it waits until the
-                       terms have actually been looked for. *@
-                    <LoadGate IsLoading="@(!Retention.RetentionLoadedFor(ProjectId))" Height="min-h-[44px]" Label="Loading retention terms">
+                    @* Two lines of text, so neither is gated — they simply do not render until
+                       the terms have been looked for. "No terms recorded" is advice to go and
+                       record some, and offering that before the fetch has answered is a lie. *@
                     @if (Retention.RetentionFor(ProjectId) is { } terms)
                     {
                         <p class="text-sm text-content-muted py-2">
@@ -315,13 +315,12 @@
                             practical completion@(terms.PracticalCompletionAt is { } pc ? $" ({pc:dd MMM yyyy})" : " — date not set")
                         </p>
                     }
-                    else
+                    else if (Retention.RetentionLoadedFor(ProjectId))
                     {
                         <p class="text-sm text-warning py-2">
                             No retention terms recorded — this claim will hold 0%. Record them in project setup first.
                         </p>
                     }
-                    </LoadGate>
                 </div>
                 @* Valuations stack month on month, so the new period ALWAYS starts from the last
                    claim's cumulative percentages — stated as fact, not offered as a choice. *@

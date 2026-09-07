@@ -9,46 +9,44 @@
 <PageTitle>@(record?.Reference ?? "Request") · JPMS</PageTitle>
 
 <Page CanAccess="CanAccess" AccessDeniedMessage="This page is for client accounts.">
-    @if (!loaded)
-    {
-        <LoadGate IsLoading="true" Prominent="true" Label="Loading request" />
-    }
-    else if (record is null)
-    {
-        <PageHeader Title="Request not found" />
-        <p class="text-content-muted">This request isn't on one of your projects, or it no longer exists.</p>
-    }
-    else
-    {
-        <a href="/client" class="text-sm text-accent hover:underline">&larr; Your projects</a>
-        <PageHeader>
-            <TitleContent>
-                @record.Title
-            </TitleContent>
-            <EyebrowContent>
-                @record.Reference · @record.Kind.DisplayName() · @record.ProjectName
-            </EyebrowContent>
-            <SubtitleContent>
-                @record.Status.DisplayName() · raised @DateText(record.RaisedAt)@(record.RespondedAt is { } responded ? $" · responded {responded.LocalDateTime:d MMM yyyy}" : "")
-            </SubtitleContent>
-        </PageHeader>
-
-        @if (!string.IsNullOrWhiteSpace(record.Description))
+    <LoadGate IsLoading="@(!loaded)" Prominent="true" Label="Loading request">
+        @if (record is null)
         {
-            <Panel Title="Detail" BodyClass="p-5">
-                <p class="text-sm text-content-muted whitespace-pre-wrap leading-relaxed">@record.Description</p>
-            </Panel>
+            <PageHeader Title="Request not found" />
+            <p class="text-content-muted">This request isn't on one of your projects, or it no longer exists.</p>
         }
-
-        @if (!string.IsNullOrWhiteSpace(record.ResponseText))
+        else
         {
-            <Panel Title="Response" BodyClass="p-5">
-                <p class="text-sm text-content-muted whitespace-pre-wrap leading-relaxed">@record.ResponseText</p>
-            </Panel>
-        }
+            <a href="/client" class="text-sm text-accent hover:underline">&larr; Your projects</a>
+            <PageHeader>
+                <TitleContent>
+                    @record.Title
+                </TitleContent>
+                <EyebrowContent>
+                    @record.Reference · @record.Kind.DisplayName() · @record.ProjectName
+                </EyebrowContent>
+                <SubtitleContent>
+                    @record.Status.DisplayName() · raised @DateText(record.RaisedAt)@(record.RespondedAt is { } responded ? $" · responded {responded.LocalDateTime:d MMM yyyy}" : "")
+                </SubtitleContent>
+            </PageHeader>
 
-        <ClientConversationPanel Load="LoadMessagesAsync" Post="PostMessageAsync" />
-    }
+            @if (!string.IsNullOrWhiteSpace(record.Description))
+            {
+                <Panel Title="Detail" BodyClass="p-5">
+                    <p class="text-sm text-content-muted whitespace-pre-wrap leading-relaxed">@record.Description</p>
+                </Panel>
+            }
+
+            @if (!string.IsNullOrWhiteSpace(record.ResponseText))
+            {
+                <Panel Title="Response" BodyClass="p-5">
+                    <p class="text-sm text-content-muted whitespace-pre-wrap leading-relaxed">@record.ResponseText</p>
+                </Panel>
+            }
+
+            <ClientConversationPanel Load="LoadMessagesAsync" Post="PostMessageAsync" />
+        }
+    </LoadGate>
 </Page>
 
 @code {

@@ -28,232 +28,230 @@
     </header>
 
     <main class="flex-1 w-full max-w-5xl mx-auto px-6 md:px-10 py-10">
-        @if (loading)
-        {
-            <LoadGate IsLoading="true" Prominent="true" Label="Opening your page" />
-        }
-        else if (view is null)
-        {
-            <div class="max-w-xl">
-                <h1 class="text-3xl font-semibold text-content mb-3">This link isn't valid</h1>
-                <p class="text-content-muted leading-relaxed">
-                    The page you're looking for opens from the code on your letter. If you've typed the address by hand,
-                    check it against the letter — or email us at <a class="text-info underline underline-offset-4" href="mailto:sales@jewelbb.co.uk">sales@jewelbb.co.uk</a>
-                    and we'll send you a fresh link.
-                </p>
-            </div>
-        }
-        else
-        {
-            var v = view;
-            <h1 class="text-3xl md:text-4xl font-semibold text-content leading-tight mb-3">
-                @(string.IsNullOrWhiteSpace(v.Greeting) ? "Imagine what your home could be" : $"{v.Greeting}, imagine what your home could be")
-            </h1>
-            <p class="text-content-muted leading-relaxed max-w-2xl mb-8">
-                Show us your house or plot as it is today, tell us what you dream of, and we'll come back with concepts
-                drawn over your own photographs — real ideas for your real home, from the people who would build it.
-            </p>
-
-            @if (error is not null)
+        <LoadGate IsLoading="loading" Prominent="true" Label="Opening your page">
+            @if (view is null)
             {
-                <Notice Tone="Tone.Negative" Class="mb-6" Dismissible="true" OnDismiss="() => error = null">@error</Notice>
-            }
-
-            @if (v.Proposal is { } proposal)
-            {
-                <section class="mb-12" id="proposal">
-                    <ImagineProposal Token="@Token" Proposal="@proposal" Concepts="@AllConcepts" ProspectEmail="@v.ProspectEmail"
-                                     OnChanged="OnViewChanged" OnError="OnChildError" />
-                </section>
-            }
-
-            @if (v.Rounds.Count == 0)
-            {
-                <section class="panel p-6 md:p-8 max-w-3xl">
-                    <h2 class="text-xl font-semibold text-content mb-1">Start with your photos</h2>
-                    <p class="text-sm text-content-muted mb-6">
-                        Up to @v.MaxPhotosPerRound photos — the front, the back, the garden, the room you'd change. Phone photos are
-                        perfect; they're shrunk on your phone before they're sent.
+                <div class="max-w-xl">
+                    <h1 class="text-3xl font-semibold text-content mb-3">This link isn't valid</h1>
+                    <p class="text-content-muted leading-relaxed">
+                        The page you're looking for opens from the code on your letter. If you've typed the address by hand,
+                        check it against the letter — or email us at <a class="text-info underline underline-offset-4" href="mailto:sales@jewelbb.co.uk">sales@jewelbb.co.uk</a>
+                        and we'll send you a fresh link.
                     </p>
-                    <div class="space-y-5">
-                        <div>
-                            <label class="block eyebrow mb-2">Photos</label>
-                            <InputFile OnChange="OnPhotosChosen" multiple accept="image/*" class="block w-full text-sm text-content-muted" disabled="@busy" />
-                            @if (preparing)
-                            {
-                                <p class="text-xs text-content-subtle mt-2 flex items-center gap-2"><JewelIcon Class="w-3 h-3 animate-jewel-pulse" /> Preparing your photos…</p>
-                            }
-                            @if (photos.Count > 0)
-                            {
-                                <div class="grid grid-cols-3 sm:grid-cols-6 gap-2 mt-3">
-                                    @foreach (var photo in photos)
-                                    {
-                                        var p = photo;
-                                        <div class="relative aspect-square rounded overflow-hidden border border-line bg-surface">
-                                            <img src="@p.Preview" alt="" class="w-full h-full object-cover" />
-                                            <button type="button" class="absolute top-1 right-1 rounded-full bg-canvas/80 text-content text-xs w-6 h-6 grid place-items-center" title="Remove" @onclick="() => photos.Remove(p)">×</button>
-                                        </div>
-                                    }
-                                </div>
-                            }
-                        </div>
-                        <div>
-                            <label class="block eyebrow mb-1">What do you dream of?</label>
-                            <textarea class="field w-full" rows="5" maxlength="4000" disabled="@busy"
-                                      placeholder="e.g. A bigger, brighter kitchen opening onto the garden; a proper master suite upstairs; we've wondered about knocking it down and starting again…"
-                                      value="@brief" @oninput="e => brief = e.Value?.ToString() ?? string.Empty"></textarea>
-                        </div>
-                        <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                            <div>
-                                <label class="block eyebrow mb-1">Your name</label>
-                                <input type="text" class="field w-full" maxlength="256" autocomplete="name" disabled="@busy"
-                                       value="@name" @oninput="e => name = e.Value?.ToString() ?? string.Empty" />
-                            </div>
-                            <div>
-                                <label class="block eyebrow mb-1">Email — where we send your concepts</label>
-                                <input type="email" class="field w-full" maxlength="256" autocomplete="email" disabled="@busy"
-                                       value="@email" @oninput="e => email = e.Value?.ToString() ?? string.Empty" />
-                            </div>
-                        </div>
-                        <Checkbox Value="@consent" ValueChanged="c => consent = c" Disabled="@busy"
-                                  Label="Email me my concepts, and keep in touch about my home. We won't pass your details on; email us at sales@jewelbb.co.uk any time to stop." />
-                        <div class="flex items-center gap-3">
-                            <button type="button" class="btn-primary btn-lg" disabled="@(busy || preparing || !CanSubmit)" @onclick="SubmitAsync">
-                                @(busy ? "Sending…" : "Imagine it")
-                            </button>
-                            <p class="text-xs text-content-subtle">Concepts usually take a few minutes. We'll email you when they're ready.</p>
-                        </div>
-                    </div>
-                </section>
+                </div>
             }
             else
             {
-                @foreach (var round in v.Rounds.OrderByDescending(r => r.Number))
+                var v = view!;
+                <h1 class="text-3xl md:text-4xl font-semibold text-content leading-tight mb-3">
+                    @(string.IsNullOrWhiteSpace(v.Greeting) ? "Imagine what your home could be" : $"{v.Greeting}, imagine what your home could be")
+                </h1>
+                <p class="text-content-muted leading-relaxed max-w-2xl mb-8">
+                    Show us your house or plot as it is today, tell us what you dream of, and we'll come back with concepts
+                    drawn over your own photographs — real ideas for your real home, from the people who would build it.
+                </p>
+
+                @if (error is not null)
                 {
-                    var r = round;
-                    <section class="mb-10">
-                        <div class="flex items-baseline justify-between gap-4 mb-3">
-                            <h2 class="text-xl font-semibold text-content">
-                                @(r.Kind == ImagineRoundKind.Concepts ? "Your concepts" : $"Revision {r.Number - 1}")
-                            </h2>
-                            <span class="text-xs text-content-subtle">@r.RequestedAt.ToLocalTime().ToString("d MMM yyyy")</span>
-                        </div>
-                        @if (r.Kind == ImagineRoundKind.Revision && !string.IsNullOrWhiteSpace(r.Brief))
-                        {
-                            <p class="text-sm text-content-muted mb-4">You asked: <em>@r.Brief</em></p>
-                        }
+                    <Notice Tone="Tone.Negative" Class="mb-6" Dismissible="true" OnDismiss="() => error = null">@error</Notice>
+                }
 
-                        @if (r.Status.IsInProgress())
-                        {
-                            <div class="panel p-6 flex items-center gap-4">
-                                <JewelIcon Class="w-6 h-6 animate-jewel-pulse text-content shrink-0" />
-                                <div>
-                                    <p class="text-content font-medium">@(r.Kind == ImagineRoundKind.Concepts ? "We're imagining your home" : "We're revising your concept")</p>
-                                    <p class="text-sm text-content-muted">This takes a few minutes. You can close the page — we'll email you when it's ready — or leave it open and it'll appear here.</p>
-                                </div>
-                            </div>
-                        }
-                        else if (r.Status == ImagineRoundStatus.Failed)
-                        {
-                            <div class="panel p-6">
-                                <p class="text-content font-medium">Something went wrong on our side</p>
-                                <p class="text-sm text-content-muted">Your photos are safe and we've been told. We'll be in touch — or email <a class="text-info underline underline-offset-4" href="mailto:sales@jewelbb.co.uk">sales@jewelbb.co.uk</a>.</p>
-                            </div>
-                        }
-                        else
-                        {
-                            @if (!string.IsNullOrWhiteSpace(r.Observations))
-                            {
-                                <p class="text-content-muted leading-relaxed max-w-3xl mb-6">@r.Observations</p>
-                            }
-                            @if (!string.IsNullOrWhiteSpace(r.Error))
-                            {
-                                <p class="text-xs text-content-subtle mb-4">Not every idea rendered this time — the ones that did are below.</p>
-                            }
-                            <div class="@ConceptGridClass(r.Concepts.Count)">
-                                @foreach (var concept in r.Concepts)
-                                {
-                                    var c = concept;
-                                    <article class="panel overflow-hidden flex flex-col">
-                                        <a href="@ImageUrl(c.ImageId)" target="_blank" rel="noopener" class="block aspect-[3/2] bg-surface">
-                                            <img src="@ImageUrl(c.ImageId)" alt="@c.Title" class="w-full h-full object-cover" loading="lazy" />
-                                        </a>
-                                        <div class="p-5 flex-1 flex flex-col gap-3">
-                                            <div>
-                                                <h3 class="font-semibold text-content">@c.Title</h3>
-                                                <p class="text-sm text-content-muted leading-relaxed mt-1">@c.Description</p>
-                                            </div>
-                                            <div class="mt-auto space-y-3">
-                                                <div class="flex items-center gap-2">
-                                                    <button type="button" class="@(c.Liked ? "btn-primary" : "btn-secondary") text-sm" disabled="@busy" @onclick="() => ToggleLikeAsync(c)">
-                                                        @(c.Liked ? "♥ You like this" : "♡ I like this")
-                                                    </button>
-                                                    @if (v.RoundsRemaining > 0 && !AnyInProgress)
-                                                    {
-                                                        <button type="button" class="btn-ghost text-sm" disabled="@busy" @onclick="() => OpenRevise(c)">Change something</button>
-                                                    }
-                                                </div>
-                                                <div class="flex gap-2">
-                                                    <input type="text" class="field w-full text-sm" maxlength="2000" placeholder="A thought about this one (optional)" disabled="@busy"
-                                                           value="@CommentDraft(c)" @oninput="e => commentDrafts[c.ImageId] = e.Value?.ToString() ?? string.Empty" />
-                                                    @if (CommentDraft(c) != c.Comment)
-                                                    {
-                                                        <button type="button" class="btn-secondary text-sm shrink-0" disabled="@busy" @onclick="() => SaveCommentAsync(c)">Save</button>
-                                                    }
-                                                </div>
-                                                @if (revising?.ImageId == c.ImageId)
-                                                {
-                                                    <div class="border-t border-line pt-3 space-y-2">
-                                                        <label class="block eyebrow">What would you change?</label>
-                                                        <textarea class="field w-full text-sm" rows="3" maxlength="4000" disabled="@busy"
-                                                                  placeholder="e.g. Love the glazing — could the roof be flat rather than pitched, and the brick a paler tone?"
-                                                                  value="@feedback" @oninput="e => feedback = e.Value?.ToString() ?? string.Empty"></textarea>
-                                                        <div class="flex items-center gap-2">
-                                                            <button type="button" class="btn-primary text-sm" disabled="@(busy || string.IsNullOrWhiteSpace(feedback))" @onclick="ReviseAsync">@(busy ? "Sending…" : "Revise this concept")</button>
-                                                            <button type="button" class="btn-ghost text-sm" disabled="@busy" @onclick="() => revising = null">Cancel</button>
-                                                        </div>
-                                                        <p class="text-xs text-content-subtle">@(v.RoundsRemaining == 1 ? "This is your last revision on this page — after that, let's talk." : $"{v.RoundsRemaining} rounds left on this page.")</p>
-                                                    </div>
-                                                }
-                                            </div>
-                                        </div>
-                                    </article>
-                                }
-                            </div>
-                        }
-
-                        @if (r.Kind == ImagineRoundKind.Concepts && r.Photos.Count > 0)
-                        {
-                            <div class="mt-5">
-                                <p class="eyebrow mb-2">Your photos</p>
-                                <div class="grid grid-cols-3 sm:grid-cols-6 gap-2">
-                                    @foreach (var photo in r.Photos)
-                                    {
-                                        var p = photo;
-                                        <a href="@ImageUrl(p.ImageId)" target="_blank" rel="noopener" class="block aspect-square rounded overflow-hidden border border-line bg-surface">
-                                            <img src="@ImageUrl(p.ImageId)" alt="" class="w-full h-full object-cover" loading="lazy" />
-                                        </a>
-                                    }
-                                </div>
-                                @if (!string.IsNullOrWhiteSpace(r.Brief))
-                                {
-                                    <p class="text-sm text-content-muted mt-3">You wrote: <em>@r.Brief</em></p>
-                                }
-                            </div>
-                        }
+                @if (v.Proposal is { } proposal)
+                {
+                    <section class="mb-12" id="proposal">
+                        <ImagineProposal Token="@Token" Proposal="@proposal" Concepts="@AllConcepts" ProspectEmail="@v.ProspectEmail"
+                                         OnChanged="OnViewChanged" OnError="OnChildError" />
                     </section>
                 }
 
-                <section class="panel p-6 max-w-3xl">
-                    <h2 class="font-semibold text-content mb-1">Ready to talk it through?</h2>
-                    <p class="text-sm text-content-muted">
-                        Reply to the email we sent you, or write to
-                        <a class="text-info underline underline-offset-4" href="mailto:sales@jewelbb.co.uk">sales@jewelbb.co.uk</a>
-                        — a site visit is the next step, and it's free.
-                    </p>
-                </section>
+                @if (v.Rounds.Count == 0)
+                {
+                    <section class="panel p-6 md:p-8 max-w-3xl">
+                        <h2 class="text-xl font-semibold text-content mb-1">Start with your photos</h2>
+                        <p class="text-sm text-content-muted mb-6">
+                            Up to @v.MaxPhotosPerRound photos — the front, the back, the garden, the room you'd change. Phone photos are
+                            perfect; they're shrunk on your phone before they're sent.
+                        </p>
+                        <div class="space-y-5">
+                            <div>
+                                <label class="block eyebrow mb-2">Photos</label>
+                                <InputFile OnChange="OnPhotosChosen" multiple accept="image/*" class="block w-full text-sm text-content-muted" disabled="@busy" />
+                                @if (preparing)
+                                {
+                                    <p class="text-xs text-content-subtle mt-2 flex items-center gap-2"><JewelIcon Class="w-3 h-3 animate-jewel-pulse" /> Preparing your photos…</p>
+                                }
+                                @if (photos.Count > 0)
+                                {
+                                    <div class="grid grid-cols-3 sm:grid-cols-6 gap-2 mt-3">
+                                        @foreach (var photo in photos)
+                                        {
+                                            var p = photo;
+                                            <div class="relative aspect-square rounded overflow-hidden border border-line bg-surface">
+                                                <img src="@p.Preview" alt="" class="w-full h-full object-cover" />
+                                                <button type="button" class="absolute top-1 right-1 rounded-full bg-canvas/80 text-content text-xs w-6 h-6 grid place-items-center" title="Remove" @onclick="() => photos.Remove(p)">×</button>
+                                            </div>
+                                        }
+                                    </div>
+                                }
+                            </div>
+                            <div>
+                                <label class="block eyebrow mb-1">What do you dream of?</label>
+                                <textarea class="field w-full" rows="5" maxlength="4000" disabled="@busy"
+                                          placeholder="e.g. A bigger, brighter kitchen opening onto the garden; a proper master suite upstairs; we've wondered about knocking it down and starting again…"
+                                          value="@brief" @oninput="e => brief = e.Value?.ToString() ?? string.Empty"></textarea>
+                            </div>
+                            <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                                <div>
+                                    <label class="block eyebrow mb-1">Your name</label>
+                                    <input type="text" class="field w-full" maxlength="256" autocomplete="name" disabled="@busy"
+                                           value="@name" @oninput="e => name = e.Value?.ToString() ?? string.Empty" />
+                                </div>
+                                <div>
+                                    <label class="block eyebrow mb-1">Email — where we send your concepts</label>
+                                    <input type="email" class="field w-full" maxlength="256" autocomplete="email" disabled="@busy"
+                                           value="@email" @oninput="e => email = e.Value?.ToString() ?? string.Empty" />
+                                </div>
+                            </div>
+                            <Checkbox Value="@consent" ValueChanged="c => consent = c" Disabled="@busy"
+                                      Label="Email me my concepts, and keep in touch about my home. We won't pass your details on; email us at sales@jewelbb.co.uk any time to stop." />
+                            <div class="flex items-center gap-3">
+                                <button type="button" class="btn-primary btn-lg" disabled="@(busy || preparing || !CanSubmit)" @onclick="SubmitAsync">
+                                    @(busy ? "Sending…" : "Imagine it")
+                                </button>
+                                <p class="text-xs text-content-subtle">Concepts usually take a few minutes. We'll email you when they're ready.</p>
+                            </div>
+                        </div>
+                    </section>
+                }
+                else
+                {
+                    @foreach (var round in v.Rounds.OrderByDescending(r => r.Number))
+                    {
+                        var r = round;
+                        <section class="mb-10">
+                            <div class="flex items-baseline justify-between gap-4 mb-3">
+                                <h2 class="text-xl font-semibold text-content">
+                                    @(r.Kind == ImagineRoundKind.Concepts ? "Your concepts" : $"Revision {r.Number - 1}")
+                                </h2>
+                                <span class="text-xs text-content-subtle">@r.RequestedAt.ToLocalTime().ToString("d MMM yyyy")</span>
+                            </div>
+                            @if (r.Kind == ImagineRoundKind.Revision && !string.IsNullOrWhiteSpace(r.Brief))
+                            {
+                                <p class="text-sm text-content-muted mb-4">You asked: <em>@r.Brief</em></p>
+                            }
+
+                            @if (r.Status.IsInProgress())
+                            {
+                                <div class="panel p-6 flex items-center gap-4">
+                                    <JewelIcon Class="w-6 h-6 animate-jewel-pulse text-content shrink-0" />
+                                    <div>
+                                        <p class="text-content font-medium">@(r.Kind == ImagineRoundKind.Concepts ? "We're imagining your home" : "We're revising your concept")</p>
+                                        <p class="text-sm text-content-muted">This takes a few minutes. You can close the page — we'll email you when it's ready — or leave it open and it'll appear here.</p>
+                                    </div>
+                                </div>
+                            }
+                            else if (r.Status == ImagineRoundStatus.Failed)
+                            {
+                                <div class="panel p-6">
+                                    <p class="text-content font-medium">Something went wrong on our side</p>
+                                    <p class="text-sm text-content-muted">Your photos are safe and we've been told. We'll be in touch — or email <a class="text-info underline underline-offset-4" href="mailto:sales@jewelbb.co.uk">sales@jewelbb.co.uk</a>.</p>
+                                </div>
+                            }
+                            else
+                            {
+                                @if (!string.IsNullOrWhiteSpace(r.Observations))
+                                {
+                                    <p class="text-content-muted leading-relaxed max-w-3xl mb-6">@r.Observations</p>
+                                }
+                                @if (!string.IsNullOrWhiteSpace(r.Error))
+                                {
+                                    <p class="text-xs text-content-subtle mb-4">Not every idea rendered this time — the ones that did are below.</p>
+                                }
+                                <div class="@ConceptGridClass(r.Concepts.Count)">
+                                    @foreach (var concept in r.Concepts)
+                                    {
+                                        var c = concept;
+                                        <article class="panel overflow-hidden flex flex-col">
+                                            <a href="@ImageUrl(c.ImageId)" target="_blank" rel="noopener" class="block aspect-[3/2] bg-surface">
+                                                <img src="@ImageUrl(c.ImageId)" alt="@c.Title" class="w-full h-full object-cover" loading="lazy" />
+                                            </a>
+                                            <div class="p-5 flex-1 flex flex-col gap-3">
+                                                <div>
+                                                    <h3 class="font-semibold text-content">@c.Title</h3>
+                                                    <p class="text-sm text-content-muted leading-relaxed mt-1">@c.Description</p>
+                                                </div>
+                                                <div class="mt-auto space-y-3">
+                                                    <div class="flex items-center gap-2">
+                                                        <button type="button" class="@(c.Liked ? "btn-primary" : "btn-secondary") text-sm" disabled="@busy" @onclick="() => ToggleLikeAsync(c)">
+                                                            @(c.Liked ? "♥ You like this" : "♡ I like this")
+                                                        </button>
+                                                        @if (v.RoundsRemaining > 0 && !AnyInProgress)
+                                                        {
+                                                            <button type="button" class="btn-ghost text-sm" disabled="@busy" @onclick="() => OpenRevise(c)">Change something</button>
+                                                        }
+                                                    </div>
+                                                    <div class="flex gap-2">
+                                                        <input type="text" class="field w-full text-sm" maxlength="2000" placeholder="A thought about this one (optional)" disabled="@busy"
+                                                               value="@CommentDraft(c)" @oninput="e => commentDrafts[c.ImageId] = e.Value?.ToString() ?? string.Empty" />
+                                                        @if (CommentDraft(c) != c.Comment)
+                                                        {
+                                                            <button type="button" class="btn-secondary text-sm shrink-0" disabled="@busy" @onclick="() => SaveCommentAsync(c)">Save</button>
+                                                        }
+                                                    </div>
+                                                    @if (revising?.ImageId == c.ImageId)
+                                                    {
+                                                        <div class="border-t border-line pt-3 space-y-2">
+                                                            <label class="block eyebrow">What would you change?</label>
+                                                            <textarea class="field w-full text-sm" rows="3" maxlength="4000" disabled="@busy"
+                                                                      placeholder="e.g. Love the glazing — could the roof be flat rather than pitched, and the brick a paler tone?"
+                                                                      value="@feedback" @oninput="e => feedback = e.Value?.ToString() ?? string.Empty"></textarea>
+                                                            <div class="flex items-center gap-2">
+                                                                <button type="button" class="btn-primary text-sm" disabled="@(busy || string.IsNullOrWhiteSpace(feedback))" @onclick="ReviseAsync">@(busy ? "Sending…" : "Revise this concept")</button>
+                                                                <button type="button" class="btn-ghost text-sm" disabled="@busy" @onclick="() => revising = null">Cancel</button>
+                                                            </div>
+                                                            <p class="text-xs text-content-subtle">@(v.RoundsRemaining == 1 ? "This is your last revision on this page — after that, let's talk." : $"{v.RoundsRemaining} rounds left on this page.")</p>
+                                                        </div>
+                                                    }
+                                                </div>
+                                            </div>
+                                        </article>
+                                    }
+                                </div>
+                            }
+
+                            @if (r.Kind == ImagineRoundKind.Concepts && r.Photos.Count > 0)
+                            {
+                                <div class="mt-5">
+                                    <p class="eyebrow mb-2">Your photos</p>
+                                    <div class="grid grid-cols-3 sm:grid-cols-6 gap-2">
+                                        @foreach (var photo in r.Photos)
+                                        {
+                                            var p = photo;
+                                            <a href="@ImageUrl(p.ImageId)" target="_blank" rel="noopener" class="block aspect-square rounded overflow-hidden border border-line bg-surface">
+                                                <img src="@ImageUrl(p.ImageId)" alt="" class="w-full h-full object-cover" loading="lazy" />
+                                            </a>
+                                        }
+                                    </div>
+                                    @if (!string.IsNullOrWhiteSpace(r.Brief))
+                                    {
+                                        <p class="text-sm text-content-muted mt-3">You wrote: <em>@r.Brief</em></p>
+                                    }
+                                </div>
+                            }
+                        </section>
+                    }
+
+                    <section class="panel p-6 max-w-3xl">
+                        <h2 class="font-semibold text-content mb-1">Ready to talk it through?</h2>
+                        <p class="text-sm text-content-muted">
+                            Reply to the email we sent you, or write to
+                            <a class="text-info underline underline-offset-4" href="mailto:sales@jewelbb.co.uk">sales@jewelbb.co.uk</a>
+                            — a site visit is the next step, and it's free.
+                        </p>
+                    </section>
+                }
             }
-        }
+        </LoadGate>
     </main>
 
     <footer class="px-6 md:px-10 py-6 border-t border-line text-xs text-content-faint">

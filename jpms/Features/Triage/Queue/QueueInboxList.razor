@@ -28,17 +28,13 @@
     }
     else
     {
-        <div class="relative space-y-2">
+        <LoadGate Overlay="true" IsLoading="ListLoading" Label="Loading" Class="space-y-2">
             @* Sort is a light, rarely-used view preference — small muted text under the
                header, not an action button. The choice is remembered per user. *@
             <div class="flex items-center gap-3 text-xs px-1">
                 <button type="button" disabled="@ListLoading" @onclick="() => OnSetSort.InvokeAsync(false)" class="@SortLinkClass(false)">Oldest first</button>
                 <button type="button" disabled="@ListLoading" @onclick="() => OnSetSort.InvokeAsync(true)" class="@SortLinkClass(true)">Newest first</button>
             </div>
-            @if (ListLoading)
-            {
-                <JewelSpinner Overlay="true" Label="Loading" />
-            }
             @{ string? lastQueueGroup = null; }
             @foreach (var item in Items)
             {
@@ -64,7 +60,7 @@
                             HasNext="HasNext"
                             OnPrevious="OnPrevious"
                             OnNext="OnNext" />
-        </div>
+        </LoadGate>
     }
 </LoadGate>
 

@@ -1,4 +1,5 @@
 @inherits LayoutComponentBase
+@inject IJSRuntime JS
 
 <div class="min-h-dvh bg-canvas text-content antialiased">
     @* Sign-in, set-password and forgot-password get the same error surface as the rest of the app:
@@ -9,3 +10,12 @@
     <UpdateToast />
     @Body
 </div>
+
+@code {
+    // Sign-in is a real screen, so the boot overlay's work is done the moment it draws. Every
+    // route that is not behind ApprovedSessionGate takes the boot screen down here.
+    protected override async Task OnAfterRenderAsync(bool firstRender)
+    {
+        if (firstRender) await JS.InvokeVoidAsync("jpmsBoot.dismiss");
+    }
+}

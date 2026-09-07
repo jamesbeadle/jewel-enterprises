@@ -143,25 +143,26 @@
                             }
                         </HeaderActions>
                         <ChildContent>
-                            @if (generating)
-                            {
-                                <LoadGate IsLoading="true" Prominent="true" Label="Claude is drafting the plan from the strategy's argument" />
-                            }
-                            else if (string.IsNullOrWhiteSpace(strategy.ApproachPlan))
-                            {
-                                <p class="text-sm text-content-subtle italic">
-                                    No plan yet. Research with AI (above) finds the evidence and drafts the plan in one go; Generate with AI
-                                    drafts one from what is written here; or write it by hand.
-                                </p>
-                            }
-                            else
-                            {
-                                <SimpleMarkdown Text="@strategy.ApproachPlan" />
-                                @if (strategy.PlanGeneratedAt is { } generatedAt)
+                            @* Drafting REPLACES a plan the reader is already looking at, so the gate veils it
+                               and takes the clicks rather than removing it: regenerating must not read as
+                               though the plan had been thrown away while Claude works. *@
+                            <LoadGate Overlay="true" IsLoading="@generating" Label="Claude is drafting the plan from the strategy's argument">
+                                @if (string.IsNullOrWhiteSpace(strategy.ApproachPlan))
                                 {
-                                    <p class="text-xs text-content-faint mt-4">Drafted by Claude @DateTimeText(generatedAt.ToLocalTime()) — edited since if the text differs.</p>
+                                    <p class="text-sm text-content-subtle italic">
+                                        No plan yet. Research with AI (above) finds the evidence and drafts the plan in one go; Generate with AI
+                                        drafts one from what is written here; or write it by hand.
+                                    </p>
                                 }
-                            }
+                                else
+                                {
+                                    <SimpleMarkdown Text="@strategy.ApproachPlan" />
+                                    @if (strategy.PlanGeneratedAt is { } generatedAt)
+                                    {
+                                        <p class="text-xs text-content-faint mt-4">Drafted by Claude @DateTimeText(generatedAt.ToLocalTime()) — edited since if the text differs.</p>
+                                    }
+                                }
+                            </LoadGate>
                         </ChildContent>
                     </Panel>
 

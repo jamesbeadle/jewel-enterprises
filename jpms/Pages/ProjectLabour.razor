@@ -53,6 +53,13 @@
             </Actions>
         </SectionHeader>
 
+        @* All four panels below fill from the one Task.WhenAll the page runs on entry — the
+           week's timesheets, the assignments, the site register and the settlement figures land
+           together — so they are one wait, not four jewels down the same screen. Each keeps its
+           own IsLoading for the refreshes it can do on its own once the tab is up. *@
+        <LoadGate IsLoading="@(LoadState.UntilAll(TimesheetsReady, AssignmentsReady, RegisterReady, SettlementReady) && !dataFailed)"
+                  Prominent="true" Label="Loading labour">
+
         @* ---- The week's timesheets: one panel, statuses as pills, approval at its foot. ---- *@
         <Panel Title="Timesheets" Class="mb-6" BodyClass="p-0"
                IsLoading="@(!TimesheetsReady && !dataFailed)" LoadingLabel="Loading timesheets">
@@ -223,6 +230,7 @@
                 }
             </div>
         </Panel>
+        </LoadGate>
     </ProjectPageShell>
 
     @* ---- Add a day: manual entry / missed sign-outs. Also the chat's manual_timesheet

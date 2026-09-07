@@ -1169,7 +1169,7 @@ Modals: none (the "workspace instead of modals" pattern is explicit in the page'
 ### Dashboard — `/dashboard`
 `Pages/Dashboard.razor` (92 lines) — the signed-in home; routes to one of three role-specific home views (client logins bounce to `/client` entirely).
 
-- LoadingScreen ✅ (isLoaded false)
+- LoadGate cover ✅ (isLoaded false)
 - RequestAccessView ✅ (not approved)
 - AdminHome ✅ (Role.Admin)
 - RoleHome ✅ (any other role)
@@ -1190,7 +1190,7 @@ No page-owned furniture at all — Dashboard is purely a role router; each desti
 ### RFI Dashboard — `/rfis`
 `Pages/RfiDashboard.razor` (312 lines) — portfolio-wide RFI register across all projects, grouped/ordered by project.
 
-- Shell preamble 🔒 — plain "Loading RFIs…" text (NOT LoadGate/LoadingScreen — deviates from the AuthGate convention used elsewhere) → RequestAccessView ✅
+- Shell preamble 🔒 — plain "Loading RFIs…" text (NOT a LoadGate — deviates from the AuthGate convention used elsewhere) → RequestAccessView ✅
 - PageHeader ⚠️ — Eyebrow "JPMS · RFIs" · Title "RFI register" · Subtitle "N total · N active · N overdue · across N projects"
 - FilterBar ⚠️ — ChipTabs ⚠️ (Active/Closed/All, each "Label · count") + ExportToExcelButton ✅ (ShowIncludeAllRows/IncludeAllLabel)
 - AlertBanner (negative) ⚠️ — loadError, with SecondaryButton "Retry" ⚠️

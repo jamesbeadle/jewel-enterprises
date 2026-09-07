@@ -10,6 +10,11 @@
 <Page>
     <ProjectPageShell ProjectId="@ProjectId" ActiveTab="progress">
 
+        @* Reports and updates are two halves of one wait: the single ProgressStore.Refresh the
+           page runs on entry fills both, so gating them apart put two jewels down the same screen
+           for the same moment. One gate, and the tab arrives in one piece. *@
+        <LoadGate IsLoading="@LoadState.UntilAll(ReportsReady, UpdatesReady)" Prominent="true" Label="Loading progress">
+
         @* ---- Progress reports -------------------------------------------------------------- *@
         <div class="flex flex-wrap items-end justify-between gap-3 mb-5">
             <div>
@@ -34,7 +39,6 @@
             </div>
         }
 
-        <LoadGate IsLoading="@(!ReportsReady)" Label="Loading reports">
         @if (Reports.Count == 0)
         {
             <p class="text-sm text-content-subtle italic mb-8">No progress reports yet.</p>
@@ -74,7 +78,6 @@
                 }
             </ul>
         }
-        </LoadGate>
 
         @* ---- Progress updates -------------------------------------------------------------- *@
         <div class="flex flex-wrap items-end justify-between gap-3 mb-5">
@@ -106,7 +109,6 @@
             </div>
         }
 
-        <LoadGate IsLoading="@(!UpdatesReady)" Prominent="true" Label="Loading progress">
         @if (Updates.Count == 0)
         {
             <EmptyState Message="No progress recorded yet." />
@@ -205,7 +207,8 @@
     private IReadOnlyList<ProgressUpdate> Updates => ProgressStore.UpdatesFor(ProjectId);
     private IReadOnlyList<ProgressReport> Reports => ProgressStore.ReportsFor(ProjectId);
 
-    // ── Panel gates. Reports and updates are fetched separately, so they wait separately. ──
+    // ── The tab's gate. Both registers arrive from the same refresh on entry, so they are
+    //    composed into one wait rather than each holding its own half of the page. ──
     private bool ReportsReady => ProgressStore.ReportsLoadedFor(ProjectId);
     private bool UpdatesReady => ProgressStore.UpdatesLoadedFor(ProjectId);
 

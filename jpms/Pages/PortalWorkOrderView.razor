@@ -22,69 +22,73 @@
             to a subcontractor record.
         </p>
     }
-    else if (!PortalStore.IsLoaded)
-    {
-        <LoadGate IsLoading="true" Prominent="true" Label="Loading" />
-    }
-    else if (Order is null)
-    {
-        <PageHeader Title="Work order not found" />
-        <p class="text-content-muted">
-            This work order isn't one of yours, or hasn't been issued yet.
-            <a class="underline underline-offset-4" href="/portal">Back to your record</a>
-        </p>
-    }
     else
     {
-        <div class="po-toolbar max-w-[820px] mx-auto mb-5">
-            <div class="flex items-center justify-between gap-3 flex-wrap">
-                <a class="text-sm text-content-subtle hover:text-content underline underline-offset-4" href="/portal">← Your record</a>
-                <div class="flex items-center gap-3">
-                    @if (Order.Order.IsAccepted)
-                    {
-                        <Pill Tone="Tone.Positive">
-                            Accepted @DateText(Order.Order.AcceptedAt!.Value)
-                        </Pill>
-                    }
-                    else if (CanAcceptThisOrder)
-                    {
-                        <button type="button" class="btn-primary text-sm" disabled="@acceptBusy" @onclick="AcceptAsync"
-                                title="Accept this work order electronically — your name and today's date are recorded on the order">
-                            @(acceptBusy ? "Accepting…" : "Accept work order")
+        @* The order, the supplier's own record and the acceptance state all come from the one
+           portal load, so the page waits behind a single gate — and any gate nested under it
+           holds its space silently rather than adding a second mark to the same wait. *@
+        <LoadGate IsLoading="@(!PortalStore.IsLoaded)" Prominent="true" Label="Loading">
+        @if (Order is null)
+        {
+            <PageHeader Title="Work order not found" />
+            <p class="text-content-muted">
+                This work order isn't one of yours, or hasn't been issued yet.
+                <a class="underline underline-offset-4" href="/portal">Back to your record</a>
+            </p>
+        }
+        else
+        {
+            <div class="po-toolbar max-w-[820px] mx-auto mb-5">
+                <div class="flex items-center justify-between gap-3 flex-wrap">
+                    <a class="text-sm text-content-subtle hover:text-content underline underline-offset-4" href="/portal">← Your record</a>
+                    <div class="flex items-center gap-3">
+                        @if (Order.Order.IsAccepted)
+                        {
+                            <Pill Tone="Tone.Positive">
+                                Accepted @DateText(Order.Order.AcceptedAt!.Value)
+                            </Pill>
+                        }
+                        else if (CanAcceptThisOrder)
+                        {
+                            <button type="button" class="btn-primary text-sm" disabled="@acceptBusy" @onclick="AcceptAsync"
+                                    title="Accept this work order electronically — your name and today's date are recorded on the order">
+                                @(acceptBusy ? "Accepting…" : "Accept work order")
+                            </button>
+                        }
+                        <button type="button" class="btn-secondary text-sm" @onclick="PrintAsync"
+                                title="Print the purchase order, or save it as a PDF from the print dialog">
+                            Print / save PDF
                         </button>
-                    }
-                    <button type="button" class="btn-secondary text-sm" @onclick="PrintAsync"
-                            title="Print the purchase order, or save it as a PDF from the print dialog">
-                        Print / save PDF
-                    </button>
+                    </div>
                 </div>
+                @if (!Order.Order.IsAccepted && CanAcceptThisOrder)
+                {
+                    <p class="text-xs text-content-subtle mt-2 text-right">
+                        Accepting records your electronic acceptance (@Auth.CurrentUser!.DisplayName) on the purchase order —
+                        it then forms part of the contract per the terms below.
+                    </p>
+                }
+                @if (acceptError is not null)
+                {
+                    <Notice Tone="Tone.Negative" Class="mt-2">@acceptError</Notice>
+                }
+                @if (acceptNote is not null)
+                {
+                    <Notice Tone="Tone.Positive" Class="mt-2">@acceptNote</Notice>
+                }
             </div>
-            @if (!Order.Order.IsAccepted && CanAcceptThisOrder)
-            {
-                <p class="text-xs text-content-subtle mt-2 text-right">
-                    Accepting records your electronic acceptance (@Auth.CurrentUser!.DisplayName) on the purchase order —
-                    it then forms part of the contract per the terms below.
-                </p>
-            }
-            @if (acceptError is not null)
-            {
-                <Notice Tone="Tone.Negative" Class="mt-2">@acceptError</Notice>
-            }
-            @if (acceptNote is not null)
-            {
-                <Notice Tone="Tone.Positive" Class="mt-2">@acceptNote</Notice>
-            }
-        </div>
 
-        <PurchaseOrderSheet Order="Order.Order"
-                            Lines="Order.Lines"
-                            SupplierName="@(MyRecord?.Record.CompanyName ?? "")"
-                            SupplierContactName="@(MyRecord?.Record.ContactName ?? "")"
-                            SupplierAddressLines="@SupplierAddressLines"
-                            ProjectName="@Order.ProjectName"
-                            SiteAddressLines="@(Order.SiteAddressLines ?? Array.Empty<string>())"
-                            ApprovedByName="@Order.ApprovedByName"
-                            PaymentTermsDays="@(MyRecord?.Record.PaymentTermsDays ?? 30)" />
+            <PurchaseOrderSheet Order="Order.Order"
+                                Lines="Order.Lines"
+                                SupplierName="@(MyRecord?.Record.CompanyName ?? "")"
+                                SupplierContactName="@(MyRecord?.Record.ContactName ?? "")"
+                                SupplierAddressLines="@SupplierAddressLines"
+                                ProjectName="@Order.ProjectName"
+                                SiteAddressLines="@(Order.SiteAddressLines ?? Array.Empty<string>())"
+                                ApprovedByName="@Order.ApprovedByName"
+                                PaymentTermsDays="@(MyRecord?.Record.PaymentTermsDays ?? 30)" />
+        }
+        </LoadGate>
     }
 </Page>
 

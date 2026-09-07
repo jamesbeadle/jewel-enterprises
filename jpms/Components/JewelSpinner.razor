@@ -1,25 +1,47 @@
-@* Inline loading indicator for in-page data loads (pagination, filters, tab switches).
-   Mirrors LoadingScreen's spinning-ring + pulsing-jewel motif, but sized to sit inside a
-   panel or list region rather than covering the viewport. Set Overlay="true" to float it,
-   centred and dimming the content behind, over a region that keeps its existing height
-   (the region needs `position: relative`, e.g. the Tailwind `relative` class). *@
+@namespace Jewel.JPMS.Components
+
+@* The pulsing jewel: the app's one loading mark, in the two shapes a region can need.
+
+   INLINE (the default) is the mark on its own, centred in space the region has reserved because
+   there is nothing to show there yet.
+
+   OVERLAY is the mark over content that is already on screen and is being refreshed — a sort
+   change, a pager, a filter, an action in flight. Three things make it read as a state of the
+   component rather than a badge dropped on top of the text:
+
+     · The veil is opaque enough to actually veil. At canvas/60 the rows read straight through it
+       and the spinner looked like it belonged to the sentence it happened to land on.
+     · The mark rides in a bordered chip on the panel surface, so it is plainly a thing ABOUT the
+       region, not a thing IN it.
+     · The chip is sticky within the visible slab of the region. A queue 3,000px tall centred its
+       spinner 1,500px down — halfway through a list nobody was looking at. Sticky keeps it where
+       the reader is, whatever the scroll position.
+
+   The veil also takes the clicks: a list being replaced must not be clicked while it is between
+   two answers. *@
 
 @if (Overlay)
 {
-    <div class="absolute inset-0 z-10 flex flex-col items-center justify-center gap-2 bg-canvas/60 backdrop-blur-[1px]">
-        <div class="relative @Size grid place-items-center">
-            <div class="absolute inset-0 rounded-full border-2 border-surface-field border-t-content/70 animate-spin"></div>
-            <JewelIcon Class="@IconClass" />
+    <div class="absolute inset-0 z-20 bg-canvas/90 cursor-progress @Class"
+         role="status" aria-live="polite" aria-busy="true">
+        <div class="sticky top-0 h-[min(100%,60svh)] flex items-center justify-center px-4">
+            <span class="inline-flex items-center gap-2.5 rounded border border-line-strong bg-surface px-3 py-2">
+                <span class="relative @Size grid place-items-center shrink-0">
+                    <span class="absolute inset-0 rounded-full border-2 border-surface-field border-t-content/70 animate-spin"></span>
+                    <JewelIcon Class="@IconClass" />
+                </span>
+                @if (!string.IsNullOrEmpty(Label))
+                {
+                    <span class="text-xs text-content-subtle">@Label</span>
+                }
+            </span>
         </div>
-        @if (!string.IsNullOrEmpty(Label))
-        {
-            <p class="text-xs text-content-subtle">@Label</p>
-        }
     </div>
 }
 else
 {
-    <div class="flex flex-col items-center justify-center gap-2 @Class">
+    <div class="flex flex-col items-center justify-center gap-2 @Class"
+         role="status" aria-live="polite" aria-busy="true">
         <div class="relative @Size grid place-items-center">
             <div class="absolute inset-0 rounded-full border-2 border-surface-field border-t-content/70 animate-spin"></div>
             <JewelIcon Class="@IconClass" />
@@ -32,15 +54,19 @@ else
 }
 
 @code {
-    // Diameter of the ring. Small by default so it reads as "inline", not "full page".
+    /// <summary>Diameter of the ring. Small by default so it reads as "inline", not "whole page".</summary>
     [Parameter] public string Size { get; set; } = "w-8 h-8";
-    // Jewel icon is roughly 40% of the ring.
+
+    /// <summary>The jewel is roughly 40% of the ring.</summary>
     [Parameter] public string IconSize { get; set; } = "w-3.5 h-3.5";
-    // Optional caption shown beneath the spinner.
+
+    /// <summary>Caption beside (overlay) or beneath (inline) the mark. Keep it specific.</summary>
     [Parameter] public string? Label { get; set; }
-    // When true, floats the spinner over its (position:relative) parent and dims the content.
+
+    /// <summary>Float the mark over its position:relative parent, veiling and blocking the content.</summary>
     [Parameter] public bool Overlay { get; set; }
-    // Extra classes for the inline (non-overlay) wrapper, e.g. vertical padding.
+
+    /// <summary>Extra classes: padding on the inline wrapper, a stacking context on the veil.</summary>
     [Parameter] public string Class { get; set; } = "py-8";
 
     private string IconClass => $"{IconSize} animate-jewel-pulse";

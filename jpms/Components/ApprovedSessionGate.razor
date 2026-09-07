@@ -2,11 +2,18 @@
 @inject AuthService Auth
 @inject SessionService Session
 @inject NavigationManager Nav
+@inject IJSRuntime JS
 
-@* The signed-in, approved gate every page stands behind: a quiet loader while the session is
-   checked, the sign-in redirect for anonymous visitors, the request-access view for signed-in
-   users not yet approved — and only then the page itself. One component instead of the same
-   three-branch scaffold at the top of every page. *@
+@* The signed-in, approved gate every page stands behind: the session check, the sign-in redirect
+   for anonymous visitors, the request-access view for signed-in users not yet approved — and only
+   then the page itself. One component instead of the same three-branch scaffold at the top of
+   every page.
+
+   It is also where the boot screen comes down. On a cold load the static overlay in index.html is
+   still up while the session is checked, so the gate's own mark below is invisible: the user sees
+   ONE jewel from the first byte of HTML until the page it was waiting for is drawn underneath it.
+   On an in-app navigation the session is already known — sessionReady is true before the first
+   render — so nothing flashes at all. *@
 @if (!sessionReady)
 {
     <section class="px-6 md:px-8 py-12">
@@ -26,15 +33,28 @@ else
     [Parameter] public RenderFragment? ChildContent { get; set; }
 
     private bool sessionReady;
+    private bool bootDismissed;
+
+    protected override void OnInitialized() => sessionReady = Session.IsLoaded;
 
     protected override async Task OnInitializedAsync()
     {
+        if (sessionReady) return;
+
         await Session.EnsureLoadedAsync();
         if (!Auth.IsSignedIn)
         {
+            // The boot screen stays up through the redirect — the sign-in page takes it down.
             Nav.NavigateTo("/login", forceLoad: true);
             return;
         }
         sessionReady = true;
+    }
+
+    protected override async Task OnAfterRenderAsync(bool firstRender)
+    {
+        if (bootDismissed || !sessionReady) return;
+        bootDismissed = true;
+        await JS.InvokeVoidAsync("jpmsBoot.dismiss");
     }
 }

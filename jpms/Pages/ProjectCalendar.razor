@@ -40,11 +40,10 @@
             <Notice Tone="Tone.Negative" Class="mb-4">@error</Notice>
         }
 
-        @if (!Calendar.LoadedFor(ProjectId) && !dataFailed)
-        {
-            <LoadGate IsLoading="true" Prominent="true" Label="Loading calendar" />
-        }
-        else if (dataFailed && !Calendar.LoadedFor(ProjectId))
+        @* The month grid and the Upcoming agenda are two readings of the same events, so they
+           share one gate — filling one of them before the other would just look like a fault. *@
+        <LoadGate IsLoading="@(!Calendar.LoadedFor(ProjectId) && !dataFailed)" Prominent="true" Label="Loading calendar">
+        @if (dataFailed && !Calendar.LoadedFor(ProjectId))
         {
             <p class="text-sm text-content-muted">The calendar couldn't be loaded just now — the error toast has the detail. Reload the page to retry.</p>
         }
@@ -160,6 +159,7 @@
                 }
             </section>
         }
+        </LoadGate>
     </ProjectPageShell>
 </Page>
 

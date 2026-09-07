@@ -32,15 +32,7 @@
         </p>
     }
 
-    @if (extracting)
-    {
-        <div class="flex items-center gap-3 rounded border border-line bg-surface-raised px-3 py-4 mb-3">
-            <JewelSpinner />
-            <p class="text-sm text-content-muted">Reading the tender — the email, its pricing schedule and the package's line items…</p>
-        </div>
-    }
-    else
-    {
+    <LoadGate IsLoading="extracting" Prominent="true" Label="Reading the tender — the email, its pricing schedule and the package's line items…">
     @if (issues.Count > 0)
     {
         <Notice Tone="Tone.Warning" Class="mb-3">
@@ -113,5 +105,5 @@
     <FormField Label="Notes (exclusions, caveats, lead times)">
     <textarea class="field" rows="3" @bind="notes"></textarea>
     </FormField>
-    }
+    </LoadGate>
 </Modal>

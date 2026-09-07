@@ -75,21 +75,24 @@
         var view = GridReady && XeroReady ? BuildView() : null;
     }
 
-    <WeeklyKpiStrip IsDirector="IsDirector" Bank="BankSnapshot" BankReady="BankReady"
-                    View="view" FetchedText="@FetchedText" />
-
-    @if (moveError is not null)
-    {
-        <Notice Tone="Tone.Negative" Class="mb-4">
-            @moveError
-            <button type="button" class="underline underline-offset-2 ml-1" @onclick="() => moveError = null">Dismiss</button>
-        </Notice>
-    }
-
-    @* One gate for the whole grid: every cell is arithmetic over all three sources, so it
-       reveals in one piece. A failed fetch opens the gate to a message — the toast carries
-       the reference and the detail. *@
+    @* One gate for the strip and the grid together: every tile and every cell is arithmetic over
+       the same three sources, so the page opens on ONE wait and shows ONE mark — six figures and
+       a grid pulsing separately would be seven marks for a single fetch. A failed fetch opens the
+       gate to a message — the toast carries the reference and the detail. The bank read is
+       deliberately not part of the condition (see WeeklyCashflow.razor.cs): it lands on its own
+       account, and the grid is fully useful without it. *@
     <LoadGate IsLoading="@(!GridReady)" Prominent="true" Label="Loading the weekly cashflow">
+        <WeeklyKpiStrip IsDirector="IsDirector" Bank="BankSnapshot" BankReady="BankReady"
+                        View="view" FetchedText="@FetchedText" />
+
+        @if (moveError is not null)
+        {
+            <Notice Tone="Tone.Negative" Class="mb-4">
+                @moveError
+                <button type="button" class="underline underline-offset-2 ml-1" @onclick="() => moveError = null">Dismiss</button>
+            </Notice>
+        }
+
         @if (planFailed)
         {
             <p class="text-sm text-negative">Couldn't load the weekly plan. The details are in the red bar at the top — reload to try again.</p>

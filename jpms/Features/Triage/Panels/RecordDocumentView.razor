@@ -29,11 +29,8 @@
             }
         </div>
 
-        @if (requestLoading)
-        {
-            <JewelSpinner Label="Loading the request" />
-        }
-        else if (request is { } loadedRequest)
+        <LoadGate IsLoading="requestLoading" Label="Loading the request">
+        @if (request is { } loadedRequest)
         {
             <div class="grid grid-cols-2 gap-x-4 gap-y-1 text-xs">
                 <span class="text-content-subtle">Issued</span><span class="text-content">@DateText(loadedRequest.IssuedAt ?? loadedRequest.RaisedAt)</span>
@@ -63,6 +60,7 @@
         {
             <p class="text-sm text-content whitespace-pre-wrap">@Record.Summary</p>
         }
+        </LoadGate>
     </div>
 
     @if (Record.Type == RecordType.Request)

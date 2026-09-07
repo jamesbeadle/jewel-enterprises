@@ -68,12 +68,7 @@
         <Notice Tone="Tone.Negative" Class="mb-3">@error</Notice>
     }
 
-    @if (loading)
-    {
-        <JewelSpinner Class="py-8" Label="Loading" />
-    }
-    else
-    {
+    <LoadGate IsLoading="loading" Prominent="true" Label="Loading to-dos">
         <div class="flex items-center gap-2 mb-4">
             <div class="relative flex-1">
                 <SearchInput Value="@search" ValueChanged="OnSearchInput" Placeholder="Search keywords — filters the list and finds related requests, variations and drawings" Width="w-full" />
@@ -292,7 +287,7 @@
                only for the triage roles — the gate lives in the component. *@
             <TaggedEmailSearch Query="@search" />
         }
-    }
+    </LoadGate>
 </div>
 
 <Modal IsOpen="@addOpen" Title="Add a to-do item" ConfirmLabel="Add to-do item" CancelLabel="Cancel"

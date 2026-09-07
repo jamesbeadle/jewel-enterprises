@@ -110,7 +110,7 @@ behind each: `docs/ui/stage-1-components.md`.
 | `Toolbar` / `ToolbarButton` / `ToolbarDivider` / `ExportToExcelButton` | THE in-view menu of icon buttons with hover text |
 | `RecordTabBar` / `WorkspaceSectionNav` / `ProjectPageShell` | The request chain tabs / a section's tab row / the project page frame (breadcrumb + project `PageHeader` + tab nav) |
 | `JewelIcon` / `NavIcon` / `ActionIcon` | The brand mark / rail icons / action glyphs |
-| `LoadGate` / `LoadingScreen` | The pulsing jewel for a region / a whole page (see *Loading states*) |
+| `LoadGate` | THE loading mark: `IsLoading` covers a region with nothing to show yet, `Overlay="true"` veils content being refreshed. A gate silences every gate nested inside it, so a screen shows one jewel (`CLAUDE.md` → *Loading states*). The whole-page mark is the boot screen in `index.html`; `JewelSpinner` is the gate's own part and is never written in a view |
 | `DropdownMenu` | The row/record actions menu |
 | `DateText` / `DateTimeText` / `Money` / `WholeMoney` | Not components — the global helpers every date and figure renders through |
 
@@ -118,11 +118,12 @@ behind each: `docs/ui/stage-1-components.md`.
 
 New views compose the components in §4 rather than hand-rolling utilities. The lint grep
 doubles as a CI check — any hit in `Pages`, `Components`, `Features` or `Layout` means the change
-drifted from the system (`PurchaseOrderSheet` — a printed sheet with its own CSS — and the
-light email-body surfaces `bg-white text-gray-900` are the known exceptions):
+drifted from the system (`PurchaseOrderSheet` — a printed sheet with its own CSS — the
+light email-body surfaces `bg-white text-gray-900`, and `LoadGate.razor`, the one file allowed to
+render a `JewelSpinner`, are the known exceptions):
 
 ```
-grep -rnE "slate-|amber-|emerald-|rose-|red-[0-9]|text-\[1?[0-9]px\]|rounded-(xl|2xl|lg|md)|uppercase|tracking-|shadow-(sm|md|lg|xl|2xl)|bg-negative/10 border|btn-primary text-xs|<section class=\"px-|RequestAccessView Email|<label class=\"block eyebrow|<h1 |<thead class=|<tbody class=\"divide|ToString\(\"d{1,2} MMM yyyy|confirming[A-Z]|Armed\b|(Chip|Tab)Class\(" Pages Components Features Layout
+grep -rnE "slate-|amber-|emerald-|rose-|red-[0-9]|text-\[1?[0-9]px\]|rounded-(xl|2xl|lg|md)|uppercase|tracking-|shadow-(sm|md|lg|xl|2xl)|bg-negative/10 border|btn-primary text-xs|<section class=\"px-|RequestAccessView Email|<label class=\"block eyebrow|<h1 |<thead class=|<tbody class=\"divide|ToString\(\"d{1,2} MMM yyyy|confirming[A-Z]|Armed\b|(Chip|Tab)Class\(|<JewelSpinner" Pages Components Features Layout
 ```
 
 (`rounded-lg` is allowed on the modal panel and `DropdownMenu`; `<h1` on the auth pages outside

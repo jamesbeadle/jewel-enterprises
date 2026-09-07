@@ -35,158 +35,156 @@
     </PageHeader>
 
     @* The whole page reads off one Xero snapshot, so it arrives in one piece. *@
-    @if (Snapshot is null)
-    {
-        <LoadGate IsLoading="true" Prominent="true" Label="Loading the payables position" />
-    }
-    else if (!Snapshot.IsConfigured)
-    {
-        <div class="panel-raised px-5 py-4 text-sm text-content-muted">
-            Xero isn't connected yet. Add the custom connection's credentials as the
-            <span class="font-mono text-content">Xero__ClientId</span> and
-            <span class="font-mono text-content">Xero__ClientSecret</span> app settings on the API, then reload.
-        </div>
-    }
-    else if (Snapshot.Error is not null)
-    {
-        <div class="panel-raised px-5 py-4 text-sm text-content-muted">
-            <p class="text-content font-medium mb-1">Xero returned an error</p>
-            <p>@Snapshot.Error</p>
-        </div>
-    }
-    else
-    {
-        @if (Snapshot.Truncated)
+    <LoadGate IsLoading="@(Snapshot is null)" Prominent="true" Label="Loading the payables position">
+        @if (!Snapshot!.IsConfigured)
         {
-            <div class="panel-raised px-5 py-3 text-sm text-content-muted mb-6">
-                Xero holds more outstanding bills than the read's page cap could fetch — these totals are
-                incomplete. Raise the <span class="font-mono text-content">Xero__MaxPages</span> app setting.
+            <div class="panel-raised px-5 py-4 text-sm text-content-muted">
+                Xero isn't connected yet. Add the custom connection's credentials as the
+                <span class="font-mono text-content">Xero__ClientId</span> and
+                <span class="font-mono text-content">Xero__ClientSecret</span> app settings on the API, then reload.
             </div>
         }
-
-        <div class="grid gap-4 sm:grid-cols-2 lg:grid-cols-3 mb-6">
-            <div class="panel px-5 py-4">
-                <p class="eyebrow mb-1">Total payables</p>
-                <p class="text-2xl font-semibold text-content">@Money(GrandTotal)</p>
-                <p class="text-xs text-content-subtle mt-1">@Bills.Count @(Bills.Count == 1 ? "bill" : "bills") outstanding · fetched @FetchedText</p>
-            </div>
-            <div class="panel px-5 py-4">
-                <p class="eyebrow mb-1">Of which draft</p>
-                <p class="text-2xl font-semibold text-content">@Money(DraftTotal)</p>
-                <p class="text-xs text-content-subtle mt-1">@DraftCount awaiting coding — not in Xero's own report</p>
-            </div>
-            <div class="panel px-5 py-4">
-                <p class="eyebrow mb-1">Overdue</p>
-                <p class="text-2xl font-semibold @(OverdueTotal > 0 ?"text-negative" : "text-content")">@Money(OverdueTotal)</p>
-                <p class="text-xs text-content-subtle mt-1">everything past the Current column</p>
-            </div>
-        </div>
-
-        <div class="flex items-center justify-between gap-4 mb-3">
-            <h2 class="text-sm font-semibold text-content">By supplier</h2>
-            @* Xero's report offers the same choice; due date is its default. Recomputed
-               locally — no refetch. *@
-            <div class="inline-flex rounded border border-line overflow-hidden text-xs font-medium">
-                <button type="button" class="@BasisClass(PayablesAgeBasis.DueDate)"
-                        @onclick="() => SetBasis(PayablesAgeBasis.DueDate)">Age by due date</button>
-                <button type="button" class="@BasisClass(PayablesAgeBasis.InvoiceDate)"
-                        @onclick="() => SetBasis(PayablesAgeBasis.InvoiceDate)">Age by invoice date</button>
-            </div>
-        </div>
-
-        @if (Rows.Count == 0)
+        else if (Snapshot.Error is not null)
         {
-            <p class="text-sm text-content-subtle">Nothing is outstanding — every supplier bill Xero holds is settled.</p>
+            <div class="panel-raised px-5 py-4 text-sm text-content-muted">
+                <p class="text-content font-medium mb-1">Xero returned an error</p>
+                <p>@Snapshot.Error</p>
+            </div>
         }
         else
         {
-            <RecordsTable Dense="true" MaxHeight="max-h-[70vh]">
-                <thead>
-                    <tr>
-                        <th>Supplier</th>
-                        @foreach (var label in AgedPayablesMaths.BucketLabels)
-                        {
-                            <th class="text-right whitespace-nowrap">@label</th>
-                        }
-                        <th class="text-right">Total</th>
-                    </tr>
-                </thead>
-                <tbody>
-                    @foreach (var row in Rows)
-                    {
-                        var isExpanded = expandedSuppliers.Contains(row.Supplier);
-                        <tr class="cursor-pointer hover:bg-surface-raised transition" @onclick="() => ToggleExpanded(row.Supplier)">
-                            <td class="text-content font-medium whitespace-nowrap">
-                                <span class="inline-flex items-center gap-2">
-                                    <svg class="w-3.5 h-3.5 text-content-subtle shrink-0 transition-transform @(isExpanded ?"rotate-90" : "")"
-                                         viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
-                                         stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M9 6l6 6-6 6" /></svg>
-                                    @row.Supplier
-                                    @if (row.DraftTotal != 0)
-                                    {
-                                        <span class="text-xs font-medium border border-line rounded px-1.5 py-0.5 text-content-subtle"
-                                              title="Includes draft bills awaiting coding — not in Xero's own aged payables">Incl. draft</span>
-                                    }
-                                </span>
-                            </td>
-                            @for (var bucket = 0; bucket < AgedPayablesMaths.BucketCount; bucket++)
+            @if (Snapshot.Truncated)
+            {
+                <div class="panel-raised px-5 py-3 text-sm text-content-muted mb-6">
+                    Xero holds more outstanding bills than the read's page cap could fetch — these totals are
+                    incomplete. Raise the <span class="font-mono text-content">Xero__MaxPages</span> app setting.
+                </div>
+            }
+
+            <div class="grid gap-4 sm:grid-cols-2 lg:grid-cols-3 mb-6">
+                <div class="panel px-5 py-4">
+                    <p class="eyebrow mb-1">Total payables</p>
+                    <p class="text-2xl font-semibold text-content">@Money(GrandTotal)</p>
+                    <p class="text-xs text-content-subtle mt-1">@Bills.Count @(Bills.Count == 1 ? "bill" : "bills") outstanding · fetched @FetchedText</p>
+                </div>
+                <div class="panel px-5 py-4">
+                    <p class="eyebrow mb-1">Of which draft</p>
+                    <p class="text-2xl font-semibold text-content">@Money(DraftTotal)</p>
+                    <p class="text-xs text-content-subtle mt-1">@DraftCount awaiting coding — not in Xero's own report</p>
+                </div>
+                <div class="panel px-5 py-4">
+                    <p class="eyebrow mb-1">Overdue</p>
+                    <p class="text-2xl font-semibold @(OverdueTotal > 0 ?"text-negative" : "text-content")">@Money(OverdueTotal)</p>
+                    <p class="text-xs text-content-subtle mt-1">everything past the Current column</p>
+                </div>
+            </div>
+
+            <div class="flex items-center justify-between gap-4 mb-3">
+                <h2 class="text-sm font-semibold text-content">By supplier</h2>
+                @* Xero's report offers the same choice; due date is its default. Recomputed
+                   locally — no refetch. *@
+                <div class="inline-flex rounded border border-line overflow-hidden text-xs font-medium">
+                    <button type="button" class="@BasisClass(PayablesAgeBasis.DueDate)"
+                            @onclick="() => SetBasis(PayablesAgeBasis.DueDate)">Age by due date</button>
+                    <button type="button" class="@BasisClass(PayablesAgeBasis.InvoiceDate)"
+                            @onclick="() => SetBasis(PayablesAgeBasis.InvoiceDate)">Age by invoice date</button>
+                </div>
+            </div>
+
+            @if (Rows.Count == 0)
+            {
+                <p class="text-sm text-content-subtle">Nothing is outstanding — every supplier bill Xero holds is settled.</p>
+            }
+            else
+            {
+                <RecordsTable Dense="true" MaxHeight="max-h-[70vh]">
+                    <thead>
+                        <tr>
+                            <th>Supplier</th>
+                            @foreach (var label in AgedPayablesMaths.BucketLabels)
                             {
-                                var amount = row.Buckets[bucket];
-                                <td class="text-right whitespace-nowrap @BucketCellClass(bucket, amount)">
-                                    @(amount == 0 ? "—" : Money(amount))
-                                </td>
+                                <th class="text-right whitespace-nowrap">@label</th>
                             }
-                            <td class="text-right whitespace-nowrap text-content font-semibold">@Money(row.Total)</td>
+                            <th class="text-right">Total</th>
                         </tr>
-                        @if (isExpanded)
+                    </thead>
+                    <tbody>
+                        @foreach (var row in Rows)
                         {
-                            @foreach (var bill in row.Bills)
+                            var isExpanded = expandedSuppliers.Contains(row.Supplier);
+                            <tr class="cursor-pointer hover:bg-surface-raised transition" @onclick="() => ToggleExpanded(row.Supplier)">
+                                <td class="text-content font-medium whitespace-nowrap">
+                                    <span class="inline-flex items-center gap-2">
+                                        <svg class="w-3.5 h-3.5 text-content-subtle shrink-0 transition-transform @(isExpanded ?"rotate-90" : "")"
+                                             viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
+                                             stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M9 6l6 6-6 6" /></svg>
+                                        @row.Supplier
+                                        @if (row.DraftTotal != 0)
+                                        {
+                                            <span class="text-xs font-medium border border-line rounded px-1.5 py-0.5 text-content-subtle"
+                                                  title="Includes draft bills awaiting coding — not in Xero's own aged payables">Incl. draft</span>
+                                        }
+                                    </span>
+                                </td>
+                                @for (var bucket = 0; bucket < AgedPayablesMaths.BucketCount; bucket++)
+                                {
+                                    var amount = row.Buckets[bucket];
+                                    <td class="text-right whitespace-nowrap @BucketCellClass(bucket, amount)">
+                                        @(amount == 0 ? "—" : Money(amount))
+                                    </td>
+                                }
+                                <td class="text-right whitespace-nowrap text-content font-semibold">@Money(row.Total)</td>
+                            </tr>
+                            @if (isExpanded)
                             {
-                                <tr class="bg-surface-raised/50">
-                                    <td class="pl-10 whitespace-nowrap">
-                                        @(bill.Number ?? bill.Reference ?? "—")
-                                        @if (bill.IsCreditNote)
-                                        {
-                                            <span class="ml-1.5 text-xs font-medium border border-line rounded px-1.5 py-0.5">Credit</span>
-                                        }
-                                        @if (bill.IsDraft)
-                                        {
-                                            <span class="ml-1.5 text-xs font-medium border border-line rounded px-1.5 py-0.5"
-                                                  title="Draft in Xero — awaiting coding through the portal; not in Xero's own aged payables">Draft</span>
-                                        }
-                                        <span class="block text-xs text-content-subtle">
-                                            @DateText(bill.Date) · due @DateText(bill.DueDate)
-                                        </span>
-                                    </td>
-                                    @for (var bucket = 0; bucket < AgedPayablesMaths.BucketCount; bucket++)
-                                    {
-                                        var inBucket = AgedPayablesMaths.BucketFor(bill, today, basis) == bucket;
-                                        var amount = inBucket ? AgedPayablesMaths.SignedAmountDue(bill) : 0m;
-                                        <td class="text-right whitespace-nowrap @(amount < 0 ?"text-negative" : "text-content-muted")">
-                                            @(inBucket ? Money(amount) : "")
+                                @foreach (var bill in row.Bills)
+                                {
+                                    <tr class="bg-surface-raised/50">
+                                        <td class="pl-10 whitespace-nowrap">
+                                            @(bill.Number ?? bill.Reference ?? "—")
+                                            @if (bill.IsCreditNote)
+                                            {
+                                                <span class="ml-1.5 text-xs font-medium border border-line rounded px-1.5 py-0.5">Credit</span>
+                                            }
+                                            @if (bill.IsDraft)
+                                            {
+                                                <span class="ml-1.5 text-xs font-medium border border-line rounded px-1.5 py-0.5"
+                                                      title="Draft in Xero — awaiting coding through the portal; not in Xero's own aged payables">Draft</span>
+                                            }
+                                            <span class="block text-xs text-content-subtle">
+                                                @DateText(bill.Date) · due @DateText(bill.DueDate)
+                                            </span>
                                         </td>
-                                    }
-                                    <td class="text-right whitespace-nowrap @(AgedPayablesMaths.SignedAmountDue(bill) < 0 ?"text-negative" : "text-content-muted")">
-                                        @Money(AgedPayablesMaths.SignedAmountDue(bill))
-                                    </td>
-                                </tr>
+                                        @for (var bucket = 0; bucket < AgedPayablesMaths.BucketCount; bucket++)
+                                        {
+                                            var inBucket = AgedPayablesMaths.BucketFor(bill, today, basis) == bucket;
+                                            var amount = inBucket ? AgedPayablesMaths.SignedAmountDue(bill) : 0m;
+                                            <td class="text-right whitespace-nowrap @(amount < 0 ?"text-negative" : "text-content-muted")">
+                                                @(inBucket ? Money(amount) : "")
+                                            </td>
+                                        }
+                                        <td class="text-right whitespace-nowrap @(AgedPayablesMaths.SignedAmountDue(bill) < 0 ?"text-negative" : "text-content-muted")">
+                                            @Money(AgedPayablesMaths.SignedAmountDue(bill))
+                                        </td>
+                                    </tr>
+                                }
                             }
                         }
-                    }
-                </tbody>
-                <tfoot class="bg-surface-raised border-t border-line">
-                    <tr class="font-semibold">
-                        <td class="text-content">All suppliers</td>
-                        @foreach (var total in BucketTotals)
-                        {
-                            <td class="text-right whitespace-nowrap text-content">@Money(total)</td>
-                        }
-                        <td class="text-right whitespace-nowrap text-content">@Money(GrandTotal)</td>
-                    </tr>
-                </tfoot>
-            </RecordsTable>
+                    </tbody>
+                    <tfoot class="bg-surface-raised border-t border-line">
+                        <tr class="font-semibold">
+                            <td class="text-content">All suppliers</td>
+                            @foreach (var total in BucketTotals)
+                            {
+                                <td class="text-right whitespace-nowrap text-content">@Money(total)</td>
+                            }
+                            <td class="text-right whitespace-nowrap text-content">@Money(GrandTotal)</td>
+                        </tr>
+                    </tfoot>
+                </RecordsTable>
+            }
         }
-    }
+    </LoadGate>
 </Page>
 
 @code {

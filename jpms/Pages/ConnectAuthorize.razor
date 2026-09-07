@@ -23,53 +23,51 @@
             <span class="font-semibold text-content">Jewel Project Management System</span>
         </div>
 
-        @if (!ready)
-        {
-            <LoadGate IsLoading="true" Prominent="true" Label="Checking the request" />
-        }
-        else if (error is not null)
-        {
-            <div class="panel p-6 text-center">
-                <p class="text-sm text-negative">@error</p>
-                <p class="text-xs text-content-subtle mt-3">
-                    Close this tab and start the connection again from your AI tool. If it keeps
-                    failing, ask an administrator.
-                </p>
-            </div>
-        }
-        else
-        {
-            <div class="panel p-6">
-                <h1 class="text-xl font-semibold text-content mb-2 text-center">
-                    Connect @(clientName ?? "an AI tool")
-                </h1>
-                <p class="text-sm text-content-muted leading-relaxed text-center mb-5">
-                    <span class="font-medium text-content">@(clientName ?? "This tool")</span> is asking to
-                    use the portal as
-                    <span class="font-medium text-content">@Auth.CurrentUser?.DisplayName</span>
-                    (@Auth.CurrentUser?.Email).
-                </p>
-
-                <div class="rounded bg-surface-raised border border-line px-4 py-3 text-xs text-content-subtle leading-relaxed mb-5">
-                    It will be able to read what you can see in the portal and take the small set of
-                    actions the connector allows (posting request messages, managing to-dos, saving
-                    AI skills) — always as you, with every call recorded in the activity log. You can
-                    disconnect it at any time from the portal's AI Connections page.
+        <LoadGate IsLoading="@(!ready)" Prominent="true" Label="Checking the request">
+            @if (error is not null)
+            {
+                <div class="panel p-6 text-center">
+                    <p class="text-sm text-negative">@error</p>
+                    <p class="text-xs text-content-subtle mt-3">
+                        Close this tab and start the connection again from your AI tool. If it keeps
+                        failing, ask an administrator.
+                    </p>
                 </div>
+            }
+            else
+            {
+                <div class="panel p-6">
+                    <h1 class="text-xl font-semibold text-content mb-2 text-center">
+                        Connect @(clientName ?? "an AI tool")
+                    </h1>
+                    <p class="text-sm text-content-muted leading-relaxed text-center mb-5">
+                        <span class="font-medium text-content">@(clientName ?? "This tool")</span> is asking to
+                        use the portal as
+                        <span class="font-medium text-content">@Auth.CurrentUser?.DisplayName</span>
+                        (@Auth.CurrentUser?.Email).
+                    </p>
 
-                @if (approveError is not null)
-                {
-                    <Notice Tone="Tone.Negative" Class="mb-3">@approveError</Notice>
-                }
+                    <div class="rounded bg-surface-raised border border-line px-4 py-3 text-xs text-content-subtle leading-relaxed mb-5">
+                        It will be able to read what you can see in the portal and take the small set of
+                        actions the connector allows (posting request messages, managing to-dos, saving
+                        AI skills) — always as you, with every call recorded in the activity log. You can
+                        disconnect it at any time from the portal's AI Connections page.
+                    </div>
 
-                <div class="flex gap-3">
-                    <button type="button" class="btn-secondary flex-1" disabled="@busy" @onclick="() => DecideAsync(false)">Cancel</button>
-                    <button type="button" class="btn-primary flex-1" disabled="@busy" @onclick="() => DecideAsync(true)">
-                        @(busy ? "Connecting…" : "Approve")
-                    </button>
+                    @if (approveError is not null)
+                    {
+                        <Notice Tone="Tone.Negative" Class="mb-3">@approveError</Notice>
+                    }
+
+                    <div class="flex gap-3">
+                        <button type="button" class="btn-secondary flex-1" disabled="@busy" @onclick="() => DecideAsync(false)">Cancel</button>
+                        <button type="button" class="btn-primary flex-1" disabled="@busy" @onclick="() => DecideAsync(true)">
+                            @(busy ? "Connecting…" : "Approve")
+                        </button>
+                    </div>
                 </div>
-            </div>
-        }
+            }
+        </LoadGate>
     </div>
 </div>
 

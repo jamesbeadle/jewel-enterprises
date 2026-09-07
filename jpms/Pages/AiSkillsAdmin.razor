@@ -37,71 +37,69 @@
                 <button type="button" class="btn-primary" @onclick="StartNew">New skill</button>
             </div>
 
-            @if (dataFailed)
-            {
-                <div class="panel p-5">
-                    <p class="text-sm text-content-muted">
-                        The skills could not be loaded. The error toast carries the reference.
-                    </p>
-                </div>
-            }
-            else if (skills is null)
-            {
-                <LoadGate IsLoading="true" Prominent="true" Label="Loading skills" />
-            }
-            else if (skills.Count == 0)
-            {
-                <div class="panel p-5">
-                    <EmptyState Message="No skills yet. Add the first — paste a SKILL.md straight in, frontmatter and all." />
-                </div>
-            }
-            else
-            {
-                <div class="panel overflow-hidden">
-                    <div class="overflow-x-auto">
-                        <table class="data-table">
-                            <thead>
-                                <tr>
-                                    <th>Skill</th>
-                                    <th>Agent</th>
-                                    <th>Pinned</th>
-                                    <th>Active</th>
-                                    <th class="text-right">Version</th>
-                                    <th class="text-right">Size</th>
-                                    <th class="text-right">References</th>
-                                    <th>Updated</th>
-                                </tr>
-                            </thead>
-                            <tbody>
-                                @foreach (var row in skills)
-                                {
-                                    <tr class="is-clickable" @onclick="() => OpenAsync(row.SkillKey)">
-                                        <td>
-                                            <span class="block text-content">@row.DisplayName</span>
-                                            <span class="block text-xs text-content-subtle">@row.SkillKey</span>
-                                        </td>
-                                        <td class="whitespace-nowrap">@AgentLabel(row.AgentKey)</td>
-                                        <td>@(row.Pinned ? "Pinned" : "On demand")</td>
-                                        <td>
-                                            <span class="@(row.IsActive ?"text-content" : "text-content-subtle")">
-                                                @(row.IsActive ? "Active" : "Off")
-                                            </span>
-                                        </td>
-                                        <td class="text-right">v@(row.Version)</td>
-                                        <td class="text-right whitespace-nowrap">@FormatSize(row.BodyLength)</td>
-                                        <td class="text-right">@row.ReferenceCount</td>
-                                        <td class="whitespace-nowrap">
-                                            <span class="block">@row.UpdatedAt.ToLocalTime().ToString("dd MMM HH:mm")</span>
-                                            <span class="block truncate max-w-[12rem] text-xs text-content-subtle"
-                                                  title="@row.UpdatedByEmail">@row.UpdatedByEmail</span>
-                                        </td>
-                                    </tr>
-                                }
-                            </tbody>
-                        </table>
+            <LoadGate IsLoading="@(skills is null && !dataFailed)" Prominent="true" Label="Loading skills">
+                @if (dataFailed)
+                {
+                    <div class="panel p-5">
+                        <p class="text-sm text-content-muted">
+                            The skills could not be loaded. The error toast carries the reference.
+                        </p>
                     </div>
-                </div>
-            }
+                }
+                else if (skills!.Count == 0)
+                {
+                    <div class="panel p-5">
+                        <EmptyState Message="No skills yet. Add the first — paste a SKILL.md straight in, frontmatter and all." />
+                    </div>
+                }
+                else
+                {
+                    <div class="panel overflow-hidden">
+                        <div class="overflow-x-auto">
+                            <table class="data-table">
+                                <thead>
+                                    <tr>
+                                        <th>Skill</th>
+                                        <th>Agent</th>
+                                        <th>Pinned</th>
+                                        <th>Active</th>
+                                        <th class="text-right">Version</th>
+                                        <th class="text-right">Size</th>
+                                        <th class="text-right">References</th>
+                                        <th>Updated</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    @foreach (var row in skills)
+                                    {
+                                        <tr class="is-clickable" @onclick="() => OpenAsync(row.SkillKey)">
+                                            <td>
+                                                <span class="block text-content">@row.DisplayName</span>
+                                                <span class="block text-xs text-content-subtle">@row.SkillKey</span>
+                                            </td>
+                                            <td class="whitespace-nowrap">@AgentLabel(row.AgentKey)</td>
+                                            <td>@(row.Pinned ? "Pinned" : "On demand")</td>
+                                            <td>
+                                                <span class="@(row.IsActive ?"text-content" : "text-content-subtle")">
+                                                    @(row.IsActive ? "Active" : "Off")
+                                                </span>
+                                            </td>
+                                            <td class="text-right">v@(row.Version)</td>
+                                            <td class="text-right whitespace-nowrap">@FormatSize(row.BodyLength)</td>
+                                            <td class="text-right">@row.ReferenceCount</td>
+                                            <td class="whitespace-nowrap">
+                                                <span class="block">@row.UpdatedAt.ToLocalTime().ToString("dd MMM HH:mm")</span>
+                                                <span class="block truncate max-w-[12rem] text-xs text-content-subtle"
+                                                      title="@row.UpdatedByEmail">@row.UpdatedByEmail</span>
+                                            </td>
+                                        </tr>
+                                    }
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>
+                }
+            </LoadGate>
         }
         else
         {

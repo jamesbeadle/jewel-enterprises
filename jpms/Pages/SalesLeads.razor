@@ -44,14 +44,19 @@
     }
     else
     {
+        @* The four figures and the register are one wait, not five: every one of them is counted
+           off the lead read the page opens with, and the strategy named on each row comes with it.
+           So one gate covers the pair and they arrive together, rather than four tiles and a table
+           each pulsing on their own account for a single fetch. *@
+        <LoadGate IsLoading="@LoadState.UntilAllPresent(Leads.Current, Strategies.Current)" Prominent="true" Label="Loading leads">
         <div class="grid grid-cols-2 lg:grid-cols-4 gap-4 mb-6">
-            <StatTile Label="Open leads" Value="@Open.Count.ToString()" IsLoading="@(Leads.Current is null)" />
-            <StatTile Label="Open pipeline" Value="@WholeMoney(Open.Sum(lead => lead.EstimatedValue ?? 0m))" IsLoading="@(Leads.Current is null)" />
-            <StatTile Label="Won this year" Value="@WonThisYear.ToString()" IsLoading="@(Leads.Current is null)" />
-            <StatTile Label="New in the last 30 days" Value="@NewRecently.ToString()" IsLoading="@(Leads.Current is null)" />
+            <StatTile Label="Open leads" Value="@Open.Count.ToString()" />
+            <StatTile Label="Open pipeline" Value="@WholeMoney(Open.Sum(lead => lead.EstimatedValue ?? 0m))" />
+            <StatTile Label="Won this year" Value="@WonThisYear.ToString()" />
+            <StatTile Label="New in the last 30 days" Value="@NewRecently.ToString()" />
         </div>
 
-        <Panel Title="Lead register" IsLoading="@(Leads.Current is null || Strategies.Current is null)" LoadingLabel="Loading leads" BodyClass="p-0">
+        <Panel Title="Lead register" BodyClass="p-0">
             <HeaderActions>
                 <SearchInput @bind-Value="search" Placeholder="Search name, company, postcode, ref" Width="w-56" />
                 <SearchSelect Options="@StrategyOptions" Value="@strategyFilter" ValueChanged="v => strategyFilter = v"
@@ -142,6 +147,7 @@
                 }
             </ChildContent>
         </Panel>
+        </LoadGate>
     }
 
     <LeadFormModal IsOpen="@captureOpen" Strategies="@Strategies.Current" OnSaved="OnCapturedAsync" OnCancel="() => captureOpen = false" />

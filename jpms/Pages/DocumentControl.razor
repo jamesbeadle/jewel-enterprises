@@ -119,12 +119,7 @@
             }
             else
             {
-                <div class="panel p-5 space-y-4 relative">
-                    @if (busy)
-                    {
-                        <JewelSpinner Overlay="true" Label="@busyLabel" />
-                    }
-
+                <LoadGate Overlay="true" IsLoading="busy" Label="@busyLabel" Class="panel p-5 space-y-4">
                     <div>
                         <div class="flex items-start justify-between gap-3">
                             <h2 class="text-lg font-semibold text-content break-all">@item.FileName</h2>
@@ -352,7 +347,7 @@
                             }
                         </div>
                     }
-                </div>
+                </LoadGate>
             }
         </div>
     </div>

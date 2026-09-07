@@ -158,14 +158,11 @@
                 <Notice Tone="Tone.Negative" Class="mb-3">@suggestError</Notice>
             }
 
-            @if (suggestBusy)
-            {
-                @* Slow tiers answer in several continuation chunks — the part counter says the
-                   long wait is progress, not a hang. *@
-                <LoadGate IsLoading="true"
-                          Label="@(suggestHops <= 1 ? "Analysing the valuation report" : $"Analysing the valuation report — part {suggestHops}")" />
-            }
-            else if (suggestions is null)
+            @* Slow tiers answer in several continuation chunks — the part counter says the
+               long wait is progress, not a hang. *@
+            <LoadGate IsLoading="@suggestBusy"
+                      Label="@(suggestHops <= 1 ? "Analysing the valuation report" : $"Analysing the valuation report — part {suggestHops}")">
+            @if (suggestions is null)
             {
                 <FormField Label="Model">
                 @* Same cost lever as the chat panel: only a tier KEY leaves the browser — the
@@ -237,6 +234,7 @@
                     </div>
                 }
             }
+            </LoadGate>
         </ChildContent>
     </Modal>
 </Page>

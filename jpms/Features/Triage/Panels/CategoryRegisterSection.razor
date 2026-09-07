@@ -34,28 +34,26 @@
         <Notice Tone="Tone.Negative">@loadError</Notice>
     }
 
-    @if (!loaded)
-    {
-        <JewelSpinner Label="Loading register" />
-    }
-    else if (items.Count == 0)
-    {
-        @if (loadError is null)
+    <LoadGate IsLoading="@(!loaded)" Label="Loading register">
+        @if (items.Count == 0)
         {
-            <p class="text-sm text-content-subtle">Nothing tagged @Label yet — tick the section above and Apply, and the thread appears here.</p>
+            @if (loadError is null)
+            {
+                <p class="text-sm text-content-subtle">Nothing tagged @Label yet — tick the section above and Apply, and the thread appears here.</p>
+            }
         }
-    }
-    else if (Filtered.Count == 0)
-    {
-        <p class="text-sm text-content-subtle">
-            @(IsScopedToProject ? $"No loaded email names {ProjectName}" : $"No loaded email matches \"{filter}\"")@(nextCursor is not null ? " — try loading more below" : "")@(IsScopedToProject ? ", or switch to All projects" : "").
-        </p>
-    }
-    else
-    {
-        <CorrespondenceThreadList Emails="Filtered" ExcludeTag="@Tag" OnPreview="OnPreview" OnReply="OnReply" OnForward="OnForward"
-                                  OnTagLike="TagLikeWhenEmailOpen" TagLikeLabel="@($"Tag open email {Label}")" />
-    }
+        else if (Filtered.Count == 0)
+        {
+            <p class="text-sm text-content-subtle">
+                @(IsScopedToProject ? $"No loaded email names {ProjectName}" : $"No loaded email matches \"{filter}\"")@(nextCursor is not null ? " — try loading more below" : "")@(IsScopedToProject ? ", or switch to All projects" : "").
+            </p>
+        }
+        else
+        {
+            <CorrespondenceThreadList Emails="Filtered" ExcludeTag="@Tag" OnPreview="OnPreview" OnReply="OnReply" OnForward="OnForward"
+                                      OnTagLike="TagLikeWhenEmailOpen" TagLikeLabel="@($"Tag open email {Label}")" />
+        }
+    </LoadGate>
 
     @if (nextCursor is not null)
     {

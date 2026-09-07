@@ -22,7 +22,7 @@ else if (Xero.Snapshot() is not { } snapshot)
     }
     else
     {
-        <JewelSpinner Label="Reading Xero" />
+        <LoadGate IsLoading="true" Label="Reading Xero" />
     }
 }
 else if (!snapshot.IsConfigured)

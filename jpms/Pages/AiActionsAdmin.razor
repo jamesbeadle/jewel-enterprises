@@ -28,128 +28,126 @@
             </SubtitleContent>
         </PageHeader>
 
-        @if (dataFailed)
-        {
-            <div class="panel p-5">
-                <p class="text-sm text-content-muted">
-                    The action catalogue could not be loaded. The error toast carries the reference.
-                </p>
-            </div>
-        }
-        else if (catalogue is null || skills is null)
-        {
-            <LoadGate IsLoading="true" Prominent="true" Label="Loading actions" />
-        }
-        else
-        {
-            <div class="flex flex-wrap items-center justify-between gap-3 mb-4">
-                <span class="text-xs text-content-subtle">
-                    @catalogue.Actions.Count actions · @attachments.Count attachments
-                </span>
-                <input class="field w-72" placeholder="Search actions…"
-                       value="@search" @oninput="OnSearchInput" />
-            </div>
-
-            @if (OrphanedAttachments.Count > 0)
+        <LoadGate IsLoading="@((catalogue is null || skills is null) && !dataFailed)" Prominent="true" Label="Loading actions">
+            @if (dataFailed)
             {
-                <div class="rounded border border-negative/40 bg-negative/5 px-4 py-3 mb-4">
-                    <p class="text-xs font-medium text-content mb-1">
-                        Attachments pointing at nothing — the action or area was renamed or removed
-                        in code. Detach them, or re-attach the skill under the current name.
+                <div class="panel p-5">
+                    <p class="text-sm text-content-muted">
+                        The action catalogue could not be loaded. The error toast carries the reference.
                     </p>
-                    @foreach (var orphan in OrphanedAttachments)
-                    {
-                        <div class="flex items-center gap-2 py-0.5">
-                            <span class="text-xs text-content-muted">
-                                @orphan.SkillKey → @orphan.TargetKind "@orphan.TargetKey"
-                            </span>
-                            <button type="button" class="text-xs underline text-content-muted"
-                                    @onclick="() => DetachOrphanAsync(orphan)" disabled="@saving">
-                                Detach
-                            </button>
-                        </div>
-                    }
-                    @if (editingKind is null)
-                    {
-                        @foreach (var saveError in saveErrors)
-                        {
-                            <p class="text-xs leading-snug text-content-muted">@saveError</p>
-                        }
-                    }
                 </div>
             }
-
-            @foreach (var areaGroup in FilteredAreas)
+            else
             {
-                var area = areaGroup.Key;
-                <div class="panel overflow-hidden mb-3">
-                    <div class="flex flex-wrap items-center gap-3 px-4 py-3 bg-surface-raised border-b border-line">
-                        <button type="button" class="flex items-center gap-2 text-left"
-                                @onclick="() => ToggleArea(area)">
-                            <span class="text-content-subtle text-xs w-3">@(IsExpanded(area) ? "▾" : "▸")</span>
-                            <span class="text-sm font-semibold text-content">@area</span>
-                            <span class="text-xs text-content-subtle">@areaGroup.Count() actions</span>
-                        </button>
-                        <div class="flex flex-wrap items-center gap-1.5 ml-auto">
-                            @foreach (var skillKey in AttachedTo(AiActionSkillTargets.Area, area))
-                            {
-                                @SkillChip(skillKey, false)
-                            }
-                            <button type="button" class="btn-neutral text-xs px-2 py-1"
-                                    @onclick="() => StartEditing(AiActionSkillTargets.Area, area)">
-                                Area skills
-                            </button>
-                        </div>
-                    </div>
-
-                    @if (IsEditing(AiActionSkillTargets.Area, area))
-                    {
-                        @SkillPicker($"every action in {area}")
-                    }
-
-                    @if (IsExpanded(area))
-                    {
-                        <div class="divide-y divide-line">
-                            @foreach (var action in areaGroup)
-                            {
-                                <div class="px-4 py-2.5">
-                                    <div class="flex flex-wrap items-start gap-3">
-                                        <div class="min-w-0 flex-1">
-                                            <span class="block font-mono text-xs text-content">
-                                                @action.Name
-                                                @if (action.RequiresConfirmation)
-                                                {
-                                                    <span class="text-content-subtle" title="Confirm-first: the first call is refused until the user says yes.">· confirm-first</span>
-                                                }
-                                            </span>
-                                            <span class="block text-xs text-content-subtle max-w-3xl">@action.Summary</span>
-                                        </div>
-                                        <div class="flex flex-wrap items-center gap-1.5">
-                                            @foreach (var skillKey in AttachedTo(AiActionSkillTargets.Action, action.Name))
-                                            {
-                                                @SkillChip(skillKey, false)
-                                            }
-                                            @foreach (var skillKey in AttachedTo(AiActionSkillTargets.Area, action.Area))
-                                            {
-                                                @SkillChip(skillKey, true)
-                                            }
-                                            <button type="button" class="text-xs underline text-content-muted"
-                                                    @onclick="() => StartEditing(AiActionSkillTargets.Action, action.Name)">
-                                                Skills
-                                            </button>
-                                        </div>
-                                    </div>
-                                    @if (IsEditing(AiActionSkillTargets.Action, action.Name))
-                                    {
-                                        @SkillPicker(action.Name)
-                                    }
-                                </div>
-                            }
-                        </div>
-                    }
+                <div class="flex flex-wrap items-center justify-between gap-3 mb-4">
+                    <span class="text-xs text-content-subtle">
+                        @(catalogue!.Actions.Count) actions · @attachments.Count attachments
+                    </span>
+                    <input class="field w-72" placeholder="Search actions…"
+                           value="@search" @oninput="OnSearchInput" />
                 </div>
+
+                @if (OrphanedAttachments.Count > 0)
+                {
+                    <div class="rounded border border-negative/40 bg-negative/5 px-4 py-3 mb-4">
+                        <p class="text-xs font-medium text-content mb-1">
+                            Attachments pointing at nothing — the action or area was renamed or removed
+                            in code. Detach them, or re-attach the skill under the current name.
+                        </p>
+                        @foreach (var orphan in OrphanedAttachments)
+                        {
+                            <div class="flex items-center gap-2 py-0.5">
+                                <span class="text-xs text-content-muted">
+                                    @orphan.SkillKey → @orphan.TargetKind "@orphan.TargetKey"
+                                </span>
+                                <button type="button" class="text-xs underline text-content-muted"
+                                        @onclick="() => DetachOrphanAsync(orphan)" disabled="@saving">
+                                    Detach
+                                </button>
+                            </div>
+                        }
+                        @if (editingKind is null)
+                        {
+                            @foreach (var saveError in saveErrors)
+                            {
+                                <p class="text-xs leading-snug text-content-muted">@saveError</p>
+                            }
+                        }
+                    </div>
+                }
+
+                @foreach (var areaGroup in FilteredAreas)
+                {
+                    var area = areaGroup.Key;
+                    <div class="panel overflow-hidden mb-3">
+                        <div class="flex flex-wrap items-center gap-3 px-4 py-3 bg-surface-raised border-b border-line">
+                            <button type="button" class="flex items-center gap-2 text-left"
+                                    @onclick="() => ToggleArea(area)">
+                                <span class="text-content-subtle text-xs w-3">@(IsExpanded(area) ? "▾" : "▸")</span>
+                                <span class="text-sm font-semibold text-content">@area</span>
+                                <span class="text-xs text-content-subtle">@areaGroup.Count() actions</span>
+                            </button>
+                            <div class="flex flex-wrap items-center gap-1.5 ml-auto">
+                                @foreach (var skillKey in AttachedTo(AiActionSkillTargets.Area, area))
+                                {
+                                    @SkillChip(skillKey, false)
+                                }
+                                <button type="button" class="btn-neutral text-xs px-2 py-1"
+                                        @onclick="() => StartEditing(AiActionSkillTargets.Area, area)">
+                                    Area skills
+                                </button>
+                            </div>
+                        </div>
+
+                        @if (IsEditing(AiActionSkillTargets.Area, area))
+                        {
+                            @SkillPicker($"every action in {area}")
+                        }
+
+                        @if (IsExpanded(area))
+                        {
+                            <div class="divide-y divide-line">
+                                @foreach (var action in areaGroup)
+                                {
+                                    <div class="px-4 py-2.5">
+                                        <div class="flex flex-wrap items-start gap-3">
+                                            <div class="min-w-0 flex-1">
+                                                <span class="block font-mono text-xs text-content">
+                                                    @action.Name
+                                                    @if (action.RequiresConfirmation)
+                                                    {
+                                                        <span class="text-content-subtle" title="Confirm-first: the first call is refused until the user says yes.">· confirm-first</span>
+                                                    }
+                                                </span>
+                                                <span class="block text-xs text-content-subtle max-w-3xl">@action.Summary</span>
+                                            </div>
+                                            <div class="flex flex-wrap items-center gap-1.5">
+                                                @foreach (var skillKey in AttachedTo(AiActionSkillTargets.Action, action.Name))
+                                                {
+                                                    @SkillChip(skillKey, false)
+                                                }
+                                                @foreach (var skillKey in AttachedTo(AiActionSkillTargets.Area, action.Area))
+                                                {
+                                                    @SkillChip(skillKey, true)
+                                                }
+                                                <button type="button" class="text-xs underline text-content-muted"
+                                                        @onclick="() => StartEditing(AiActionSkillTargets.Action, action.Name)">
+                                                    Skills
+                                                </button>
+                                            </div>
+                                        </div>
+                                        @if (IsEditing(AiActionSkillTargets.Action, action.Name))
+                                        {
+                                            @SkillPicker(action.Name)
+                                        }
+                                    </div>
+                                }
+                            </div>
+                        }
+                    </div>
+                }
             }
-        }
+        </LoadGate>
 </Page>
 
 @code {

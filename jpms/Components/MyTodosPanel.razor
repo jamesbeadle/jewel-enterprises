@@ -71,11 +71,8 @@
         </div>
     }
 
-    @if (loading)
-    {
-        <JewelSpinner Class="py-6" Label="Loading" />
-    }
-    else if (boardView && items.Count > 0)
+    <LoadGate IsLoading="loading" Prominent="true" Label="Loading your to-dos">
+    @if (boardView && items.Count > 0)
     {
         @* Everything on this panel is the reader's own (ListMyTodoItems), and the API lets a
            role-holder tick their role's items off even outside the manage gate — so every card
@@ -118,6 +115,7 @@
             }
         </div>
     }
+    </LoadGate>
 </div>
 
 @code {

@@ -47,11 +47,8 @@ else
             </span>
         </label>
 
-        @if (loading)
-        {
-            <JewelSpinner Label="Searching records" />
-        }
-        else if (records is null)
+        <LoadGate IsLoading="loading" Label="Searching records">
+        @if (records is null)
         {
             <p class="text-sm text-content-subtle">Pick a project (or search RFIs across all projects) to list records.</p>
         }
@@ -87,5 +84,6 @@ else
                 }
             </div>
         }
+        </LoadGate>
     </div>
 }

@@ -60,6 +60,11 @@ public sealed class SessionService : IDisposable
     /// re-arms it.</summary>
     public event Action? OnRevertDue;
 
+    /// <summary>True once the session has been resolved for a signed-in user. Read synchronously
+    /// by the page gate so an in-app navigation, where the answer is already known, never flashes
+    /// a loading state for a question nobody is waiting on.</summary>
+    public bool IsLoaded => CurrentUser is not null;
+
     public async Task EnsureLoadedAsync()
     {
         if (CurrentUser is not null) return;

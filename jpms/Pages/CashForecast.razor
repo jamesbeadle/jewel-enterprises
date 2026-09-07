@@ -89,12 +89,6 @@
         var forecastView = TableReady && SelectedProjects.Count > 0 ? BuildForecast() : null;
     }
 
-    @if (IsDirector)
-    {
-        <ForecastKpiStrip Bank="BankSnapshot" BankReady="BankReady" TableReady="TableReady"
-                          Forecast="forecastView" FetchedText="@FetchedText" />
-    }
-
     @if (projectsFailed)
     {
         <p class="text-sm text-negative">Couldn't load the project list. The details are in the red bar at the top — reload to try again.</p>
@@ -127,6 +121,13 @@
         @* One gate for everything below: the forecast, the statement and the table are the
            same arithmetic over the same sources, so all of it reveals in one piece. *@
         <LoadGate IsLoading="@(!TableReady)" Prominent="true" Label="Loading project cashflows">
+        @* The director's headline figures are the same forecast as the table below, so they wait
+           inside the same gate: six tiles pulsing above a pulsing table is six marks too many. *@
+        @if (IsDirector)
+        {
+            <ForecastKpiStrip Bank="BankSnapshot" BankReady="BankReady" TableReady="TableReady"
+                              Forecast="forecastView" FetchedText="@FetchedText" />
+        }
         @if (SelectedProjects.Count == 0)
         {
             <div class="panel p-8 text-center">

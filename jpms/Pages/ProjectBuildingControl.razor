@@ -29,11 +29,10 @@
             <Notice Tone="Tone.Negative" Class="mb-4">@error</Notice>
         }
 
-        @if (!BuildingControl.LoadedFor(ProjectId) && !dataFailed)
-        {
-            <LoadGate IsLoading="true" Prominent="true" Label="Loading building control" />
-        }
-        else if (dataFailed && !BuildingControl.LoadedFor(ProjectId))
+        @* The case panel, its documents and the inspection register are all the same load, so
+           the tab gates once around the lot rather than once per section. *@
+        <LoadGate IsLoading="@(!BuildingControl.LoadedFor(ProjectId) && !dataFailed)" Prominent="true" Label="Loading building control">
+        @if (dataFailed && !BuildingControl.LoadedFor(ProjectId))
         {
             <p class="text-sm text-content-muted">Building control couldn't be loaded just now — the error toast has the detail. Reload the page to retry.</p>
         }
@@ -329,6 +328,7 @@
                 }
             }
         }
+        </LoadGate>
     </ProjectPageShell>
 </Page>
 

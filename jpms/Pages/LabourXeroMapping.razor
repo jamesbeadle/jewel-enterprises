@@ -46,134 +46,136 @@
         <Notice Tone="Tone.Negative" Class="mb-3">@actionError</Notice>
     }
 
-    <Panel Title="Sites → Xero tracking" Class="mb-6" BodyClass="p-5"
-           IsLoading="@(!MappingsReady && !dataFailed)" LoadingLabel="Loading mappings">
-        @if (dataFailed || mappings is null)
-        {
-            <p class="text-sm text-negative">Couldn't load the mappings — refresh to try again.</p>
-        }
-        else
-        {
-            <div class="flex flex-wrap items-end gap-2 mb-4">
-                <FormField Label="Project">
-                    <select class="field" @bind="siteProjectId">
-                        <option value="">Project…</option>
-                        @foreach (var project in Projects.Current ?? Array.Empty<Project>())
-                        {
-                            <option value="@project.ProjectId">@project.Name</option>
-                        }
-                    </select>
-                </FormField>
-                <FormField Label="Xero Sites option">
-                    <select class="field" @bind="siteOptionName" disabled="@(SiteOptions().Count == 0)">
-                        <option value="">@(SiteOptions().Count == 0 ? "Loading options…" : "Sites option…")</option>
-                        @foreach (var option in SiteOptions())
-                        {
-                            <option value="@option.Name">@option.Name</option>
-                        }
-                    </select>
-                </FormField>
-                <button type="button" class="btn-secondary" disabled="@isSaving" @onclick="SaveSiteMappingAsync">Set mapping</button>
-            </div>
-
-            var openSites = mappings.Sites.Where(row => row.EffectiveTo is null).ToList();
-            @if (openSites.Count == 0)
+    @* Both tables come out of the one mappings fetch the page open starts, so they wait behind
+       a single mark rather than pulsing in turn down the page. *@
+    <LoadGate IsLoading="@(!MappingsReady && !dataFailed)" Prominent="true" Label="Loading mappings">
+        <Panel Title="Sites → Xero tracking" Class="mb-6" BodyClass="p-5">
+            @if (dataFailed || mappings is null)
             {
-                <EmptyState Message="No sites mapped yet — the coding run will skip every site until they are." />
+                <p class="text-sm text-negative">Couldn't load the mappings — refresh to try again.</p>
             }
             else
             {
-                <table class="data-table data-table-dense max-w-3xl">
-                    <thead>
-                        <tr>
-                            <th>Project</th>
-                            <th>Xero Sites option</th>
-                            <th>Since</th>
-                        </tr>
-                    </thead>
-                    <tbody>
-                        @foreach (var row in openSites)
-                        {
+                <div class="flex flex-wrap items-end gap-2 mb-4">
+                    <FormField Label="Project">
+                        <select class="field" @bind="siteProjectId">
+                            <option value="">Project…</option>
+                            @foreach (var project in Projects.Current ?? Array.Empty<Project>())
+                            {
+                                <option value="@project.ProjectId">@project.Name</option>
+                            }
+                        </select>
+                    </FormField>
+                    <FormField Label="Xero Sites option">
+                        <select class="field" @bind="siteOptionName" disabled="@(SiteOptions().Count == 0)">
+                            <option value="">@(SiteOptions().Count == 0 ? "Loading options…" : "Sites option…")</option>
+                            @foreach (var option in SiteOptions())
+                            {
+                                <option value="@option.Name">@option.Name</option>
+                            }
+                        </select>
+                    </FormField>
+                    <button type="button" class="btn-secondary" disabled="@isSaving" @onclick="SaveSiteMappingAsync">Set mapping</button>
+                </div>
+
+                var openSites = mappings.Sites.Where(row => row.EffectiveTo is null).ToList();
+                @if (openSites.Count == 0)
+                {
+                    <EmptyState Message="No sites mapped yet — the coding run will skip every site until they are." />
+                }
+                else
+                {
+                    <table class="data-table data-table-dense max-w-3xl">
+                        <thead>
                             <tr>
-                                <td class="text-content">@row.ProjectName</td>
-                                <td>@row.XeroTrackingOptionName</td>
-                                <td class="text-content-subtle">@DateText(row.EffectiveFrom)</td>
+                                <th>Project</th>
+                                <th>Xero Sites option</th>
+                                <th>Since</th>
                             </tr>
-                        }
-                    </tbody>
-                </table>
+                        </thead>
+                        <tbody>
+                            @foreach (var row in openSites)
+                            {
+                                <tr>
+                                    <td class="text-content">@row.ProjectName</td>
+                                    <td>@row.XeroTrackingOptionName</td>
+                                    <td class="text-content-subtle">@DateText(row.EffectiveFrom)</td>
+                                </tr>
+                            }
+                        </tbody>
+                    </table>
+                }
             }
-        }
-    </Panel>
+        </Panel>
 
-    <Panel Title="Cost codes → Xero tracking & accounts" Class="mb-6" BodyClass="p-5"
-           IsLoading="@(!MappingsReady && !dataFailed)" LoadingLabel="Loading mappings">
-        @if (dataFailed || mappings is null)
-        {
-            <p class="text-sm text-negative">Couldn't load the mappings — refresh to try again.</p>
-        }
-        else
-        {
-            <div class="flex flex-wrap items-end gap-2 mb-4">
-                <FormField Label="Cost code">
-                    <select class="field" @bind="codeCostCode">
-                        <option value="">Cost code…</option>
-                        @foreach (var centre in CostCenters.Alphabetical.Where(centre => centre.IsActive))
-                        {
-                            <option value="@centre.Code">@centre.Code — @centre.Name</option>
-                        }
-                    </select>
-                </FormField>
-                <FormField Label="Labour account">
-                    <input class="field mt-1 w-28" @bind="codeLabourAccount" placeholder="e.g. 310" />
-                </FormField>
-                <FormField Label="Materials account">
-                    <input class="field mt-1 w-28" @bind="codeMaterialsAccount" placeholder="e.g. 312" />
-                </FormField>
-                <FormField Label="Travel account">
-                    <input class="field mt-1 w-28" @bind="codeTravelAccount" placeholder="e.g. 493" />
-                </FormField>
-                <button type="button" class="btn-secondary" disabled="@isSaving" @onclick="SaveCodeMappingAsync">Set mapping</button>
-            </div>
-            <p class="text-xs text-content-subtle mb-4">
-                The cost-code tracking option defaults to the code itself (the approval flow
-                already creates missing options in Xero); the account codes decide where each
-                line nature posts — CIS labour, CIS materials, travel.
-            </p>
-
-            var openCodes = mappings.CostCodes.Where(row => row.EffectiveTo is null).ToList();
-            @if (openCodes.Count == 0)
+        <Panel Title="Cost codes → Xero tracking & accounts" Class="mb-6" BodyClass="p-5">
+            @if (dataFailed || mappings is null)
             {
-                <EmptyState Message="No cost codes mapped yet." />
+                <p class="text-sm text-negative">Couldn't load the mappings — refresh to try again.</p>
             }
             else
             {
-                <table class="data-table data-table-dense max-w-3xl">
-                    <thead>
-                        <tr>
-                            <th>Cost code</th>
-                            <th>Labour</th>
-                            <th>Materials</th>
-                            <th>Travel</th>
-                            <th>Since</th>
-                        </tr>
-                    </thead>
-                    <tbody>
-                        @foreach (var row in openCodes)
-                        {
+                <div class="flex flex-wrap items-end gap-2 mb-4">
+                    <FormField Label="Cost code">
+                        <select class="field" @bind="codeCostCode">
+                            <option value="">Cost code…</option>
+                            @foreach (var centre in CostCenters.Alphabetical.Where(centre => centre.IsActive))
+                            {
+                                <option value="@centre.Code">@centre.Code — @centre.Name</option>
+                            }
+                        </select>
+                    </FormField>
+                    <FormField Label="Labour account">
+                        <input class="field mt-1 w-28" @bind="codeLabourAccount" placeholder="e.g. 310" />
+                    </FormField>
+                    <FormField Label="Materials account">
+                        <input class="field mt-1 w-28" @bind="codeMaterialsAccount" placeholder="e.g. 312" />
+                    </FormField>
+                    <FormField Label="Travel account">
+                        <input class="field mt-1 w-28" @bind="codeTravelAccount" placeholder="e.g. 493" />
+                    </FormField>
+                    <button type="button" class="btn-secondary" disabled="@isSaving" @onclick="SaveCodeMappingAsync">Set mapping</button>
+                </div>
+                <p class="text-xs text-content-subtle mb-4">
+                    The cost-code tracking option defaults to the code itself (the approval flow
+                    already creates missing options in Xero); the account codes decide where each
+                    line nature posts — CIS labour, CIS materials, travel.
+                </p>
+
+                var openCodes = mappings.CostCodes.Where(row => row.EffectiveTo is null).ToList();
+                @if (openCodes.Count == 0)
+                {
+                    <EmptyState Message="No cost codes mapped yet." />
+                }
+                else
+                {
+                    <table class="data-table data-table-dense max-w-3xl">
+                        <thead>
                             <tr>
-                                <td class="text-content tabular-nums">@row.CostCode</td>
-                                <td class="tabular-nums">@Blank(row.LabourAccountCode)</td>
-                                <td class="tabular-nums">@Blank(row.MaterialsAccountCode)</td>
-                                <td class="tabular-nums">@Blank(row.TravelAccountCode)</td>
-                                <td class="text-content-subtle">@DateText(row.EffectiveFrom)</td>
+                                <th>Cost code</th>
+                                <th>Labour</th>
+                                <th>Materials</th>
+                                <th>Travel</th>
+                                <th>Since</th>
                             </tr>
-                        }
-                    </tbody>
-                </table>
+                        </thead>
+                        <tbody>
+                            @foreach (var row in openCodes)
+                            {
+                                <tr>
+                                    <td class="text-content tabular-nums">@row.CostCode</td>
+                                    <td class="tabular-nums">@Blank(row.LabourAccountCode)</td>
+                                    <td class="tabular-nums">@Blank(row.MaterialsAccountCode)</td>
+                                    <td class="tabular-nums">@Blank(row.TravelAccountCode)</td>
+                                    <td class="text-content-subtle">@DateText(row.EffectiveFrom)</td>
+                                </tr>
+                            }
+                        </tbody>
+                    </table>
+                }
             }
-        }
-    </Panel>
+        </Panel>
+    </LoadGate>
 </Page>
 
 @code {
