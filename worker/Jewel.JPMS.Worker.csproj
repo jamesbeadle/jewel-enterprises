@@ -89,6 +89,14 @@
     <Compile Include="..\api\Features\Xero\XeroClient.ReadsSuppliers.cs" Link="Shared\Xero\XeroClient.ReadsSuppliers.cs" />
     <Compile Include="..\api\Features\Xero\XeroClient.ReadsCash.cs" Link="Shared\Xero\XeroClient.ReadsCash.cs" />
     <Compile Include="..\api\Features\Xero\XeroClient.Writes.cs" Link="Shared\Xero\XeroClient.Writes.cs" />
+    <Compile Include="..\api\Features\Xero\XeroClient.Approve.cs" Link="Shared\Xero\XeroClient.Approve.cs" />
+    <Compile Include="..\api\Features\Xero\XeroClient.Bills.cs" Link="Shared\Xero\XeroClient.Bills.cs" />
+    <Compile Include="..\api\Features\Xero\XeroClient.ScheduleLines.cs" Link="Shared\Xero\XeroClient.ScheduleLines.cs" />
+    <Compile Include="..\api\Features\Xero\XeroClient.Recode.cs" Link="Shared\Xero\XeroClient.Recode.cs" />
+    <Compile Include="..\api\Features\Xero\XeroClient.DraftBill.cs" Link="Shared\Xero\XeroClient.DraftBill.cs" />
+    <Compile Include="..\api\Features\Xero\XeroClient.ContactTaxType.cs" Link="Shared\Xero\XeroClient.ContactTaxType.cs" />
+    <Compile Include="..\api\Features\Xero\XeroClient.SiteTracking.cs" Link="Shared\Xero\XeroClient.SiteTracking.cs" />
+    <Compile Include="..\api\Features\Xero\XeroClient.SiteTrackingLines.cs" Link="Shared\Xero\XeroClient.SiteTrackingLines.cs" />
     <Compile Include="..\api\Features\Xero\XeroClient.SitePnl.cs" Link="Shared\Xero\XeroClient.SitePnl.cs" />
     <Compile Include="..\api\Features\Xero\XeroClient.Attachments.cs" Link="Shared\Xero\XeroClient.Attachments.cs" />
     <Compile Include="..\api\Features\Xero\XeroClient.LineItems.cs" Link="Shared\Xero\XeroClient.LineItems.cs" />

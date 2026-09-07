@@ -1,4 +1,4 @@
-# Jewel portal refactor — handover prompt (paste this whole file as the first message of the fresh chat)
+# Jewel portal refactor — handover prompt (paste this whole file as the first message of the fresh chat; §0 is current as of 7 Sep 2026)
 
 You are continuing a staged, audit-measured refactor of my C#/Blazor WASM construction portal,
 **jewel-portal** (`api/` Azure Functions, `jpms/` Blazor WebAssembly client, `contracts/`,
@@ -15,6 +15,59 @@ order, before your first commit: `tools/refactor/playbook.md`, `tools/refactor/R
 (the current report, v16). `docs/Drawing-the-Line.pdf` is the 22 August briefing the whole
 programme answers to; `CLAUDE.md` at the root carries the product's house conventions
 (terminology, loading states, toolbars, error reporting) that every extracted component must respect.
+
+---
+
+## 0. State at 7 September 2026 — read this first; where it disagrees with §1, §5, §8, §9 or §10 below, this wins
+
+**Baseline is v21, after round 19** (`tools/refactor/baseline-report.md`, 7 Sep). Nineteen rounds
+are done, not fifteen. The 2 September figures in §9 are history; the current report carries the
+journey table and names round 20.
+
+**Branches and commits no longer exist in this programme.** James works on `main` only and does his
+own git. You do not create branches, do not commit, do not push, do not produce patch tarballs.
+You change the files, verify, and write the changed files straight into his project folder
+(`/Users/ybt/Documents/Claude/Projects/jewel-portal` — note the path; §8's `/Users/james/…` is
+stale) with `device_commit_files`, one call of up to 50 files, `stagedPath` under
+`/mnt/user-data/outputs/`. Files you delete cannot be deleted through the bridge: give him ONE
+copy-paste line (`git rm -q <paths>`, no `cd` prefix) and say so. Then he commits and pushes.
+The `device_bash` mount of the project folder has been dead since 6 September ("failed to
+mount") — use `device_list_dir` / `device_stage_files` / `device_commit_files` by absolute path
+instead, and expect the bridge to drop for minutes at a time (retry once, carry on, deliver when
+it returns; put the deliverables under `/mnt/user-data/outputs/` meanwhile so nothing is lost).
+
+**Packages (7 Sep recipe).** nuget.org is blocked from the cloud. James packs his Mac's cache with
+ONE line — `tar cz -C ~/.nuget packages | split -b 60m - nuget-cache.tgz.p-` — run from the
+project folder (chunks ≤ 60 MB; a 380 MB chunk times out the bridge), you stage the chunks
+(`device_stage_files`, up to three per call), `cat … | tar xz -C ~/.nuget`, and restore offline
+with an untracked `nuget.config` that clears every source (§1). `.gitignore` already ignores
+`nuget-cache.tgz*`. His cache holds what the api, contracts and the `dotnet ef` design-time need —
+**it does NOT hold `Microsoft.AspNetCore.Components.WebAssembly` (so the jpms Verify project
+cannot restore), nor xunit / `Microsoft.NET.Test.Sdk` / `Microsoft.EntityFrameworkCore.InMemory`
+(so `dotnet test` cannot run), nor three worker packages (`ApplicationInsights.WorkerService`,
+`Functions.Worker.Extensions.Storage.Queues`, `…Extensions.Timer`).** Until one `dotnet build
+jpms` and one `dotnet test` on his Mac put those in the cache, the cloud can verify `api` and
+`contracts` only. Round 19 ran its 58 new tests through a stand-in harness — a ~100-line shim
+for xunit's attributes and `Assert`, and the EF Core InMemory provider built from the
+`dotnet/efcore` v8.0.10 source (`src/EFCore.InMemory` + `src/Shared`, one csproj referencing the
+cached `Microsoft.EntityFrameworkCore` 8.0.10) — 84/84 green, including three existing test
+files. Rebuild that harness if the cache is still short; say in the report that the tests want a
+real xunit run (`dotnet test tests/Jewel.JPMS.Tests/Jewel.JPMS.Tests.csproj` on the Mac, or the
+manual Tests workflow on GitHub).
+
+**What this means for targets.** The worst files are now jpms pages (`SalesStrategyDetail` 525,
+`SalesLeadDetail` 505, `Imagine` 464, `SalesInbox` 457, `AdminKpis` 429) and they cannot be built
+in the cloud until the WebAssembly package is in the cache. Do not divide Razor you cannot
+compile. Worst-first among buildable files is the rule until then; the current report's
+"Round 20, named" lists both queues.
+
+**The worker compile list (§4) still bites.** `worker/Jewel.JPMS.Worker.csproj` compiles api
+sources by name; round 19 added the eight new `XeroClient.*` partials beside `.Writes` but could
+not build the worker (packages above). Check it every time an api file in that list is split.
+
+**The audit report now leads with the headline** ("N of M source files are over the 100-line
+limit (x%)") and a "vs baseline" table — `tools/refactor/audit/report.py`, round 19. James asked
+for files-over-100 to be stated plainly every time; keep it first in `baseline-report.md` too.
 
 ---
 

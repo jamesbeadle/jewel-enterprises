@@ -38,7 +38,7 @@ public static class ProfitDisplay
             : $"{sign}£{abs:N0}";
     }
 
-    /// <summary>Signed compact £ for the grid's hovers ("+£8.1k", "−£4.8k").</summary>
+    /// <summary>Signed compact £ for the grid's small print and hovers ("+£8.1k", "−£4.8k").</summary>
     public static string SignedMoneyCompact(decimal value) =>
         value >= 0m ? $"+{MoneyCompact(value)}" : MoneyCompact(value);
 
@@ -46,31 +46,62 @@ public static class ProfitDisplay
     public static string PctCell(decimal value) =>
         value >= 0m ? $"{value:0.0}%" : $"−{Math.Abs(value):0.0}%";
 
-    /// <summary>A movement in percentage points, one decimal, always signed ("+15.3", "−11.8") — Jeremy's small print.</summary>
+    /// <summary>A movement in percentage points, one decimal, always signed ("+15.3", "−11.8").</summary>
     public static string SignedPp(decimal value) =>
         value >= 0m ? $"+{value:0.0}" : $"−{Math.Abs(value):0.0}";
 
-    /// <summary>The small-print line: the movement, or "—" for no meaningful movement (or no prior % to move from).</summary>
-    public static string MovementPrint(decimal? movementPp) =>
-        movementPp is decimal move && Math.Abs(move) >= 0.05m ? SignedPp(move) : "—";
+    /// <summary>The movement in points as the hover words it: "+0.8 pts" / "−3.8 pts", "no movement" inside a twentieth of a point, or why there is none.</summary>
+    public static string MovementWords(decimal? movementPp) =>
+        movementPp is decimal move
+            ? Math.Abs(move) >= 0.05m ? $"{SignedPp(move)} pts" : "no movement"
+            : "no prior % to move from";
 
-    /// <summary>The grid's cell shading: green improving, red worsening, alpha scaling with the movement's share of the biggest (capped).</summary>
-    public static string MovementCellStyle(decimal movementPp, decimal shadeMax)
+    /// <summary>The ▲/▼ after the month margin: above or below the running % at the end of the previous month. Empty when there is nothing to compare.</summary>
+    public static string DirectionMarker(int direction) => direction > 0 ? "▲" : direction < 0 ? "▼" : "";
+
+    /// <summary>The small print's month margin with its marker ("77.5% ▼"), or null when the month's invoicing is under the floor.</summary>
+    public static string? MonthMarginPrint(RunningCell cell, decimal floor)
     {
-        if (shadeMax <= 0m) return "background:#12151c";
-        var alpha = (0.10m + 0.55m * Math.Min(Math.Abs(movementPp), shadeMax) / shadeMax)
-            .ToString("0.00", CultureInfo.InvariantCulture);
-        return movementPp < 0m
-            ? $"background:rgba(194,85,85,{alpha})"
-            : $"background:rgba(46,160,101,{alpha})";
+        if (cell.MonthPercent(floor) is not decimal monthPct) return null;
+        var marker = DirectionMarker(cell.MonthDirection(floor));
+        return marker.Length == 0 ? PctCell(monthPct) : $"{PctCell(monthPct)} {marker}";
     }
 
-    /// <summary>The running cell's hover: the position to date, then the month's own figures — the old grid's cell, preserved.</summary>
-    public static string RunningCellHover(DateTime month, RunningCell cell)
+    /// <summary>The whole small-print line — "77.5% ▼ · +£31k", or just the £ where the month % is suppressed, or "—" for a month where nothing happened.</summary>
+    public static string SmallPrint(RunningCell cell, decimal floor)
     {
-        var own = cell.Own.Percent is decimal ownPct
-            ? $"this month: invoiced {MoneyCompact(cell.Own.Income)} · profit {SignedMoneyCompact(cell.Own.Profit)} ({PctCell(ownPct)})"
-            : $"this month: nothing invoiced · profit {SignedMoneyCompact(cell.Own.Profit)}";
-        return $"{month:MMM yy} — to date: invoiced {MoneyCompact(cell.CumIncome)} · profit {SignedMoneyCompact(cell.CumProfit)} · {own}";
+        if (cell.Own.Empty) return "—";
+        var money = SignedMoneyCompact(cell.Own.Profit);
+        return MonthMarginPrint(cell, floor) is { } margin ? $"{margin} · {money}" : money;
+    }
+
+    // The cell colours: ONE rule — the sign of the month's own £. Green made money, red lost
+    // money, the neutral canvas where the month is nil or nothing happened. A flat tint, not a
+    // scale: intensity would be a second signal, and the colour is meant to answer one question.
+    private const string NeutralCellStyle = "background:#12151c";
+    private const string PositiveCellStyle = "background:rgba(46,160,101,0.32)";
+    private const string NegativeCellStyle = "background:rgba(194,85,85,0.32)";
+
+    /// <summary>The grid's cell shading from the month's own £: green profit, red loss, neutral nil.</summary>
+    public static string MonthCellStyle(MonthCell own) => own.MoneySign switch
+    {
+        > 0 => PositiveCellStyle,
+        < 0 => NegativeCellStyle,
+        _ => NeutralCellStyle,
+    };
+
+    /// <summary>The running cell's hover: the month's own figures (invoicing, so the margin can
+    /// be checked), what the month did to the running % in points, then the position to date.</summary>
+    public static string RunningCellHover(DateTime month, RunningCell cell, decimal floor)
+    {
+        var own = cell.Own.Income == 0m
+            ? $"this month: nothing invoiced · profit {SignedMoneyCompact(cell.Own.Profit)}"
+            : cell.MonthPercent(floor) is decimal monthPct
+                ? $"this month: invoiced {MoneyCompact(cell.Own.Income)} · profit {SignedMoneyCompact(cell.Own.Profit)} ({PctCell(monthPct)})"
+                : $"this month: invoiced {MoneyCompact(cell.Own.Income)} · profit {SignedMoneyCompact(cell.Own.Profit)} (month % not shown — invoicing under the £{floor:N0} floor)";
+        var movement = cell.PriorRunning is decimal prior && cell.Running is decimal now
+            ? $"running % {MovementWords(cell.MovementPp)} ({PctCell(prior)} → {PctCell(now)})"
+            : $"running % {MovementWords(cell.MovementPp)}";
+        return $"{month:MMM yy} — {own} · {movement} · to date: invoiced {MoneyCompact(cell.CumIncome)} · profit {SignedMoneyCompact(cell.CumProfit)}";
     }
 }

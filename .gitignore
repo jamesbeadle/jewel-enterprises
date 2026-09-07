@@ -83,3 +83,6 @@ Claude outputs/
 
 *.bundle
 _nuget_transfer/
+
+# NuGet cache chunks packed on the Mac for an offline cloud restore
+nuget-cache.tgz*

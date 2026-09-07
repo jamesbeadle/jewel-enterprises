@@ -58,6 +58,11 @@ public enum ExcelFill
     Panel,
     /// <summary>Warm gold tint — lines that moved this period.</summary>
     Highlight,
+    /// <summary>Light green tint — a month (or line) that made money. Pairs with <see cref="Negative"/>: the
+    /// running-profit grid's one colour rule, the sign of the month's £.</summary>
+    Positive,
+    /// <summary>Light red tint — a month (or line) that lost money.</summary>
+    Negative,
 }
 
 /// <summary>Bottom border applied to a presentation cell.</summary>

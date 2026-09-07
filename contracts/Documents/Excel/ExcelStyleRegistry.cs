@@ -19,6 +19,8 @@ internal sealed class ExcelStyleRegistry
     private const string NegativeArgb = "FFB42318";
     private const string PanelArgb = "FFF3F3F5";
     private const string HighlightArgb = "FFFBF2E2";
+    private const string PositiveFillArgb = "FFDCEFE3";
+    private const string NegativeFillArgb = "FFF6DADA";
     private const string LegacyHeaderFillArgb = "FFF2F1EE";
     private const string HairlineArgb = "FFB9B6B0";
     private const string AccentArgb = "FFFF8300";
@@ -83,6 +85,8 @@ internal sealed class ExcelStyleRegistry
             ExcelFill.Navy => FillId(NavyArgb),
             ExcelFill.Panel => FillId(PanelArgb),
             ExcelFill.Highlight => FillId(HighlightArgb),
+            ExcelFill.Positive => FillId(PositiveFillArgb),
+            ExcelFill.Negative => FillId(NegativeFillArgb),
             _ => 0,
         };
         return Register(new XfKey(

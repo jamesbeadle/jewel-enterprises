@@ -2,10 +2,13 @@
 @using static Jewel.JPMS.Features.Cvr.ProfitDisplay
 
 @* The running-profit grid: one row per job, one column per month end. Each cell's main figure
-   is the running % to date (the trend of the whole project); the small print is what the month
-   did to it, in points and in £. The shade follows the MOVEMENT (the month's news), the number
-   carries the level. The host builds the MovementModel and owns the labour-accrual overlay —
-   the three delegates carry its per-cell hover, dot and to-date figures. *@
+   is the running % to date (the trend of the whole project); the small print is the month on
+   its own — its margin (▲/▼ against the running % at the end of the previous month) and its £.
+   The COLOUR follows the sign of the month's £ and nothing else: green made money, red lost
+   money, neutral nil (Jeremy, 2026-09-07 — a red cell must mean the month lost money). The
+   movement in points and the month's invoicing are in the hover. A month invoicing under the
+   floor shows its £ only, greyed. The host builds the MovementModel and owns the labour-accrual
+   overlay — the three delegates carry its per-cell hover, dot and to-date figures. *@
 <div class="overflow-x-auto">
     <table class="data-table data-table-dense" style="border-collapse:separate;border-spacing:3px">
         <thead>
@@ -31,15 +34,15 @@
                     {
                         var cell = row.MonthCells[index];
                         var cellMonth = Movement.Months[index];
-                        var move = row.MovementsPp[index];
                         @if (cell.Empty)
                         {
-                            <td class="text-center rounded text-xs text-content-faint" style="background:#12151c">—</td>
+                            <td class="text-center rounded text-xs text-content-faint" style="@MonthCellStyle(cell.Own)">—</td>
                         }
                         else if (cell.Running is not decimal runningLevel)
                         {
-                            @* Costs have moved but nothing has EVER been invoiced — no honest running %; the £ is in the hover. *@
-                            <td class="text-center rounded text-xs text-content-faint" style="background:#12151c"
+                            @* Costs have moved but nothing has EVER been invoiced — no honest running %. The
+                               month's £ still colours the cell: a month of bills against no invoicing lost money. *@
+                            <td class="text-center rounded text-xs text-content-faint" style="@MonthCellStyle(cell.Own)"
                                 title="@($"{cellMonth:MMM yy} — nothing invoiced to date · profit to date {SignedMoneyCompact(cell.CumProfit)}{AccrualHover(row.Project.ProjectId, cellMonth)}")">
                                 n/a
                                 @if (!cell.Own.Empty)
@@ -51,11 +54,11 @@
                         else
                         {
                             <td class="text-center rounded text-xs tabular-nums"
-                                style="@(move is decimal shadePp ? MovementCellStyle(shadePp, Movement.ShadeMax) : "background:#12151c")"
-                                title="@(RunningCellHover(cellMonth, cell) + AccrualHover(row.Project.ProjectId, cellMonth))">
+                                style="@MonthCellStyle(cell.Own)"
+                                title="@(RunningCellHover(cellMonth, cell, Movement.MonthPercentFloor) + AccrualHover(row.Project.ProjectId, cellMonth))">
                                 <span class="font-medium @ProfitClass(runningLevel)">@PctCell(runningLevel)</span>@if (AccrualOwnFor(row.Project.ProjectId, cellMonth) > 0m)
                                 {<span class="text-warning ml-0.5" aria-hidden="true">•</span>}
-                                <span class="block text-xs font-normal text-content-muted mt-0.5">@MovementPrint(move)@(cell.Own.Empty ? "" : $" · {SignedMoneyCompact(cell.Own.Profit)}")</span>
+                                <span class="block text-xs font-normal mt-0.5 @SmallPrintClass(cell)">@SmallPrint(cell, Movement.MonthPercentFloor)</span>
                             </td>
                         }
                     }
@@ -87,13 +90,14 @@
                     @for (var index = 0; index < Movement.ColumnTotals.Count; index++)
                     {
                         var total = Movement.ColumnTotals[index];
-                        var totalMove = Movement.TotalMovementsPp[index];
-                        <td class="text-center text-xs border-t tabular-nums"
-                            title="@($"invoiced to date {MoneyCompact(total.CumIncome)} · profit to date {SignedMoneyCompact(total.CumProfit)}")">
+                        var totalMonth = Movement.Months[index];
+                        <td class="text-center rounded text-xs border-t tabular-nums"
+                            style="@MonthCellStyle(total.Own)"
+                            title="@RunningCellHover(totalMonth, total, Movement.MonthPercentFloor)">
                             @if (total.Running is decimal totalPct)
                             {
                                 <span class="@ProfitClass(totalPct)">@PctCell(totalPct)</span>
-                                <span class="block text-xs font-normal text-content-muted mt-0.5">@MovementPrint(totalMove)@(total.Own.Empty ? "" : $" · {SignedMoneyCompact(total.Own.Profit)}")</span>
+                                <span class="block text-xs font-normal mt-0.5 @SmallPrintClass(total)">@SmallPrint(total, Movement.MonthPercentFloor)</span>
                             }
                             else
                             {
@@ -128,4 +132,9 @@
     [Parameter, EditorRequired] public Func<string, DateTime, decimal> AccrualOwnFor { get; set; } = default!;
     /// <summary>…and the to-date accrued £ for the Position column's memo.</summary>
     [Parameter, EditorRequired] public Func<string, decimal> AccrualToDateFor { get; set; } = default!;
+
+    // The small print greys where the month % is suppressed (invoicing under the floor, or nil):
+    // the £ is still a fact, but it is not the month's margin and shouldn't read like one.
+    private string SmallPrintClass(RunningCell cell) =>
+        cell.MonthPercent(Movement.MonthPercentFloor) is null ? "text-content-faint" : "text-content-muted";
 }

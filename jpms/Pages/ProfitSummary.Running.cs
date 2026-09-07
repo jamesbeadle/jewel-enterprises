@@ -15,14 +15,21 @@ public partial class ProfitSummary
     // to date at that month end — cumulative operating profit (income less cost of sales less
     // site-tracked overheads) over cumulative invoicing, the accountant's "Running % Profit"
     // row — so the row is the trend of the whole project and the last month equals "Position
-    // now" by construction. The SMALL PRINT is the month's movement in percentage points
-    // (main figure minus the prior month end's) with the month's own profit £ beside it
-    // (2026-08-27, Jeremy: "I can't see the £ amount on profit"); the month's own % (the
-    // 2026-08-12 "Current Month % Profit" format this replaced) lives in the hover, so a single
-    // month's spike or fall is visible without being mistakable for the position. A job with cost but
-    // no invoicing ever has no honest running % — the cell says n/a and carries the £ in its
-    // hover rather than printing an exploded figure. The trajectory stays in £ — the running
-    // total the cumulative panel's gap shows.
+    // now" by construction. The SMALL PRINT is the month's OWN margin (the month's profit over
+    // the month's invoicing — his "Current Month % Profit") with the month's profit £ beside it
+    // (2026-08-27, Jeremy: "I can't see the £ amount on profit"), and the cell is COLOURED on
+    // the sign of that £ (2026-09-07 — until then the small print was the month's movement in
+    // the running % and the colour followed it, so a profitable month on a high-margin job read
+    // red because it pulled the average down). The movement in points lives in the hover. A
+    // job with cost but no invoicing ever has no honest running % — the cell says n/a with the
+    // £ beneath rather than printing an exploded figure; likewise a month invoicing under the
+    // floor shows its £ only. The trajectory stays in £ — the running total the cumulative
+    // panel's gap shows.
+
+    // The low-invoicing floor (Jeremy, 2026-09-07): a month invoicing less than this shows its
+    // £ only, greyed — the % would be noise. Page state with his default; the panel's own
+    // control changes it for the session.
+    private decimal monthPercentFloor = RunningMovement.DefaultMonthPercentFloor;
 
     // The site's operating profit — the accountant's definition (2026-08-12), so the grid
     // reconciles with his Xero P&L exactly.
@@ -45,30 +52,28 @@ public partial class ProfitSummary
             new(pnl.Where(inRange).Sum(row => row.Income),
                 pnl.Where(inRange).Sum(ProfitOf));
 
-        // The running cells and their movements for one job (or the combined book): cumulative
-        // through each month end, each month's movement against the prior month end — seeded
-        // from the month BEFORE the window so the first column has an honest movement too, and
-        // the same seed is the 6-mo Δ's baseline (null baseline — nothing invoiced back then —
-        // means no honest Δ, the "—").
-        (List<RunningCell> Cells, List<decimal?> Moves, decimal? WindowDelta) RunningFor(List<XeroSiteMonthlyPnl> pnl, List<MonthCell> ownCells)
+        // The running cells for one job (or the combined book): cumulative through each month
+        // end, each carrying the prior month end's running % (the hover's movement and the ▲/▼
+        // marker read off it) — seeded from the month BEFORE the window so the first column has
+        // an honest prior too, and the same seed is the 6-mo Δ's baseline (null baseline —
+        // nothing invoiced back then — means no honest Δ, the "—").
+        (List<RunningCell> Cells, decimal? WindowDelta) RunningFor(List<XeroSiteMonthlyPnl> pnl, List<MonthCell> ownCells)
         {
             var beforeWindow = CellFor(pnl, row => row.Month < months[0]);
             var baseline = beforeWindow.Income == 0m ? (decimal?)null : beforeWindow.Profit / beforeWindow.Income * 100m;
 
             var cells = new List<RunningCell>();
-            var moves = new List<decimal?>();
             var previous = baseline;
             for (var index = 0; index < months.Count; index++)
             {
                 var end = months[index].AddMonths(1);
                 var toDate = CellFor(pnl, row => row.Month < end);
-                var cell = new RunningCell(ownCells[index], toDate.Income, toDate.Profit);
+                var cell = new RunningCell(ownCells[index], toDate.Income, toDate.Profit, previous);
                 cells.Add(cell);
-                moves.Add(cell.Running is decimal current && previous is decimal prior ? current - prior : null);
                 previous = cell.Running;
             }
             var windowDelta = cells[^1].Running is decimal last && baseline is decimal from ? last - from : (decimal?)null;
-            return (cells, moves, windowDelta);
+            return (cells, windowDelta);
         }
 
         var rows = new List<MovementRow>();
@@ -86,7 +91,7 @@ public partial class ProfitSummary
             var ownCells = months
                 .Select(month => CellFor(pnl, row => row.Month.Year == month.Year && row.Month.Month == month.Month))
                 .ToList();
-            var (runningCells, movements, windowDelta) = RunningFor(pnl, ownCells);
+            var (runningCells, windowDelta) = RunningFor(pnl, ownCells);
             var window = CellFor(pnl, row => row.Month >= months[0]);
             var running = CellFor(pnl, _ => true);
             // Stale needs history: a job whose data only starts inside the window isn't
@@ -98,7 +103,6 @@ public partial class ProfitSummary
             rows.Add(new MovementRow(
                 project,
                 runningCells,
-                movements,
                 window,
                 windowDelta,
                 running.Percent,
@@ -115,25 +119,16 @@ public partial class ProfitSummary
         var combinedOwn = months
             .Select(month => CellFor(combined, row => row.Month.Year == month.Year && row.Month.Month == month.Month))
             .ToList();
-        var (columnTotals, totalMovements, totalWindowDelta) = RunningFor(combined, combinedOwn);
+        var (columnTotals, totalWindowDelta) = RunningFor(combined, combinedOwn);
         var totalWindow = CellFor(combined, row => row.Month >= months[0]);
         var totalRunning = CellFor(combined, _ => true);
 
-        // Shade relative to the biggest movement, capped at 20pp so one wild early-job swing
-        // (a first deposit landing on months of cost) can't wash every other cell out.
-        var maxAbs = rows.SelectMany(row => row.MovementsPp)
-            .Where(move => move is not null)
-            .Select(move => Math.Abs(move!.Value))
-            .DefaultIfEmpty(0m)
-            .Max();
-        var shadeMax = Math.Min(maxAbs, 20m);
-
         return new MovementModel(
-            months, rows, columnTotals, totalMovements,
+            months, rows, columnTotals,
             totalWindow, totalWindowDelta,
             totalRunning.Percent,
             rows.Sum(row => row.PositionMoney),
-            excluded, shadeMax);
+            excluded, monthPercentFloor);
     }
 
     private List<TrajectoryCard> TrajectoriesFor(MovementModel movement)

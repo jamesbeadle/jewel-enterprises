@@ -67,6 +67,12 @@ public partial class ProfitSummary
         if (rows.Count > 1)
             AddRow("All projects", "", ProfitRow.TotalOf(rows), null);
 
+        // The running-profit grid travels with the table (Jeremy, 2026-09-07: "the Excel export
+        // of this grid carries the same small print and the same colour rule") — the same model
+        // the panel renders, in the same row order, on the same basis and floor.
+        if (MovementFor(GridProjects) is { } movement)
+            AddRunningProfitSheets(workbook, movement);
+
         return workbook;
     }
 }
