@@ -39,6 +39,9 @@
                     <button type="button" class="@ViewTabClass(true)" title="Status board — drag a card between columns to change its status" @onclick="() => SetView(true)">Board</button>
                     <button type="button" class="@ViewTabClass(false)" title="Flat list of open items" @onclick="() => SetView(false)">List</button>
                 </div>
+                @* Oldest/newest raised first for the open items — the same shared preference as
+                   the board/list choice (TodoViewStorage), one rule for the order (TodoSortOrder). *@
+                <button type="button" class="chip" title="@TodoSortOrder.Title(newestFirst)" @onclick="ToggleSort">⇅ @TodoSortOrder.Label(newestFirst)</button>
             }
             <a href="/todos" class="text-xs font-medium text-accent hover:underline">View all</a>
         </div>
@@ -132,6 +135,9 @@
     private IReadOnlyList<TodoItem> openItems = Array.Empty<TodoItem>();
     // Board (the default) or flat open-only list — the shared per-user preference (TodoViewStorage).
     private bool boardView = true;
+    // Open items newest raised first (true) or oldest first (false, the default — the server's
+    // number order) — the other shared per-user preference. Applied through TodoSortOrder.
+    private bool newestFirst;
     // The assigned-role filter ("" = all my roles) — the panel's items are all the reader's own,
     // so unlike the bigger lists there is no Unassigned answer to offer.
     private string roleFilter = "";
@@ -141,7 +147,9 @@
 
     protected override async Task OnInitializedAsync()
     {
-        boardView = await ViewStorage.ReadBoardAsync(Auth.CurrentUser?.Email ?? "");
+        var email = Auth.CurrentUser?.Email ?? "";
+        boardView = await ViewStorage.ReadBoardAsync(email);
+        newestFirst = await ViewStorage.ReadNewestFirstAsync(email);
 
         // Two independent reads — the list is the panel, the labels dress the rows' scope lines.
         // Neither needs the other, so they run together instead of one waiting behind the last.
@@ -220,11 +228,13 @@
     private bool MatchesRoleFilter(TodoItem item) =>
         roleFilter == "" || (int.TryParse(roleFilter, out var value) && item.AssigneeRole == (Role)value);
 
+    // Both views sorted through the one rule: the board's Open column keeps the host's order,
+    // so the direction is applied before the items are handed over.
     private IReadOnlyList<TodoItem> BoardItems =>
-        roleFilter == "" ? items : items.Where(MatchesRoleFilter).ToList();
+        TodoSortOrder.Apply(roleFilter == "" ? items : items.Where(MatchesRoleFilter), newestFirst);
 
     private IReadOnlyList<TodoItem> VisibleOpenItems =>
-        roleFilter == "" ? openItems : openItems.Where(MatchesRoleFilter).ToList();
+        TodoSortOrder.Apply(roleFilter == "" ? openItems : openItems.Where(MatchesRoleFilter), newestFirst);
 
     // The board card's project badge: reference AND name (the ref alone said nothing to anyone
     // not living in the numbering; the board truncates long names, hover for the full label), or
@@ -249,6 +259,12 @@
         if (boardView == board) return;
         boardView = board;
         await ViewStorage.WriteAsync(Auth.CurrentUser?.Email ?? "", board);
+    }
+
+    private async Task ToggleSort()
+    {
+        newestFirst = !newestFirst;
+        await ViewStorage.WriteNewestFirstAsync(Auth.CurrentUser?.Email ?? "", newestFirst);
     }
 
     private static bool IsOverdue(TodoItem item) =>

@@ -40,6 +40,9 @@ public partial class Todos
     // Board (the default) or flat list — read from TodoViewStorage per user, written back on
     // toggle, and shared with the project tab and the dashboard panel.
     private bool boardView = true;
+    // Open items newest raised first (true) or oldest first (false, the default — the server's
+    // number order) — the other shared per-user preference. Applied through TodoSortOrder.
+    private bool newestFirst;
     private string scopeFilter = ScopeAll;
     // The two assignee filters: a role (its int as a string, or Unassigned, "" = any) and a
     // person's email ("" = anyone). Independent — see MatchesAssigneeFilter.
@@ -84,6 +87,7 @@ public partial class Todos
         await Session.EnsureLoadedAsync();
         if (!Auth.IsSignedIn) { Nav.NavigateTo("/login", forceLoad: true); return; }
         boardView = await ViewStorage.ReadBoardAsync(Auth.CurrentUser!.Email);
+        newestFirst = await ViewStorage.ReadNewestFirstAsync(Auth.CurrentUser!.Email);
         // Paint the chrome before the fetches: Blazor re-renders OnInitializedAsync only at its
         // FIRST await, which has already passed, so without this the page waits on the list.
         StateHasChanged();

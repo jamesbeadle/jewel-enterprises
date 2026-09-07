@@ -184,8 +184,10 @@
     // still fires when the drop lands outside any column, so the highlight can't stick.
     private TodoItem? dragging;
 
-    // Open cards keep the host's order (the server's open-first ordering); done cards read
-    // newest-done-first, which is also what a Done cap should keep when one is set.
+    // Open cards keep the host's order (the server's number order, turned over when the reader
+    // picks Newest first — TodoSortOrder, applied by the host); done cards read newest-done-first
+    // whichever way the open pile is turned, which is also what a Done cap should keep when one
+    // is set.
     private IReadOnlyList<TodoItem> ItemsFor(bool done) =>
         done
             ? Items.Where(i => i.IsComplete).OrderByDescending(i => i.CompletedAt ?? DateTimeOffset.MinValue).ToList()

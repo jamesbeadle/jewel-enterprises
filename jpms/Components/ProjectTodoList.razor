@@ -48,6 +48,9 @@
                     <button type="button" class="@ViewTabClass(true)" title="Status board — drag a card between columns to change its status" @onclick="() => SetView(true)">Board</button>
                     <button type="button" class="@ViewTabClass(false)" title="Flat list" @onclick="() => SetView(false)">List</button>
                 </div>
+                @* Oldest/newest raised first for the open items — the same shared preference as
+                   the board/list choice (TodoViewStorage), one rule for the order (TodoSortOrder). *@
+                <button type="button" class="chip" title="@TodoSortOrder.Title(newestFirst)" @onclick="ToggleSort">⇅ @TodoSortOrder.Label(newestFirst)</button>
             }
             @if (CanManage && !loading)
             {
@@ -104,7 +107,9 @@
         }
         else
         {
-            var visible = items.Where(item => MatchesRoleFilter(item) && (!HasQuery || MatchesTodo(item))).ToList();
+            // Sorted through the one rule before the split — the board's Open column keeps this
+            // order, and the list's open block reads it straight.
+            var visible = TodoSortOrder.Apply(items.Where(item => MatchesRoleFilter(item) && (!HasQuery || MatchesTodo(item))), newestFirst);
             var open = visible.Where(i => !i.IsComplete).ToList();
             var done = visible.Where(i => i.IsComplete).ToList();
 

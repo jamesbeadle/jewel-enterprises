@@ -95,6 +95,14 @@
                 <button type="button" class="@ViewTabClass(false)" title="Flat list with status tabs" @onclick="() => SetView(false)">List</button>
             </div>
 
+            @* Oldest/newest raised first for the OPEN items — the same shared preference as the
+               board/list choice (TodoViewStorage), one rule for the order (TodoSortOrder). The
+               done pile always reads most recently completed first, so on the list's Done tab
+               the toggle is disabled (never hidden) and says why. *@
+            <button type="button" class="chip disabled:opacity-60 mr-1" disabled="@SortToggleIdle"
+                    title="@(SortToggleIdle ? "Done items always read most recently completed first — the order applies to open items" : TodoSortOrder.Title(newestFirst))"
+                    @onclick="ToggleSort">⇅ @TodoSortOrder.Label(newestFirst)</button>
+
             @if (!boardView)
             {
                 @* Disabled (never hidden) while a query is live — the search looks across every

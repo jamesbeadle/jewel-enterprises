@@ -1,4 +1,5 @@
 using Jewel.JPMS.Contracts.Todos;
+using Jewel.JPMS.Features.Todos;
 
 namespace Jewel.JPMS.Pages;
 
@@ -6,17 +7,20 @@ public partial class Todos
 {
     // Everything the scope and assignee filters — and the search — leave standing: the BOARD's
     // item set (it shows both statuses as columns, so the status filter is not applied here).
+    // Sorted through the one rule (TodoSortOrder) before it leaves: the board's Open column
+    // keeps the host's order, and the list below narrows this set without reordering it.
     private IReadOnlyList<TodoItem> FilteredItems =>
-        items
-            .Where(item => scopeFilter switch
-            {
-                ScopeAll => true,
-                ScopeGeneral => IsGeneral(item),
-                _ => item.ProjectId == scopeFilter
-            })
-            .Where(item => MatchesAssigneeFilter(item))
-            .Where(item => !HasQuery || MatchesTodo(item))
-            .ToList();
+        TodoSortOrder.Apply(
+            items
+                .Where(item => scopeFilter switch
+                {
+                    ScopeAll => true,
+                    ScopeGeneral => IsGeneral(item),
+                    _ => item.ProjectId == scopeFilter
+                })
+                .Where(item => MatchesAssigneeFilter(item))
+                .Where(item => !HasQuery || MatchesTodo(item)),
+            newestFirst);
 
     // The LIST's item set: the filtered items narrowed further by the Open/Done/All tabs — except
     // while a query is live, when the search looks across every status (the tabs render disabled).
@@ -120,5 +124,15 @@ public partial class Todos
         if (boardView == board) return;
         boardView = board;
         await ViewStorage.WriteAsync(Auth.CurrentUser!.Email, board);
+    }
+
+    // The sort direction applies to OPEN items only (TodoSortOrder), so the list's Done tab —
+    // with no query, which would bring the open items back in — has nothing for it to turn.
+    private bool SortToggleIdle => !boardView && !HasQuery && statusFilter == StatusFilter.Done;
+
+    private async Task ToggleSort()
+    {
+        newestFirst = !newestFirst;
+        await ViewStorage.WriteNewestFirstAsync(Auth.CurrentUser!.Email, newestFirst);
     }
 }

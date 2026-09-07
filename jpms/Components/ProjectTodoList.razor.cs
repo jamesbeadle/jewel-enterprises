@@ -20,6 +20,9 @@ public partial class ProjectTodoList
     private string? error;
     // Board (the default) or flat list — the shared per-user preference (TodoViewStorage).
     private bool boardView = true;
+    // Open items newest raised first (true) or oldest first (false, the default — the server's
+    // number order) — the other shared per-user preference. Applied through TodoSortOrder.
+    private bool newestFirst;
     // The assigned-role filter: "" = any, UnassignedFilter, or a Role's int as a string.
     private const string UnassignedFilter = "__unassigned__";
     private string roleFilter = "";
@@ -51,7 +54,9 @@ public partial class ProjectTodoList
 
     protected override async Task OnInitializedAsync()
     {
-        boardView = await ViewStorage.ReadBoardAsync(Auth.CurrentUser?.Email ?? "");
+        var email = Auth.CurrentUser?.Email ?? "";
+        boardView = await ViewStorage.ReadBoardAsync(email);
+        newestFirst = await ViewStorage.ReadNewestFirstAsync(email);
 
         // Related-record sources for the keyword search. Refresh on entry per the store
         // convention: cached requests/drawings serve matches immediately, then update when the
@@ -253,6 +258,12 @@ public partial class ProjectTodoList
         if (boardView == board) return;
         boardView = board;
         await ViewStorage.WriteAsync(Auth.CurrentUser?.Email ?? "", board);
+    }
+
+    private async Task ToggleSort()
+    {
+        newestFirst = !newestFirst;
+        await ViewStorage.WriteNewestFirstAsync(Auth.CurrentUser?.Email ?? "", newestFirst);
     }
 
     private static bool IsOverdue(TodoItem item) =>
