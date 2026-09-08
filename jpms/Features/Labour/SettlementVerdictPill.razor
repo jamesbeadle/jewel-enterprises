@@ -4,7 +4,7 @@
 @switch (Schedule.Verdict)
 {
     case ScheduleVerdict.Matches:
-        <Pill Tone="Tone.Positive">Matches</Pill>
+        <Pill Tone="Tone.Positive" Title="@(Schedule.PostedVariance == 0m ? null : $"Matches with a £{Schedule.PostedVariance:N2} variance posted")">Matches</Pill>
         break;
     case ScheduleVerdict.VarianceOpen:
         <Pill Tone="Tone.Negative" Title="@($"Covered bill differs by £{Schedule.Difference:N2}")">Variance £@Math.Abs(Schedule.Difference).ToString("N0")</Pill>

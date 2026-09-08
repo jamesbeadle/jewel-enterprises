@@ -73,6 +73,7 @@ internal static class AiLabourMonthEndTools
                             cisDeduction = worker.CisDeduction,
                             netPayable = worker.NetPayable,
                             coveredBillTotal = worker.CoveredBillTotal,
+                            postedVariance = worker.PostedVariance,
                             difference = worker.Difference,
                             lastCodingOutcome = string.IsNullOrWhiteSpace(worker.LastCodingOutcome) ? null : worker.LastCodingOutcome,
                             lastCodedAt = worker.LastCodedAt,
@@ -83,7 +84,8 @@ internal static class AiLabourMonthEndTools
                                 status = worker.CoveredBill.Status,
                                 total = worker.CoveredBill.Total,
                                 workerNames = worker.CoveredBill.WorkerNames,
-                                isApprovable = worker.CoveredBill.IsApprovable
+                                isApprovable = worker.CoveredBill.IsApprovable,
+                                lineIds = worker.CoveredBill.LineIds
                             },
                             lines = worker.Lines.Select(line => new
                             {
@@ -104,7 +106,9 @@ internal static class AiLabourMonthEndTools
                             + "DRAFT only where no bill exists. coveredBill names the bill a worker's "
                             + "month is covered by and its status; once every worker on it reads Matches "
                             + "(isApprovable), approve_labour_bill (confirm-first) takes it DRAFT → "
-                            + "AUTHORISED in Xero. add_labour_settlement_variance posts an accepted difference. A "
+                            + "AUTHORISED in Xero. add_labour_settlement_variance posts an accepted difference — "
+                            + "against one of the worker's coveredBill.lineIds, which is what nets it into this "
+                            + "month (postedVariance; difference and verdict read net of it). A "
                             + "verdict of NoBillYet with lastCodingOutcome DraftStaged means the staged "
                             + "draft is awaiting approval in Xero, not a missing invoice; lastCodingOutcome "
                             + "Reset means a person reopened the month for the run."

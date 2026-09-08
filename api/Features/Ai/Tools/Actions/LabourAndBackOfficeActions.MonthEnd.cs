@@ -111,8 +111,10 @@ internal sealed partial class LabourAndBackOfficeActions
                 + "worker, so each worker's verdict reads on their own lines; one unsigned worker "
                 + "holds the whole company bill and every worker's outcome says so. A matched bill "
                 + "Xero says is voided is followed to its live re-issue under the same contact, "
-                + "number and period. Returns per-worker outcomes: BillRecoded, DraftStaged, "
-                + "Skipped or Failed, each with the detail in the run's own words.",
+                + "number and period; of several live bills sharing a number it takes the one whose "
+                + "net is the schedule's, else the newest, and says so in the outcome — only two it "
+                + "cannot tell apart stop the run. Returns per-worker outcomes: BillRecoded, "
+                + "DraftStaged, Skipped or Failed, each with the detail in the run's own words.",
             CommandType: typeof(RunXeroCodingByName),
             ResultType: typeof(XeroCodingRunReport),
             AuthorisationType: typeof(RunXeroCodingByNameAuthorisation),
@@ -226,10 +228,14 @@ internal sealed partial class LabourAndBackOfficeActions
             RequiresConfirmation: true,
             Notes: "projectId from list_projects; costCode from list_cost_codes; amount is the "
                 + "signed difference being accepted (positive = paying more than the timesheets "
-                + "say); reason is mandatory and shows on the settlement view; xeroLedgerLineId "
-                + "ties it to the bill line when there is one. In the confirm turn put the "
-                + "schedule total, the bill total and the difference side by side — re-coding or "
-                + "chasing a corrected invoice may be the honest route instead."),
+                + "say); reason is mandatory and shows on the settlement view. xeroLedgerLineId is "
+                + "one of the worker's covered lines (view_settlement_month's coveredBill.lineIds) "
+                + "and is what nets the variance into that worker's month (8 Sep 2026): with it, the "
+                + "settlement verdict reads Matches once covered + variance = schedule and the bill "
+                + "becomes approvable; without it the variance counts only on the per-project view. "
+                + "In the confirm turn put the schedule total, the bill total and the difference "
+                + "side by side — re-coding or chasing a corrected invoice may be the honest route "
+                + "instead."),
 
         new AiAction(
             Name: "set_site_xero_mapping",
