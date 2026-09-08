@@ -79,6 +79,10 @@ public sealed class XeroLineTimesheetCoverEntity
     [MaxLength(140)]      public string XeroLedgerLineId { get; set; } = "";
     [MaxLength(64)]       public string ProjectId { get; set; } = "";
     [MaxLength(64)]       public string SubcontractorId { get; set; } = "";
+    // The worker this line settles (2026-09-08): the coding run marks a company bill's cover per
+    // worker, so each worker's schedule reconciles against their own lines. Null is the
+    // counterparty's cover as a whole — a cover marked by hand, or from before this column.
+    [MaxLength(64)]       public string? WorkerId { get; set; }
     public DateTimeOffset PeriodStart { get; set; }
     public DateTimeOffset PeriodEnd { get; set; }
     [MaxLength(256)]      public string CreatedByEmail { get; set; } = "";

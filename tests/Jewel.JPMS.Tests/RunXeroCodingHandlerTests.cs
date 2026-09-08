@@ -247,17 +247,38 @@ public sealed class RunXeroCodingHandlerTests
     }
 
     [Fact]
-    public async Task TwoBillsThatBothLookLikeTheWorkersAreSkippedAndListed()
+    public async Task TwoBillsThatBothLookLikeTheWorkersAndBothStandAreSkippedAndListed()
     {
         var fixture = await Fixture.SignedOff(true);
         fixture.Context.XeroLedgerLines.Add(LedgerLine("bill-1:a", "bill-1", "Adam Midgley", "Aug 2026", new DateTime(2026, 8, 25), 1600m));
         fixture.Context.XeroLedgerLines.Add(LedgerLine("bill-2:a", "bill-2", "Adam Midgley", "INV-9", new DateTime(2026, 9, 2), 800m));
         await fixture.Context.SaveChangesAsync();
+        fixture.Xero.Bills["bill-1"] = Bill("AUTHORISED", 1600m);
+        fixture.Xero.Bills["bill-2"] = Bill("AUTHORISED", 800m, invoiceNumber: "INV-9");
 
         var adam = Assert.Single(await fixture.RunAsync());
 
         Assert.Equal(XeroCodingOutcome.Skipped, adam.Outcome);
         Assert.Equal("2 bills in Xero look like Adam Midgley's for Aug 2026: \"Aug 2026\" (AUTHORISED, £1,600.00), \"INV-9\" (AUTHORISED, £800.00). Mark the right one as settlement on the Cost allocation page's Labour tab, then re-run.", adam.Detail);
+        Assert.Equal(new[] { "GetBill:bill-1", "GetBill:bill-2" }, fixture.Xero.Calls);
+    }
+
+    [Fact]
+    public async Task OfTwoBillsThatLookLikeTheWorkersTheOneXeroHasVoidedIsDroppedAndTheOtherRecoded()
+    {
+        var fixture = await Fixture.SignedOff(true);
+        fixture.Context.XeroLedgerLines.Add(LedgerLine("bill-1:a", "bill-1", "Adam Midgley", "Aug 2026", new DateTime(2026, 8, 25), 1600m));
+        fixture.Context.XeroLedgerLines.Add(LedgerLine("bill-2:a", "bill-2", "Adam Midgley", "Aug 2026", new DateTime(2026, 9, 2), 1600m));
+        await fixture.Context.SaveChangesAsync();
+        fixture.Xero.Bills["bill-1"] = Bill("VOIDED", 1600m);
+        fixture.Xero.Bills["bill-2"] = Bill("AUTHORISED", 1600m) with { InvoiceId = "bill-2" };
+        fixture.Xero.RecodedLineIds = new[] { "new-1", "new-2" };
+
+        var adam = Assert.Single(await fixture.RunAsync());
+
+        Assert.Equal((XeroCodingOutcome.BillRecoded, "bill-2"), (adam.Outcome, adam.XeroBillId));
+        Assert.Equal(new[] { "GetBill:bill-1", "GetBill:bill-2", "GetBill:bill-2", "RecodeBill:bill-2" }, fixture.Xero.Calls);
+        Assert.All(fixture.Context.XeroLineTimesheetCovers, cover => Assert.Equal("W-ADAM", cover.WorkerId));
     }
 
     [Fact]
@@ -389,56 +410,5 @@ public sealed class RunXeroCodingHandlerTests
                 .HandleAsync(new RunXeroCoding(2026, 8, workerIds, dryRun), "accounts@jewelbb.co.uk", CancellationToken.None);
 
         public List<XeroCodingRunEntity> Runs() => Context.XeroCodingRuns.AsNoTracking().OrderBy(run => run.RunAt).ToList();
-    }
-
-    /// <summary>Xero as the run sees it: bills by id, a draft that lands with a given id, a recode
-    /// that answers with fresh line ids — every call recorded in order.</summary>
-    private sealed class RecordingXero : IXeroClient
-    {
-        public List<string> Calls { get; } = new();
-        public Dictionary<string, XeroBillSummary?> Bills { get; } = new();
-        public string StagedBillId { get; set; } = "";
-        public string[] RecodedLineIds { get; set; } = Array.Empty<string>();
-        public XeroDraftBillRequest? Draft { get; private set; }
-        public XeroBillCodingRequest? Recode { get; private set; }
-
-        public bool IsConfigured => true;
-
-        public Task<XeroBillSummary?> GetBillAsync(string invoiceId, CancellationToken ct)
-        {
-            Calls.Add($"GetBill:{invoiceId}");
-            return Task.FromResult(Bills.TryGetValue(invoiceId, out var bill) ? bill : null);
-        }
-
-        public Task<XeroApprovalResult> CreateDraftBillAsync(XeroDraftBillRequest request, CancellationToken ct)
-        {
-            Calls.Add("CreateDraftBill");
-            Draft = request;
-            return Task.FromResult(XeroApprovalResult.Ok(StagedBillId, "Tax from the contact."));
-        }
-
-        public Task<XeroBillRecodeResult> RecodeBillAsync(XeroBillCodingRequest request, CancellationToken ct)
-        {
-            Calls.Add($"RecodeBill:{request.InvoiceId}");
-            Recode = request;
-            var before = Bills[request.InvoiceId]!;
-            var lines = request.Lines.Select((line, index) => new XeroRecodedLine(
-                RecodedLineIds[index], line.Description, line.Net, 0m, line.AccountCode, line.SiteOption, line.CostCodeOption)).ToList();
-            return Task.FromResult(new XeroBillRecodeResult(true, null, before.Status, before.LineAmountTypes, before.TaxType,
-                before.SubTotal, before.TotalTax, before.Total, lines));
-        }
-
-        public Task<XeroTransactionsSnapshot> GetPurchaseInvoicesAsync(bool force, CancellationToken ct) => throw new NotSupportedException();
-        public Task<XeroCashSummarySnapshot> GetCashSummaryAsync(bool force, CancellationToken ct) => throw new NotSupportedException();
-        public Task<XeroAgedPayablesSnapshot> GetAgedPayablesAsync(bool force, CancellationToken ct) => throw new NotSupportedException();
-        public Task<XeroAgedReceivablesSnapshot> GetAgedReceivablesAsync(bool force, CancellationToken ct) => throw new NotSupportedException();
-        public Task<XeroSuppliersSnapshot> GetSuppliersAsync(bool force, CancellationToken ct) => throw new NotSupportedException();
-        public Task<XeroTrackingCategoriesSnapshot> GetTrackingCategoriesSnapshotAsync(bool force, CancellationToken ct) => throw new NotSupportedException();
-        public Task<XeroApprovalResult> ApproveInvoiceAsync(XeroApprovalRequest request, CancellationToken ct) => throw new NotSupportedException();
-        public Task<XeroApprovalResult> SetSiteTrackingAsync(XeroSiteTrackingRequest request, CancellationToken ct) => throw new NotSupportedException();
-        public Task<IReadOnlyList<XeroInvoiceAttachment>> ListAttachmentsAsync(string invoiceId, bool isCreditNote, CancellationToken ct) => throw new NotSupportedException();
-        public Task<XeroAttachmentContent?> GetAttachmentAsync(string invoiceId, bool isCreditNote, string fileName, CancellationToken ct) => throw new NotSupportedException();
-        public Task<IReadOnlyList<XeroSitePnlMonthFigures>> GetSiteMonthlyPnlAsync(string siteOption, DateTime fromMonth, DateTime toMonth, CancellationToken ct) => throw new NotSupportedException();
-        public Task<XeroSitePnlRangeFigures?> GetSiteRangePnlAsync(string siteOption, DateTime fromDate, DateTime toDate, CancellationToken ct) => throw new NotSupportedException();
     }
 }

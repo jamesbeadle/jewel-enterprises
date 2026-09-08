@@ -1,7 +1,5 @@
 using Jewel.JPMS.Api.Data.Entities;
 using Jewel.JPMS.Api.Features.Xero;
-using Jewel.JPMS.Contracts.Xero;
-using static Jewel.JPMS.Api.Features.Labour.Commands.XeroCodingWording;
 
 namespace Jewel.JPMS.Api.Features.Labour.Commands;
 
@@ -10,12 +8,15 @@ public sealed partial class RunXeroCodingHandler
     /// <summary>
     /// Item B: Xero issued new line ids, so the stored ledger lines are replaced with the fresh
     /// ones and every cover on the old lines is re-created on the new labour lines — same
-    /// counterparty, same period, same project scope — all in the tracked context, saved with
-    /// the run record. Only cost-of-sales lines are stored (the sync's own rule), so a cover
-    /// never points at a line the next sync would drop. Returns how many lines now carry cover.
+    /// counterparty, same period, same project scope, and now the worker each line settles
+    /// (J: a company bill's cover is marked per worker) — all in the tracked context, saved with
+    /// the run record. The old lines include a voided predecessor's (K), so nothing stays pointed
+    /// at a bill Xero has dropped. Only cost-of-sales lines are stored (the sync's own rule), so a
+    /// cover never points at a line the next sync would drop. Returns how many lines now carry
+    /// each worker's cover.
     /// </summary>
-    private async Task<int> RepointCoverAndLedgerAsync(
-        WorkerRun run, string billId, List<XeroLedgerLineEntity> storedLines, XeroBillSummary before,
+    private async Task<Dictionary<string, int>> RepointCoverAndLedgerAsync(
+        CodingParty party, XeroBillSummary bill, List<XeroLedgerLineEntity> storedLines, List<CodedLine> codedLines,
         XeroBillRecodeResult recode, CancellationToken cancellationToken)
     {
         // EVERY cover on the bill's old lines, whatever month or project it was marked under —
@@ -28,7 +29,7 @@ public sealed partial class RunXeroCodingHandler
                 .Where(cover => storedIds.Contains(cover.XeroLedgerLineId))
                 .ToListAsync(cancellationToken);
         var coverTemplate = oldCovers
-            .OrderByDescending(cover => cover.SubcontractorId == run.Schedule.SubcontractorId)
+            .OrderByDescending(cover => cover.SubcontractorId == party.CounterpartyId)
             .ThenBy(cover => cover.PeriodStart)
             .FirstOrDefault();
         var now = DateTimeOffset.UtcNow;
@@ -36,32 +37,41 @@ public sealed partial class RunXeroCodingHandler
         foreach (var cover in oldCovers) context.XeroLineTimesheetCovers.Remove(cover);
         foreach (var line in storedLines) context.XeroLedgerLines.Remove(line);
 
-        var covered = 0;
-        foreach (var line in recode.Lines)
+        var coveredByWorker = party.Workers.ToDictionary(worker => worker.WorkerId, _ => 0);
+        foreach (var (line, position) in recode.Lines.Select((line, position) => (line, position)))
         {
             if (string.IsNullOrEmpty(line.LineItemId) || !IsCostOfSales(line.AccountCode)) continue;
-            var entity = RecodedLedgerLine(billId, line, storedLines, before, recode, now);
+            var entity = RecodedLedgerLine(bill.InvoiceId, line, storedLines, bill, recode, now);
+            var worker = WorkerOf(codedLines, line, position);
             context.XeroLedgerLines.Add(entity);
-            context.XeroLineTimesheetCovers.Add(CoverFor(run, entity, coverTemplate, now));
-            covered++;
+            context.XeroLineTimesheetCovers.Add(CoverFor(party, worker, entity, coverTemplate, now));
+            if (worker is not null) coveredByWorker[worker.WorkerId]++;
         }
-        return covered;
+        return coveredByWorker;
     }
+
+    /// <summary>The worker a fresh line settles: the line the run sent with that description,
+    /// else the line sent in that position; a line neither answers for is covered for the
+    /// counterparty as a whole rather than attributed to the wrong worker.</summary>
+    private static WorkerRun? WorkerOf(List<CodedLine> codedLines, XeroRecodedLine line, int position) =>
+        codedLines.FirstOrDefault(coded => coded.Line.Description == line.Description)?.Worker
+        ?? (position < codedLines.Count ? codedLines[position].Worker : null);
 
     /// <summary>Every recoded line settles the month. A bill that was covered keeps the cover's
     /// own scope (project, period, who marked it); a bill found by recognition is marked
     /// worker-month scoped — ProjectId "" — the same mark the Labour tab's "Mark as settlement"
     /// makes.</summary>
     private static XeroLineTimesheetCoverEntity CoverFor(
-        WorkerRun run, XeroLedgerLineEntity line, XeroLineTimesheetCoverEntity? coverTemplate, DateTimeOffset now) => new()
+        CodingParty party, WorkerRun? worker, XeroLedgerLineEntity line, XeroLineTimesheetCoverEntity? coverTemplate, DateTimeOffset now) => new()
     {
         XeroLineTimesheetCoverId = LabourIdentifierFactory.NextXeroLineTimesheetCoverId(),
         XeroLedgerLineId = line.XeroLedgerLineId,
         ProjectId = coverTemplate?.ProjectId ?? "",
-        SubcontractorId = coverTemplate?.SubcontractorId ?? run.Schedule.SubcontractorId ?? "",
-        PeriodStart = coverTemplate?.PeriodStart ?? run.MonthStart,
-        PeriodEnd = coverTemplate?.PeriodEnd ?? run.MonthEnd,
-        CreatedByEmail = coverTemplate?.CreatedByEmail ?? run.RunByEmail,
+        SubcontractorId = coverTemplate?.SubcontractorId ?? party.CounterpartyId ?? "",
+        WorkerId = worker?.WorkerId,
+        PeriodStart = coverTemplate?.PeriodStart ?? party.MonthStart,
+        PeriodEnd = coverTemplate?.PeriodEnd ?? party.Month.End,
+        CreatedByEmail = coverTemplate?.CreatedByEmail ?? party.Workers[0].RunByEmail,
         CreatedAt = now,
     };
 

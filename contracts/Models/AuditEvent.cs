@@ -132,7 +132,13 @@ public enum AuditEventType
     // LabourBudgetOverridden, exactly as an over-budget approval does. Not client-facing:
     // Pathway is "", like CostCentreRecoded.
     LabourApprovalReversed = 40,     // an approved timesheet was put back to Submitted, its posted cost withdrawn
-    LabourDayMoved = 41              // a timesheet was moved to another project (status, hours and snapshot kept)
+    LabourDayMoved = 41,             // a timesheet was moved to another project (status, hours and snapshot kept)
+    // Directory ↔ Xero linking (written since 2026-09-08, the accountant's ask): an existing
+    // directory record was linked to a Xero contact — or a link was taken off — without importing
+    // a second record. The link decides which Xero supplier a company's bills reconcile against,
+    // so who made it is a matter of record, exactly like WorkerLinkedToDirectory. Not
+    // client-facing: Pathway is "".
+    DirectoryRecordXeroLinkChanged = 42 // a directory record was linked to (or unlinked from) a Xero contact
 }
 
 // One append-only audit event. WebLink (when present) opens the email or draft in Outlook on the

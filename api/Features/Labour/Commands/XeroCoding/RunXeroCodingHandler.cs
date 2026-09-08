@@ -5,10 +5,12 @@ using Jewel.JPMS.Contracts.Labour;
 namespace Jewel.JPMS.Api.Features.Labour.Commands;
 
 /// <summary>
-/// The §6a coding run: one worker-month at a time, through the gates in <c>.Gates</c>, to either
-/// a recode of the worker's own bill (<c>.Recode</c>, re-pointing the ledger and cover in
-/// <c>.Repoint</c>) or a staged draft (<c>.Draft</c>). The month's reads live in
-/// <c>.MonthReads</c>, bill recognition in <c>.Recognition</c>, the words in <c>.Wording</c>.
+/// The §6a coding run: one settlement party at a time — a sole trader alone, or every worker a
+/// company bills on one invoice (<c>.Parties</c>) — through the gates in <c>.Gates</c> and
+/// <c>.RunOnce</c>, to either a recode of the party's own bill (<c>.Recode</c>, re-pointing the
+/// ledger and cover in <c>.Repoint</c>) or a staged draft (<c>.Draft</c>). The month's reads live
+/// in <c>.MonthReads</c>, bill recognition in <c>.FindBill</c> / <c>.Recognition</c>, a voided
+/// bill's re-issue in <c>.Reissue</c>, the words in <c>.Sentences</c> and <c>XeroCodingWording</c>.
 /// </summary>
 public sealed partial class RunXeroCodingHandler : ICommandHandler<RunXeroCoding, IReadOnlyList<XeroCodingRunResult>>
 {
@@ -30,15 +32,13 @@ public sealed partial class RunXeroCodingHandler : ICommandHandler<RunXeroCoding
         var wanted = command.WorkerIds is { Count: > 0 } ? command.WorkerIds.ToHashSet() : null;
 
         var results = new List<XeroCodingRunResult>();
-        foreach (var schedule in snapshot.Workers)
+        foreach (var party in SettlementParties(snapshot, month, runByEmail, command.DryRun))
         {
-            if (wanted is not null && !wanted.Contains(schedule.WorkerId)) continue;
-            if (schedule.Verdict == ScheduleVerdict.Nothing) continue;
+            if (wanted is not null && !party.Workers.Any(worker => wanted.Contains(worker.WorkerId))) continue;
 
-            var latest = month.LatestRuns.TryGetValue(schedule.WorkerId, out var run) ? run : null;
-            var result = await CodeWorkerMonthAsync(new WorkerRun(schedule, month, latest, runByEmail, command.DryRun), cancellationToken);
-            results.Add(result);
-            if (!command.DryRun) context.XeroCodingRuns.Add(RunRecord(result, month.Start, runByEmail));
+            var outcomes = await CodePartyMonthAsync(party, cancellationToken);
+            results.AddRange(outcomes);
+            if (!command.DryRun) context.XeroCodingRuns.AddRange(outcomes.Select(outcome => RunRecord(outcome, month.Start, runByEmail)));
         }
         // A dry run has changed nothing tracked; saving is harmless but pointless.
         if (!command.DryRun) await context.SaveChangesAsync(cancellationToken);
@@ -66,11 +66,17 @@ public sealed partial class RunXeroCodingHandler : ICommandHandler<RunXeroCoding
         string RunByEmail,
         bool DryRun)
     {
+        /// <summary>What every outcome for this worker starts with — why a month already written
+        /// is being written again, or that the bill the ledger named has been re-issued. Empty
+        /// until a gate sets it.</summary>
+        public string Preface { get; set; } = "";
+        public string WorkerId => Schedule.WorkerId;
+        public string WorkerName => Schedule.WorkerName;
         public DateTimeOffset MonthStart => Month.Start;
         public DateTimeOffset MonthEnd => Month.End;
 
         public XeroCodingRunResult Outcome(XeroCodingOutcome outcome, string detail, string billId = "") =>
-            new(Schedule.WorkerId, Schedule.WorkerName, outcome, detail, billId);
+            new(Schedule.WorkerId, Schedule.WorkerName, outcome, Preface + detail, billId);
 
         public XeroCodingRunResult Skip(string why, string billId = "") => Outcome(XeroCodingOutcome.Skipped, why, billId);
 

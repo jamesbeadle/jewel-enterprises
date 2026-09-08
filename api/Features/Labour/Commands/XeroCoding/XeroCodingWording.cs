@@ -7,6 +7,11 @@ namespace Jewel.JPMS.Api.Features.Labour.Commands;
 /// <summary>How the coding run names things in the outcomes it records.</summary>
 internal static class XeroCodingWording
 {
+    public const string NotSignedOff = "Not every week with approved time is signed off — sign the month off first.";
+
+    public const string NoSettlementIdentity = "The worker has no settlement identity — link a subcontractor company or flag "
+        + "them a sole trader (Workers page, or the allocation page's inline fix) so the run knows whose bill to look for.";
+
     public static bool IsGone(string status) =>
         status.Equals("VOIDED", StringComparison.OrdinalIgnoreCase)
         || status.Equals("DELETED", StringComparison.OrdinalIgnoreCase);
@@ -21,8 +26,8 @@ internal static class XeroCodingWording
         : !string.IsNullOrWhiteSpace(line.Reference) ? $"\"{line.Reference}\""
         : line.XeroInvoiceId;
 
-    public static string LinesSummary(IReadOnlyList<XeroScheduleLine> lines) =>
-        "Lines: " + string.Join("; ", lines.Select(line => $"{line.SiteOption} / {line.CostCodeOption} → {line.AccountCode} £{line.Net:N2}")) + ".";
+    public static string LinesSummary(IReadOnlyList<XeroScheduleLine> lines, string label = "Lines") =>
+        $"{label}: " + string.Join("; ", lines.Select(line => $"{line.SiteOption} / {line.CostCodeOption} → {line.AccountCode} £{line.Net:N2}")) + ".";
 
     public static string NatureLabel(SettlementLineNature nature) => nature switch
     {

@@ -56,7 +56,9 @@ public sealed record XeroSupplier(
     bool IsSupplier = false,
     bool IsCustomer = false,
     bool AlreadyImported = false,
-    string? LinkedSubcontractorId = null);
+    string? LinkedSubcontractorId = null,
+    string? MatchingSubcontractorId = null,
+    string MatchingSubcontractorName = "");
 
 /// <summary>An additional person on a Xero contact (Xero's ContactPersons list).</summary>
 public sealed record XeroContactPerson(string Name, string EmailAddress);

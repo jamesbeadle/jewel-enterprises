@@ -1,9 +1,7 @@
 using Jewel.JPMS.Api.Data.Entities;
 using Jewel.JPMS.Api.Features.Audit;
 using Jewel.JPMS.Api.Features.Labour;
-using Jewel.JPMS.Api.Features.Xero;
 using Jewel.JPMS.Contracts.Subcontractors;
-using Jewel.JPMS.Contracts.Xero;
 
 namespace Jewel.JPMS.Api.Features.Subcontractors.Commands;
 
@@ -12,19 +10,21 @@ namespace Jewel.JPMS.Api.Features.Subcontractors.Commands;
 /// — those are curated by hand afterwards), a SubcontractorXeroLink row marking the record linked
 /// to Xero, and one company contact row per Xero contact person. Importing never merges into an
 /// existing record — duplicates are resolved afterwards through ConsolidateDirectoryRecords, so
-/// there is one consistent flow for all duplicates.
+/// there is one consistent flow for all duplicates — and a supplier that already HAS a record is
+/// linked to it with LinkDirectoryRecordToXeroContact instead of imported (the modal offers that
+/// when the names match).
 /// </summary>
 public sealed class ImportXeroSupplierHandler : ICommandHandler<ImportXeroSupplier, Subcontractor>
 {
     private readonly JpmsContext context;
-    private readonly IXeroClient xero;
+    private readonly XeroSupplierLookup xeroSuppliers;
     private readonly AuditActor actor;
     private readonly AuditTrail audit;
 
-    public ImportXeroSupplierHandler(JpmsContext context, IXeroClient xero, AuditActor actor, AuditTrail audit)
+    public ImportXeroSupplierHandler(JpmsContext context, XeroSupplierLookup xeroSuppliers, AuditActor actor, AuditTrail audit)
     {
         this.context = context;
-        this.xero = xero;
+        this.xeroSuppliers = xeroSuppliers;
         this.actor = actor;
         this.audit = audit;
     }
@@ -38,7 +38,7 @@ public sealed class ImportXeroSupplierHandler : ICommandHandler<ImportXeroSuppli
         if (alreadyLinked)
             throw new InvalidOperationException("That Xero supplier has already been imported into the directory.");
 
-        var supplier = await FindSupplierAsync(command.XeroContactId, cancellationToken);
+        var supplier = await xeroSuppliers.FindAsync(command.XeroContactId, cancellationToken);
 
         var entity = new SubcontractorEntity
         {
@@ -58,7 +58,7 @@ public sealed class ImportXeroSupplierHandler : ICommandHandler<ImportXeroSuppli
         };
         context.Subcontractors.Add(entity);
 
-        context.SubcontractorXeroLinks.Add(new SubcontractorXeroLinkEntity
+        var link = new SubcontractorXeroLinkEntity
         {
             SubcontractorXeroLinkId = SubcontractorIdentifierFactory.NextSubcontractorXeroLinkId(),
             SubcontractorId = entity.SubcontractorId,
@@ -66,7 +66,8 @@ public sealed class ImportXeroSupplierHandler : ICommandHandler<ImportXeroSuppli
             XeroContactName = supplier.Name,
             ImportedAt = DateTimeOffset.UtcNow,
             ImportedByEmail = actor.Email
-        });
+        };
+        context.SubcontractorXeroLinks.Add(link);
 
         // Xero's additional contact persons come across as company contacts, so nothing Xero
         // holds about who to talk to is lost. The first person also seeds the primary line above.
@@ -118,30 +119,6 @@ public sealed class ImportXeroSupplierHandler : ICommandHandler<ImportXeroSuppli
                 $"Xero import: worker {name} auto-linked to {supplier.Name}.",
                 cancellationToken: cancellationToken);
 
-        return entity.ToModel(Array.Empty<Trade>(), xeroLinked: true);
+        return entity.ToModel(Array.Empty<Trade>(), xeroLinked: true, xeroLinks: new[] { link.ToModel() });
     }
-
-    private async Task<XeroSupplier> FindSupplierAsync(string xeroContactId, CancellationToken cancellationToken)
-    {
-        // The cached snapshot is normally fresh (the import modal just listed it); fall back to a
-        // forced read once in case the cache predates a supplier created moments ago in Xero.
-        var snapshot = await xero.GetSuppliersAsync(force: false, cancellationToken);
-        var supplier = Match(snapshot, xeroContactId);
-        if (supplier is null && snapshot.IsConfigured && snapshot.Error is null)
-        {
-            snapshot = await xero.GetSuppliersAsync(force: true, cancellationToken);
-            supplier = Match(snapshot, xeroContactId);
-        }
-
-        if (!snapshot.IsConfigured)
-            throw new InvalidOperationException("Xero isn't connected — add the Xero__ClientId / Xero__ClientSecret app settings.");
-        if (snapshot.Error is not null)
-            throw new InvalidOperationException(snapshot.Error);
-        return supplier
-            ?? throw new InvalidOperationException("That supplier wasn't found in Xero. Refresh the list and try again.");
-    }
-
-    private static XeroSupplier? Match(XeroSuppliersSnapshot snapshot, string xeroContactId) =>
-        snapshot.Suppliers.FirstOrDefault(supplier =>
-            string.Equals(supplier.ContactId, xeroContactId, StringComparison.OrdinalIgnoreCase));
 }

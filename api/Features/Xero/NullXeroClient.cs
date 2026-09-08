@@ -39,6 +39,10 @@ public sealed class NullXeroClient : IXeroClient
         throw new XeroCallFailedException(
             "Xero isn't connected — add the Xero__ClientId / Xero__ClientSecret app settings.");
 
+    public Task<IReadOnlyList<XeroBillSummary>> FindBillsByNumberAsync(string invoiceNumber, CancellationToken ct) =>
+        throw new XeroCallFailedException(
+            "Xero isn't connected — add the Xero__ClientId / Xero__ClientSecret app settings.");
+
     public Task<XeroBillRecodeResult> RecodeBillAsync(XeroBillCodingRequest request, CancellationToken ct) =>
         Task.FromResult(XeroBillRecodeResult.Failed(
             "Xero isn't connected — add the Xero__ClientId / Xero__ClientSecret app settings."));

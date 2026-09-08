@@ -1,13 +1,31 @@
 using Jewel.JPMS.Api.Features.Xero;
-using Jewel.JPMS.Contracts.Labour;
 using static Jewel.JPMS.Api.Features.Labour.Commands.XeroCodingWording;
 
 namespace Jewel.JPMS.Api.Features.Labour.Commands;
 
 public sealed partial class RunXeroCodingHandler
 {
-    /// <summary>Gate 3: every schedule line as the Xero line it would become, or the skip that
-    /// names every mapping gap.</summary>
+    /// <summary>One schedule line as the Xero line it becomes, and whose month it settles — the
+    /// cover the recode marks on the resulting line is that worker's.</summary>
+    private sealed record CodedLine(WorkerRun Worker, XeroScheduleLine Line);
+
+    /// <summary>Gate 3 for the party: every worker's schedule as the Xero lines it would become,
+    /// worker by worker, or the gap that names every mapping hole per worker.</summary>
+    private (List<CodedLine> Lines, Dictionary<string, string> Gaps) ScheduleAsXeroLines(CodingParty party)
+    {
+        var lines = new List<CodedLine>();
+        var gaps = new Dictionary<string, string>();
+        foreach (var worker in party.Workers)
+        {
+            var (workerLines, gap) = ScheduleAsXeroLines(worker);
+            if (gap is not null) { gaps[worker.WorkerId] = gap; continue; }
+            lines.AddRange(workerLines.Select(line => new CodedLine(worker, line)));
+        }
+        return (lines, gaps);
+    }
+
+    /// <summary>Every schedule line as the Xero line it would become, or the skip that names
+    /// every mapping gap.</summary>
     private (List<XeroScheduleLine> Lines, string? Gap) ScheduleAsXeroLines(WorkerRun run)
     {
         var gaps = new List<string>();
@@ -15,8 +33,8 @@ public sealed partial class RunXeroCodingHandler
         foreach (var line in run.Schedule.Lines)
         {
             var (xeroLine, gap) = XeroLineFor(run, line);
-            if (gap is not null) gaps.Add(gap);
-            else xeroLines.Add(xeroLine!);
+            if (gap is not null) { gaps.Add(gap); continue; }
+            xeroLines.Add(xeroLine!);
         }
         if (gaps.Count > 0)
             return (xeroLines, "Mapping gaps: " + string.Join("; ", gaps.Distinct()) + ". Fix the Xero mapping and re-run.");
@@ -38,7 +56,7 @@ public sealed partial class RunXeroCodingHandler
             _ => code.TravelAccountCode,
         };
         if (string.IsNullOrWhiteSpace(account)) return (null, $"cost code {line.CostCode} has no {line.Nature} account code");
-        var description = $"{run.Schedule.WorkerName} — {line.ProjectName} [{line.CostCode}] {NatureLabel(line.Nature)} {run.MonthStart:MMM yyyy}";
+        var description = $"{run.WorkerName} — {line.ProjectName} [{line.CostCode}] {NatureLabel(line.Nature)} {run.MonthStart:MMM yyyy}";
         var costCodeOption = string.IsNullOrWhiteSpace(code.XeroTrackingOptionName) ? line.CostCode : code.XeroTrackingOptionName;
         return (new XeroScheduleLine(description, line.Amount, account, site.XeroTrackingOptionName, costCodeOption), null);
     }

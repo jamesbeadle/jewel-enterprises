@@ -14,18 +14,16 @@ public sealed class ListSubcontractorsHandler
         var entities = await context.Subcontractors.AsNoTracking().OrderBy(sub => sub.CompanyName).ToListAsync(cancellationToken);
         var tradesBySubcontractor = await context.TradesBySubcontractorAsync(cancellationToken);
 
-        // The Xero link mark: a record holding at least one Xero link (imported from Xero, or a
-        // Xero-imported record was consolidated into it) shows as linked.
-        var xeroLinkedIds = (await context.SubcontractorXeroLinks.AsNoTracking()
-                .Select(link => link.SubcontractorId)
-                .Distinct()
-                .ToListAsync(cancellationToken))
-            .ToHashSet(StringComparer.OrdinalIgnoreCase);
+        // The Xero link mark: a record holding at least one Xero link (imported from Xero, linked
+        // to a Xero contact, or a Xero-imported record was consolidated into it) shows as linked,
+        // and carries the links so its page can name the Xero contact and offer to unlink.
+        var xeroLinksByRecord = await DirectoryXeroLinks.ByRecordAsync(context, cancellationToken);
 
         return entities
             .Select(entity => entity.ToModel(
                 tradesBySubcontractor.TryGetValue(entity.SubcontractorId, out var trades) ? trades : Array.Empty<Trade>(),
-                xeroLinked: xeroLinkedIds.Contains(entity.SubcontractorId)))
+                xeroLinked: xeroLinksByRecord.ContainsKey(entity.SubcontractorId),
+                xeroLinks: xeroLinksByRecord.TryGetValue(entity.SubcontractorId, out var links) ? links : null))
             .ToList()
             .AsReadOnly();
     }

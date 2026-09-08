@@ -6,11 +6,13 @@ internal static class SubcontractorEntityMapping
 {
     // xeroLinked defaults to false so callers that don't show the Xero link mark — the portal's
     // own-record read, command handlers returning the record just written — keep working unchanged;
-    // ListSubcontractors passes the real value from the SubcontractorXeroLinks table.
-    public static Subcontractor ToModel(this SubcontractorEntity entity, IReadOnlyList<Trade> trades, bool xeroLinked = false) =>
+    // ListSubcontractors passes the real value from the SubcontractorXeroLinks table, and the
+    // links themselves (xeroLinks) so a record page can say WHICH Xero contact it settles through.
+    public static Subcontractor ToModel(this SubcontractorEntity entity, IReadOnlyList<Trade> trades, bool xeroLinked = false,
+        IReadOnlyList<DirectoryXeroLink>? xeroLinks = null) =>
         new(entity.SubcontractorId, entity.CompanyName, trades, entity.ContactName, entity.ContactEmail, entity.ContactPhone, entity.CisStatus, entity.OnboardedAt,
             (DirectoryCategory)entity.Category, entity.MobileNumber, entity.Town, entity.County, entity.Website, entity.Pli, entity.PliExpiry,
-            entity.PaymentTermsDays, xeroLinked, entity.AddressLine, entity.Postcode, entity.IsProspect);
+            entity.PaymentTermsDays, xeroLinked, entity.AddressLine, entity.Postcode, entity.IsProspect, xeroLinks);
 
     public static Trade ToModel(this TradeEntity entity) => new(entity.TradeId, entity.Name);
 
