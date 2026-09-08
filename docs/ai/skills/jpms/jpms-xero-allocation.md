@@ -40,6 +40,18 @@ description: "How Xero and the portal reconcile — allocation doctrine and why 
   links and Xero tracking reverse together — but Xero never un-approves, so an approved bill
   stays awaiting payment there.
 
+## Where a bill stands in Xero (2026-09-08)
+
+- Every line carries `xeroStatus` — the bill's status as Xero last reported it (DRAFT /
+  SUBMITTED / AUTHORISED / PAID / VOIDED), refreshed by every sync and stamped after every
+  write-back. That, not `writeBackStatus`, answers "is it still draft in Xero?": `None` also
+  covers bills approved outside the portal.
+- `writeBackStatus` is what the portal's write did NOW; `writeBackError` and
+  `writeBackFailedAtUtc` are the LAST failure and are kept through a later success, so a bill
+  that failed and then approved on retry still says so. On the allocation page the Allocated
+  tab's chips "Draft in Xero" and "Write-back failed" narrow to exactly these, and the export
+  carries Xero status, write-back and last error.
+
 ## Work-order invoice links
 
 set_xero_line_work_order_links takes the line's COMPLETE slice list every time — read the

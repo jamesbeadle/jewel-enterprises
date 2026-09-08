@@ -8193,6 +8193,9 @@ namespace Jewel.JPMS.Api.Migrations
                     b.Property<DateTimeOffset?>("WriteBackAtUtc")
                         .HasColumnType("datetimeoffset");
 
+                    b.Property<DateTimeOffset?>("WriteBackFailedAtUtc")
+                        .HasColumnType("datetimeoffset");
+
                     b.Property<string>("WriteBackError")
                         .HasMaxLength(1024)
                         .HasColumnType("nvarchar(1024)");

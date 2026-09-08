@@ -65,9 +65,15 @@ public sealed class XeroLedgerLineEntity
     // Xero write-back (tracking + DRAFT → AUTHORISED approval) — per invoice,
     // stamped on every stored line of the invoice when attempted.
     // 0 None (not attempted / not needed), 1 Approved, 2 Failed (see error).
+    // The write-back story (2026-09-08, the accountant's ask): WriteBackStatus is where it stands
+    // NOW, WriteBackAtUtc when that was decided. WriteBackError is the LAST failure's text and
+    // WriteBackFailedAtUtc when it happened — both kept through a later success, so a bill that
+    // failed at 09:12 and approved on retry at 10:40 still says so on the line instead of the
+    // failure vanishing. Only a fresh failure rewrites them.
     public int WriteBackStatus { get; set; }
     [MaxLength(1024)]     public string? WriteBackError { get; set; }
     public DateTimeOffset? WriteBackAtUtc { get; set; }
+    public DateTimeOffset? WriteBackFailedAtUtc { get; set; }
 
     public DateTimeOffset FirstSeenAtUtc { get; set; }
     public DateTimeOffset LastSyncedAtUtc { get; set; }

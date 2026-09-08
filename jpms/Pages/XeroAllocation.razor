@@ -102,6 +102,14 @@
                 </div>
             </div>
 
+            @if (AllocatedXeroChips is { } xeroChips)
+            {
+                @* Where each allocated bill stands in XERO — draft still awaiting the write-back,
+                   or a write-back Xero refused — as opposed to what the portal did with it. *@
+                <FilterChips Items="xeroChips" Selected="@allocatedXeroFilter" OnSelect="SelectAllocatedXeroFilter"
+                             AriaLabel="Xero state" Class="mb-4" />
+            }
+
             @if (activeTab == XeroAllocationStatus.Unallocated && labourTab)
             {
                 <LabourSectionStrip CoveredCount="LabourCoveredCount" @bind-ShowCovered="showCoveredLabour" />

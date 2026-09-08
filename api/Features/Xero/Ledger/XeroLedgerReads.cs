@@ -134,6 +134,7 @@ internal static partial class XeroLedgerReads
             labour?.CoveredPeriodStart,
             workOrderBill?.Match,
             workOrderBill?.ExceptionReason,
-            workOrderApproval);
+            workOrderApproval,
+            entity.WriteBackFailedAtUtc);
     }
 }

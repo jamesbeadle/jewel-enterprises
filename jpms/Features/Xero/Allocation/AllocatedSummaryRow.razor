@@ -45,11 +45,18 @@
             @if (WriteBackBadge is { } badge)
             {
                 <span class="block text-xs mt-0.5 @badge.Css" title="@badge.Tooltip">@badge.Text</span>
-                @* The tooltip is easy to miss — failures need their reason readable at a glance. *@
-                @if (Line.WriteBackStatus == XeroWriteBackStatus.Failed
-                     && !string.IsNullOrWhiteSpace(Line.WriteBackError))
+                @* The tooltip is easy to miss — failures need their reason readable at a glance,
+                   and a failure that a later retry cured stays readable too (2026-09-08): the
+                   line says it was approved AFTER failing, and what Xero said the first time. *@
+                @if (!string.IsNullOrWhiteSpace(Line.WriteBackError))
                 {
-                    <span class="block text-xs mt-0.5 text-content-subtle whitespace-normal max-w-md">@Line.WriteBackError</span>
+                    <span class="block text-xs mt-0.5 text-content-subtle whitespace-normal max-w-md">
+                        @if (Line.WriteBackStatus != XeroWriteBackStatus.Failed && Line.WriteBackFailedAtUtc is { } failedAt)
+                        {
+                            <span>Earlier attempt failed @DateTimeText(failedAt.ToLocalTime()): </span>
+                        }
+                        @Line.WriteBackError
+                    </span>
                 }
             }
         }
@@ -106,15 +113,26 @@
 
     private sealed record BadgeModel(string Text, string? Tooltip, string Css);
 
-    /// <summary>Status line under an allocated line's cost centre(s): what Xero knows.</summary>
+    /// <summary>Status line under an allocated line's cost centre(s): what Xero holds — the bill's
+    /// status as last synced or stamped by a write — and what the portal's write-back did.</summary>
     private BadgeModel? WriteBackBadge => Line.WriteBackStatus switch
     {
-        XeroWriteBackStatus.Approved => new("✓ Approved in Xero",
+        XeroWriteBackStatus.Approved => new("✓ Approved in Xero by JPMS",
             DateTimeText(Line.WriteBackAtUtc?.ToLocalTime()), "text-positive"),
-        XeroWriteBackStatus.Failed => new("⚠ Xero write-back failed",
+        XeroWriteBackStatus.Failed => new("⚠ Xero write-back failed — still " + XeroStatusWord + " in Xero",
             Line.WriteBackError, "text-negative"),
-        _ when IsAwaitingApproval(Line) => new("Draft — approves in Xero once the whole bill is allocated",
-            null, "text-content-subtle"),
-        _ => null
+        _ when IsAwaitingApproval(Line) => new("Draft in Xero — approves once the whole bill is allocated",
+            null, "text-warning"),
+        _ => new(XeroStatusWord + " in Xero (outside JPMS)", "The bill was approved or paid in Xero without the portal's write-back", "text-content-subtle")
+    };
+
+    private string XeroStatusWord => Line.InvoiceStatus.ToUpperInvariant() switch
+    {
+        "DRAFT" => "Draft",
+        "SUBMITTED" => "Submitted",
+        "AUTHORISED" => "Approved",
+        "PAID" => "Paid",
+        "VOIDED" => "Voided",
+        _ => Line.InvoiceStatus
     };
 }
