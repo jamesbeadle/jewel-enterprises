@@ -19,6 +19,7 @@ namespace Jewel.JPMS.Contracts.Commercial.Export;
 public static class ValuationSnapshotExport
 {
     private static readonly CultureInfo Gb = CultureInfo.GetCultureInfo("en-GB");
+    private const string StampFormat = "dd MMM yyyy HH:mm";
 
     /// <summary>The statement's sections, in the order every surface prints them.</summary>
     public static readonly IReadOnlyList<(string Title, ValuationElementType Type)> Sections = new[]
@@ -102,12 +103,17 @@ public static class ValuationSnapshotExport
         isDraft
             ? new ValuationExportMeta(
                 snapshot.Label,
-                $"Prepared {snapshot.TakenAt.ToString("dd MMM yyyy HH:mm", Gb)} · working copy of the live report",
+                $"Prepared {Stamp(snapshot.TakenAt)} · working copy of the live report",
                 IsDraft: true)
             : new ValuationExportMeta(
                 snapshot.Label,
-                $"Snapshot taken {snapshot.TakenAt.ToString("dd MMM yyyy HH:mm", Gb)} · immutable record from the JPMS register",
+                $"Snapshot taken {Stamp(snapshot.TakenAt)} · immutable record from the JPMS register",
                 IsDraft: false);
+
+    // Invariant, not en-GB: ICU on Linux (the Functions host, the CI runner) abbreviates September
+    // as "Sept" under en-GB while macOS gives "Sep", so the stamp differed by platform.
+    private static string Stamp(DateTimeOffset takenAt) =>
+        takenAt.ToString(StampFormat, CultureInfo.InvariantCulture);
 
     // The area sub-heading the line falls under — the estimate section frozen on the line, else
     // the cost centre's master name; variations never group by area.
