@@ -26,7 +26,7 @@ public sealed class ResetXeroCodingOutcomeHandler : ICommandHandler<ResetXeroCod
             throw new InvalidOperationException(
                 $"{worker.Name}'s {monthStart:MMM yyyy} has no coding outcome to reset — the run has never written it, so it will run as it is.");
         var previous = (XeroCodingOutcome)latest.Outcome;
-        if (previous is not (XeroCodingOutcome.BillRecoded or XeroCodingOutcome.DraftStaged))
+        if (!XeroCodingOutcomes.IsWritten(previous))
             throw new InvalidOperationException(
                 $"{worker.Name}'s {monthStart:MMM yyyy} reads {previous} ({latest.RunAt:dd MMM HH:mm}) — that does not block the run, so there is nothing to reset.");
 

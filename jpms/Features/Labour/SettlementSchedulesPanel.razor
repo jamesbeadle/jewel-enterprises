@@ -33,9 +33,10 @@
             split the worker's bill is coded to in Xero. The run finds the worker's existing
             bill for the month (draft or authorised) and recodes it, keeping its total, VAT
             and status and moving the settlement cover onto the new lines; it stages a
-            draft only where no bill exists, and approving that draft stays with the
-            accountant. Anything unsigned, unmapped, paid or already coded is skipped and
-            reported, never guessed — and you see the plan before anything is written.
+            draft only where no bill exists. Once every worker on a bill reads Matches,
+            "Approve in Xero" takes that bill from draft to authorised from here. Anything
+            unsigned, unmapped, paid or already coded is skipped and reported, never
+            guessed — and you see the plan before anything is written.
         </p>
         @if (CodingResults is not null)
         {
@@ -80,7 +81,21 @@
                             <td class="text-right tabular-nums text-content">@schedule.GrossTotal.ToString("N2")</td>
                             <td class="text-right tabular-nums">− @schedule.CisDeduction.ToString("N2")</td>
                             <td class="text-right tabular-nums font-semibold text-content">@schedule.NetPayable.ToString("N2")</td>
-                            <td class="text-right tabular-nums">@(schedule.CoveredBillTotal == 0m ? "—" : schedule.CoveredBillTotal.ToString("N2"))</td>
+                            <td class="text-right tabular-nums">
+                                @(schedule.CoveredBillTotal == 0m ? "—" : schedule.CoveredBillTotal.ToString("N2"))
+                                @if (schedule.CoveredBill is { } bill)
+                                {
+                                    <span class="block text-xs text-content-subtle whitespace-nowrap" title="@BillTitle(bill)">
+                                        @bill.Label · @bill.Status.ToLowerInvariant()
+                                        @if (bill.IsApprovable)
+                                        {
+                                            <button type="button" class="ml-2 underline text-content-subtle hover:text-content"
+                                                    title="Approve this bill in Xero — every worker on it reads Matches"
+                                                    @onclick="() => OnApproveBill.InvokeAsync(schedule)" @onclick:stopPropagation="true">Approve in Xero</button>
+                                        }
+                                    </span>
+                                }
+                            </td>
                             <td><SettlementVerdictPill Schedule="schedule" /></td>
                             <td class="text-content-subtle text-xs whitespace-nowrap">
                                 @if (schedule.LastCodingOutcome == "")
@@ -154,6 +169,9 @@
     [Parameter] public EventCallback OnRunCoding { get; set; }
     [Parameter] public EventCallback OnCancelPlan { get; set; }
     [Parameter] public EventCallback<WorkerSettlementSchedule> OnResetCoding { get; set; }
+    /// <summary>The row's "Approve in Xero" (2026-09-08): offered only while the covered bill is
+    /// still a draft and every worker on it reads Matches; the page opens the confirm dialog.</summary>
+    [Parameter] public EventCallback<WorkerSettlementSchedule> OnApproveBill { get; set; }
     [Parameter] public EventCallback<WorkerSettlementSchedule> OnAddLine { get; set; }
     [Parameter] public EventCallback<string> OnRemoveLine { get; set; }
 
@@ -162,6 +180,9 @@
     private string MonthLabel => Schedules is null ? "the month" : new DateTime(Schedules.Year, Schedules.Month, 1).ToString("MMMM yyyy");
 
     private int PlanWrites => CodingPlan?.Count(row => row.Outcome is XeroCodingOutcome.WouldRecodeBill or XeroCodingOutcome.WouldStageDraft) ?? 0;
+
+    private static string BillTitle(CoveredBill bill) =>
+        $"Bill {bill.Label} ({bill.Status}, £{bill.Total:N2}) covers {string.Join(", ", bill.WorkerNames)}";
 
     private static string PlanPillClass(XeroCodingOutcome outcome) => outcome switch
     {

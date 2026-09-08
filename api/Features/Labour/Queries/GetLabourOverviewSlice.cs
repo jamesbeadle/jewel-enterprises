@@ -76,9 +76,7 @@ public sealed class GetLabourOverviewHandler : IQueryHandler<GetLabourOverview, 
             .ToListAsync(cancellationToken);
         var dismissalsByWorker = dismissals.ToLookup(row => row.WorkerId);
         var settledWorkerIds = (await context.XeroCodingRuns
-                .Where(run => run.Month == monthStart
-                              && (run.Outcome == (int)XeroCodingOutcome.BillRecoded
-                                  || run.Outcome == (int)XeroCodingOutcome.DraftStaged))
+                .Where(run => run.Month == monthStart && XeroCodingOutcomes.WrittenValues.Contains(run.Outcome))
                 .Select(run => run.WorkerId)
                 .Distinct()
                 .ToListAsync(cancellationToken))

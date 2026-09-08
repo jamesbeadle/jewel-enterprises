@@ -159,6 +159,33 @@ internal sealed partial class LabourAndBackOfficeActions
                 + "preview_xero_coding to show what it would do."),
 
         new AiAction(
+            Name: "approve_labour_bill",
+            Area: "Labour",
+            Description: "WRITES TO XERO: approves a covered labour bill — DRAFT → AUTHORISED — exactly "
+                + "as the coding run coded it, touching no line (2026-09-08, the Settlement view's "
+                + "\"Approve in Xero\"). Allowed only while EVERY worker-month the bill covers reads "
+                + "Matches; a worker on VarianceOpen or NoBillYet refuses with their name. The "
+                + "ledger's copy reads AUTHORISED at once and a BillApproved outcome is recorded "
+                + "against every worker on the bill. A bill Xero already holds approved is "
+                + "acknowledged (wasAlreadyApproved), never rewritten; a paid, voided or deleted "
+                + "bill refuses with Xero's own words. Nothing is paid.",
+            CommandType: typeof(ApproveLabourBill),
+            ResultType: typeof(LabourBillApproval),
+            AuthorisationType: typeof(ApproveLabourBillAuthorisation),
+            ValidationType: typeof(ApproveLabourBillValidation),
+            VisibleTo: LabourRoleSets.ManageSettlement,
+            EmailStamps: new[] { "ApprovedByEmail" },
+            NameStamps: Array.Empty<string>(),
+            RequiresConfirmation: true,
+            Notes: "xeroInvoiceId is the bill as view_settlement_month's coveredBill names it (its "
+                + "isApprovable says the rule is met); year/month are the settlement month. In the "
+                + "confirm turn show the bill's label, total, status and the workers it covers with "
+                + "their verdicts, and say plainly that this authorises the bill in Xero. The step "
+                + "after run_xero_coding, once every worker on the bill reads Matches; a variance "
+                + "must be posted (add_labour_settlement_variance) or the bill corrected first — "
+                + "approve nothing that does not match."),
+
+        new AiAction(
             Name: "set_xero_line_timesheet_cover",
             Area: "Labour",
             Description: "Marks (or with isCovered: false unmarks) a Xero purchase line as "

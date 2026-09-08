@@ -13,6 +13,7 @@ public partial class LabourOverview
     private IReadOnlyList<XeroCodingRunResult>? codingResults;
     private IReadOnlyList<XeroCodingRunResult>? codingPlan;
     private CodingResetModal? codingResetModal;
+    private LabourBillApproveDialog? billApproveDialog;
 
     // Dry run, then confirm (2026-09-03, item E): "Code month into Xero" first asks the run what
     // it WOULD do — recode bill X, stage a draft, skip because Y — and the confirm modal shows
@@ -36,6 +37,8 @@ public partial class LabourOverview
     private void CancelCodingPlan() => codingPlan = null;
 
     private void OpenCodingReset(WorkerSettlementSchedule schedule) => codingResetModal!.Open(schedule);
+
+    private void OpenBillApprove(WorkerSettlementSchedule schedule) => billApproveDialog!.Open(schedule);
 
     private void OpenSettleLine(WorkerSettlementSchedule schedule) => settlementLineModal!.Open(schedule);
 

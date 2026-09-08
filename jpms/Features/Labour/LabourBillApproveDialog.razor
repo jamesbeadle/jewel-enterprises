@@ -1,0 +1,60 @@
+@namespace Jewel.JPMS.Features.Labour
+@inject ILabourStore Labour
+
+@* Approve a covered labour bill in Xero (2026-09-08): DRAFT → AUTHORISED exactly as the run coded
+   it, offered only once every worker on the bill reads Matches. The dialog names the bill, its
+   total and the workers it settles, and the server checks the same rule again before writing.
+   Opened by the page with Open(schedule). *@
+<ConfirmDialog IsOpen="@open" Title="@($"Approve {label} in Xero?")"
+               ConfirmLabel="Approve in Xero" BusyLabel="Approving…" Busy="@saving"
+               OnCancel="() => open = false" OnConfirm="ApproveAsync">
+    <p>
+        Takes bill <span class="font-medium text-content">@label</span> from
+        <span class="font-medium text-content">@status.ToLowerInvariant()</span> to authorised in Xero,
+        £@total.ToString("N2") as coded, covering <span class="font-medium text-content">@workerNames</span>
+        — every one reads Matches. The lines stay exactly as the run wrote them; nothing is paid.
+    </p>
+    @if (error is not null)
+    {
+        <Notice Tone="Tone.Negative" Class="mt-3">@error</Notice>
+    }
+</ConfirmDialog>
+
+@code {
+    [Parameter] public int Year { get; set; }
+    [Parameter] public int Month { get; set; }
+
+    private bool open;
+    private bool saving;
+    private string? error;
+    private string xeroInvoiceId = "";
+    private string label = "";
+    private string status = "";
+    private decimal total;
+    private string workerNames = "";
+
+    public void Open(WorkerSettlementSchedule schedule)
+    {
+        if (schedule.CoveredBill is not { } bill) return;
+        xeroInvoiceId = bill.XeroInvoiceId;
+        label = bill.Label;
+        status = bill.Status;
+        total = bill.Total;
+        workerNames = string.Join(", ", bill.WorkerNames);
+        error = null;
+        open = true;
+        StateHasChanged();
+    }
+
+    private async Task ApproveAsync()
+    {
+        saving = true; error = null;
+        try
+        {
+            await Labour.ApproveLabourBillAsync(Year, Month, xeroInvoiceId);
+            open = false;
+        }
+        catch (Exception) { error = "Xero didn't approve the bill — check the error bar for its reason and try again."; }
+        finally { saving = false; }
+    }
+}

@@ -166,6 +166,13 @@ public static class LabourFeatureRegistration
         services.AddScoped<ICommandHandler<ResetXeroCodingOutcomeByName, Acknowledgement>, ResetXeroCodingOutcomeByNameHandler>();
         services.AddScoped<ResetXeroCodingOutcomeByNameAuthorisation>();
         services.AddScoped<ResetXeroCodingOutcomeByNameValidation>();
+        // Approving a covered labour bill (2026-09-08): the Settlement view's button and the
+        // approve_labour_bill action share one handler and one pair of gates.
+        services.AddScoped<ApproveLabourBillHandler>();
+        services.AddScoped<ICommandHandler<ApproveLabourBill, LabourBillApproval>>(
+            provider => provider.GetRequiredService<ApproveLabourBillHandler>());
+        services.AddScoped<ApproveLabourBillAuthorisation>();
+        services.AddScoped<ApproveLabourBillValidation>();
         // Gate classes for the settlement/Xero write cluster (2026-08-31): the endpoints keep
         // their inline checks; these exist so the connector's action gateway composes the same
         // RoleSet constants and argument rules (SettlementCommandGates.cs).

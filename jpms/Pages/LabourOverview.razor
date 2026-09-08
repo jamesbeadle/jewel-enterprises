@@ -106,7 +106,7 @@
                                   Loading="@(!Labour.SchedulesLoadedFor(year, month) && !dataFailed)"
                                   RunningCoding="isRunningCoding" CodingResults="codingResults" CodingPlan="codingPlan"
                                   OnPreviewCoding="PreviewCodingAsync" OnRunCoding="RunCodingAsync" OnCancelPlan="CancelCodingPlan"
-                                  OnResetCoding="OpenCodingReset"
+                                  OnResetCoding="OpenCodingReset" OnApproveBill="OpenBillApprove"
                                   OnAddLine="OpenSettleLine" OnRemoveLine="RemoveSettlementLineAsync" />
     }
 
@@ -129,5 +129,6 @@
     <AbsenceModal @ref="absenceModal" Year="year" Month="month" />
     <SettlementLineModal @ref="settlementLineModal" Year="year" Month="month" />
     <CodingResetModal @ref="codingResetModal" Year="year" Month="month" />
+    <LabourBillApproveDialog @ref="billApproveDialog" Year="year" Month="month" />
     <WeekEntryModal @ref="weekEntryModal" OnSaved="lines => weekSummaryLines = lines" />
 </Page>

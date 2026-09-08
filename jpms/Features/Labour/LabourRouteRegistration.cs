@@ -121,6 +121,7 @@ public static class LabourRouteRegistration
         commands.Register<SetCostCodeXeroMapping, Acknowledgement>(CommandRoute.Post("/api/labour/xero-mappings/cost-code"));
         commands.Register<RunXeroCoding, IReadOnlyList<XeroCodingRunResult>>(CommandRoute.Post("/api/labour/xero-coding/run"));
         commands.Register<ResetXeroCodingOutcome, Acknowledgement>(CommandRoute.Post("/api/labour/xero-coding/reset"));
+        commands.Register<ApproveLabourBill, LabourBillApproval>(CommandRoute.Post("/api/labour/xero-coding/approve-bill"));
 
         // Worker ↔ directory linking and chase dismissals (2026-08-31, the month-end doc).
         commands.Register<SetWorkerSettlementIdentity, Worker>(

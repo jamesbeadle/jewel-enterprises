@@ -55,9 +55,7 @@ public sealed partial class RunXeroCodingHandler
     private async Task<(XeroCodingRunResult? Skip, string Preface, string? StandingBillId)> AlreadyCodedAsync(
         WorkerRun run, CancellationToken cancellationToken)
     {
-        if (run.LatestRun is null
-            || (XeroCodingOutcome)run.LatestRun.Outcome is not (XeroCodingOutcome.BillRecoded or XeroCodingOutcome.DraftStaged))
-            return (null, "", null);
+        if (run.LatestRun is null || !XeroCodingOutcomes.IsWritten(run.LatestRun.Outcome)) return (null, "", null);
         var previous = (XeroCodingOutcome)run.LatestRun.Outcome;
         var stamp = RunStamp(run);
         if (string.IsNullOrEmpty(run.LatestRun.XeroBillId))

@@ -60,8 +60,8 @@ internal static class TimesheetCorrectionGuards
             : null;
     }
 
-    /// <summary>The Xero coding run has posted the worker's month (bill recoded or draft staged
-    /// as its latest recorded outcome): the schedule the bill was coded to would silently drift
+    /// <summary>The Xero coding run has posted the worker's month (bill recoded, draft staged or
+    /// bill approved as its latest recorded outcome): the schedule the bill was coded to would silently drift
     /// from the timesheets. reset_xero_coding_outcome is the deliberate way back.</summary>
     public static async Task<string?> CodedReasonAsync(JpmsContext context, TimesheetEntity timesheet, WorkerEntity worker,
         CancellationToken cancellationToken)
@@ -72,8 +72,13 @@ internal static class TimesheetCorrectionGuards
             .OrderByDescending(run => run.RunAt)
             .FirstOrDefaultAsync(cancellationToken);
         if (latest is null) return null;
-        if (latest.Outcome is not ((int)XeroCodingOutcome.BillRecoded or (int)XeroCodingOutcome.DraftStaged)) return null;
-        var what = latest.Outcome == (int)XeroCodingOutcome.BillRecoded ? "its bill was recoded" : "a draft bill was staged";
+        if (!XeroCodingOutcomes.IsWritten(latest.Outcome)) return null;
+        var what = (XeroCodingOutcome)latest.Outcome switch
+        {
+            XeroCodingOutcome.BillRecoded => "its bill was recoded",
+            XeroCodingOutcome.BillApproved => "its bill was approved",
+            _ => "a draft bill was staged",
+        };
         return $"{worker.Name}'s {monthStart:MMMM yyyy} has already been coded to Xero ({what} on {latest.RunAt:dd MMM}) — "
              + "reset that outcome first (reset_xero_coding_outcome, with a reason), correct the day, then run the coding again.";
     }

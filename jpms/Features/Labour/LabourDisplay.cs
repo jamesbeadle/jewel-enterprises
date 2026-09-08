@@ -23,6 +23,7 @@ public static class LabourDisplay
         XeroCodingOutcome.WouldRecodeBill => "would recode bill",
         XeroCodingOutcome.WouldStageDraft => "would stage draft",
         XeroCodingOutcome.Reset => "reset",
+        XeroCodingOutcome.BillApproved => "bill approved",
         _ => "failed",
     };
 
@@ -34,8 +35,7 @@ public static class LabourDisplay
 
     /// <summary>A recorded outcome that blocks the run until reset (or until its bill vanishes
     /// from Xero) — the rows the settlement table offers "Reset" on.</summary>
-    public static bool CodingOutcomeBlocksRerun(string storedOutcome) =>
-        storedOutcome is nameof(XeroCodingOutcome.BillRecoded) or nameof(XeroCodingOutcome.DraftStaged);
+    public static bool CodingOutcomeBlocksRerun(string storedOutcome) => XeroCodingOutcomes.IsWritten(storedOutcome);
 
     public static string StatusLabel(TimesheetStatus status) => status switch
     {
