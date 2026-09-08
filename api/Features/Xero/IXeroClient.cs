@@ -103,6 +103,14 @@ public interface IXeroClient
     Task<XeroBillSummary?> GetBillAsync(string invoiceId, CancellationToken ct);
 
     /// <summary>
+    /// Every bill Xero holds under one invoice number, live or voided, newest first (2026-09-08)
+    /// — how the coding run finds the re-issue of a bill that was voided and keyed again after
+    /// the ledger last saw it. Throws <see cref="XeroCallFailedException"/> when Xero can't be
+    /// asked.
+    /// </summary>
+    Task<IReadOnlyList<XeroBillSummary>> FindBillsByNumberAsync(string invoiceNumber, CancellationToken ct);
+
+    /// <summary>
     /// Recodes a bill's whole line list to a settlement schedule
     /// (docs/Labour-Overview-Forecast-and-Xero-Mapping-Scope.md §6a) — DRAFT, SUBMITTED or
     /// AUTHORISED with nothing paid or credited (2026-09-03: the cover route authorises the

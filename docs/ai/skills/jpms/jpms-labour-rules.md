@@ -110,10 +110,26 @@ what it shows the signed-in user.
      non-labour line that matters, settle by the manual cover route instead
      (set_xero_line_timesheet_cover on the labour line only, leaving the other lines for the
      Allocation page), or correct the lines in the Xero UI after the recode.
+   - **Company bills (8 Sep 2026).** Workers linked to the same subcontractor company are coded
+     as ONE: the company's single bill for the month (Jewel Property Serve Ltd's INV-1252 for
+     Dan Prowse, Finley Taylor and John Ahern) is recoded once to every worker's lines — one
+     line per worker per site per cost code — with the cover marked per worker, so each
+     worker's verdict reads on their own lines and the bill's status, total, VAT and attachment
+     are untouched. Naming one of those workers in workerNames runs and reports every worker on
+     the bill. One worker not signed off (or unmapped) holds the whole bill, and every worker's
+     outcome says who it is waiting for. Where the company has no bill yet, ONE draft carrying
+     every worker's lines is staged.
+   - **A voided bill is followed to its re-issue (8 Sep 2026).** When the bill the ledger or a
+     cover names is voided or deleted in Xero and a live DRAFT/AUTHORISED bill exists under the
+     same number, contact and period, the run recodes that one and moves the cover onto its
+     lines; two live re-issues, or none, skip with the reason.
    - The manual cover route remains valid where the run cannot act: the FD authorises the
      worker's own bill in Xero, then set_xero_line_timesheet_cover marks the labour line(s)
      against the worker-month. A covered line needs NO allocation on the Allocation page — the
      approved timesheets carry the site cost and covered lines are excluded from cost of sales.
+     A cover marked by hand is the counterparty's as a whole — for a company with several
+     workers it counts against every worker's verdict; the run's per-worker cover is what
+     reconciles them separately.
 4. add_labour_settlement_variance posts any accepted difference between the bill total and the
    settlement schedule.
 

@@ -1,0 +1,64 @@
+using Jewel.JPMS.Api.Features.Xero;
+using Jewel.JPMS.Contracts.Xero;
+
+namespace Jewel.JPMS.Tests;
+
+/// <summary>Xero as the coding run sees it: bills by id, the bills held under a number, a draft
+/// that lands with a given id, a recode that answers with fresh line ids — every call recorded
+/// in order.</summary>
+internal sealed class RecordingXero : IXeroClient
+{
+    public List<string> Calls { get; } = new();
+    public Dictionary<string, XeroBillSummary?> Bills { get; } = new();
+    public Dictionary<string, List<XeroBillSummary>> BillsByNumber { get; } = new();
+    public string StagedBillId { get; set; } = "";
+    public string[] RecodedLineIds { get; set; } = Array.Empty<string>();
+    public XeroDraftBillRequest? Draft { get; private set; }
+    public XeroBillCodingRequest? Recode { get; private set; }
+
+    public bool IsConfigured => true;
+
+    public Task<XeroBillSummary?> GetBillAsync(string invoiceId, CancellationToken ct)
+    {
+        Calls.Add($"GetBill:{invoiceId}");
+        return Task.FromResult(Bills.TryGetValue(invoiceId, out var bill) ? bill : null);
+    }
+
+    public Task<IReadOnlyList<XeroBillSummary>> FindBillsByNumberAsync(string invoiceNumber, CancellationToken ct)
+    {
+        Calls.Add($"FindBills:{invoiceNumber}");
+        IReadOnlyList<XeroBillSummary> found = BillsByNumber.TryGetValue(invoiceNumber, out var bills) ? bills : new List<XeroBillSummary>();
+        return Task.FromResult(found);
+    }
+
+    public Task<XeroApprovalResult> CreateDraftBillAsync(XeroDraftBillRequest request, CancellationToken ct)
+    {
+        Calls.Add("CreateDraftBill");
+        Draft = request;
+        return Task.FromResult(XeroApprovalResult.Ok(StagedBillId, "Tax from the contact."));
+    }
+
+    public Task<XeroBillRecodeResult> RecodeBillAsync(XeroBillCodingRequest request, CancellationToken ct)
+    {
+        Calls.Add($"RecodeBill:{request.InvoiceId}");
+        Recode = request;
+        var before = Bills[request.InvoiceId]!;
+        var lines = request.Lines.Select((line, index) => new XeroRecodedLine(
+            RecodedLineIds[index], line.Description, line.Net, 0m, line.AccountCode, line.SiteOption, line.CostCodeOption)).ToList();
+        return Task.FromResult(new XeroBillRecodeResult(true, null, before.Status, before.LineAmountTypes, before.TaxType,
+            before.SubTotal, before.TotalTax, before.Total, lines));
+    }
+
+    public Task<XeroTransactionsSnapshot> GetPurchaseInvoicesAsync(bool force, CancellationToken ct) => throw new NotSupportedException();
+    public Task<XeroCashSummarySnapshot> GetCashSummaryAsync(bool force, CancellationToken ct) => throw new NotSupportedException();
+    public Task<XeroAgedPayablesSnapshot> GetAgedPayablesAsync(bool force, CancellationToken ct) => throw new NotSupportedException();
+    public Task<XeroAgedReceivablesSnapshot> GetAgedReceivablesAsync(bool force, CancellationToken ct) => throw new NotSupportedException();
+    public Task<XeroSuppliersSnapshot> GetSuppliersAsync(bool force, CancellationToken ct) => throw new NotSupportedException();
+    public Task<XeroTrackingCategoriesSnapshot> GetTrackingCategoriesSnapshotAsync(bool force, CancellationToken ct) => throw new NotSupportedException();
+    public Task<XeroApprovalResult> ApproveInvoiceAsync(XeroApprovalRequest request, CancellationToken ct) => throw new NotSupportedException();
+    public Task<XeroApprovalResult> SetSiteTrackingAsync(XeroSiteTrackingRequest request, CancellationToken ct) => throw new NotSupportedException();
+    public Task<IReadOnlyList<XeroInvoiceAttachment>> ListAttachmentsAsync(string invoiceId, bool isCreditNote, CancellationToken ct) => throw new NotSupportedException();
+    public Task<XeroAttachmentContent?> GetAttachmentAsync(string invoiceId, bool isCreditNote, string fileName, CancellationToken ct) => throw new NotSupportedException();
+    public Task<IReadOnlyList<XeroSitePnlMonthFigures>> GetSiteMonthlyPnlAsync(string siteOption, DateTime fromMonth, DateTime toMonth, CancellationToken ct) => throw new NotSupportedException();
+    public Task<XeroSitePnlRangeFigures?> GetSiteRangePnlAsync(string siteOption, DateTime fromDate, DateTime toDate, CancellationToken ct) => throw new NotSupportedException();
+}

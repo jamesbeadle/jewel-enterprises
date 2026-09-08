@@ -8052,6 +8052,10 @@ namespace Jewel.JPMS.Api.Migrations
                         .HasMaxLength(64)
                         .HasColumnType("nvarchar(64)");
 
+                    b.Property<string>("WorkerId")
+                        .HasMaxLength(64)
+                        .HasColumnType("nvarchar(64)");
+
                     b.Property<string>("XeroLedgerLineId")
                         .IsRequired()
                         .HasMaxLength(140)

@@ -105,7 +105,13 @@ internal sealed partial class LabourAndBackOfficeActions
                 + "last bill), never assumed. A bill it cannot recode (paid, part-paid, credited, "
                 + "voided) skips naming the bill and its status; it NEVER stages a second bill "
                 + "beside an existing one. Unsigned weeks, mapping gaps and already-coded months "
-                + "skip-and-report. Returns per-worker outcomes: BillRecoded, DraftStaged, "
+                + "skip-and-report. Workers linked to the same company are coded as ONE (8 Sep "
+                + "2026): the company's one bill for the month is recoded once to every worker's "
+                + "lines (one line per worker per site per cost code) with the cover marked per "
+                + "worker, so each worker's verdict reads on their own lines; one unsigned worker "
+                + "holds the whole company bill and every worker's outcome says so. A matched bill "
+                + "Xero says is voided is followed to its live re-issue under the same contact, "
+                + "number and period. Returns per-worker outcomes: BillRecoded, DraftStaged, "
                 + "Skipped or Failed, each with the detail in the run's own words.",
             CommandType: typeof(RunXeroCodingByName),
             ResultType: typeof(XeroCodingRunReport),
@@ -117,8 +123,9 @@ internal sealed partial class LabourAndBackOfficeActions
             RequiresConfirmation: true,
             Notes: "Call preview_xero_coding FIRST and put its per-worker list in the confirm "
                 + "turn — the user confirms against that list, not against a summary. "
-                + "workerNames narrows the run to named workers; leave it out to run everyone "
-                + "with activity in the month. Every skip's detail names its fix: not signed off "
+                + "workerNames narrows the run to named workers — naming one worker on a company "
+                + "bill runs and reports every worker on it, because the bill is coded whole; leave "
+                + "it out to run everyone with activity in the month. Every skip's detail names its fix: not signed off "
                 + "→ sign_off_labour_week; a mapping gap → set_site_xero_mapping or "
                 + "set_cost_code_xero_mapping, then re-run; two candidate bills → mark the right "
                 + "one as settlement (set_xero_line_timesheet_cover). Already-coded worker-months "

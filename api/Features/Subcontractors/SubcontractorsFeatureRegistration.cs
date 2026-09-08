@@ -54,10 +54,20 @@ public static class SubcontractorsFeatureRegistration
 
         services.AddScoped<ICommandHandler<AddComplianceDocumentVersion, ComplianceDocument>, AddComplianceDocumentVersionHandler>();
 
-        // Xero import + consolidation (the duplicate-resolution flow) + company contacts.
+        // Xero import + link/unlink on an existing record + consolidation (the duplicate-resolution
+        // flow) + company contacts.
+        services.AddScoped<XeroSupplierLookup>();
         services.AddScoped<ICommandHandler<ImportXeroSupplier, Subcontractor>, ImportXeroSupplierHandler>();
         services.AddScoped<ImportXeroSupplierAuthorisation>();
         services.AddScoped<ImportXeroSupplierValidation>();
+
+        services.AddScoped<ICommandHandler<LinkDirectoryRecordToXeroContact, Subcontractor>, LinkDirectoryRecordToXeroContactHandler>();
+        services.AddScoped<LinkDirectoryRecordToXeroContactAuthorisation>();
+        services.AddScoped<LinkDirectoryRecordToXeroContactValidation>();
+
+        services.AddScoped<ICommandHandler<UnlinkDirectoryRecordFromXeroContact, Subcontractor>, UnlinkDirectoryRecordFromXeroContactHandler>();
+        services.AddScoped<UnlinkDirectoryRecordFromXeroContactAuthorisation>();
+        services.AddScoped<UnlinkDirectoryRecordFromXeroContactValidation>();
 
         services.AddScoped<ICommandHandler<ConsolidateDirectoryRecords, Subcontractor>, ConsolidateDirectoryRecordsHandler>();
         services.AddScoped<ConsolidateDirectoryRecordsAuthorisation>();

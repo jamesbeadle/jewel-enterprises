@@ -103,7 +103,51 @@ internal sealed partial class SubcontractorsAndLeadsActions
             NameStamps: Array.Empty<string>(),
             RequiresConfirmation: true,
             Notes: "xeroContactId is Xero's contact id. Refused if the supplier is already imported or "
-                + "Xero is unreachable. The import is recorded against the signed-in user."),
+                + "Xero is unreachable. The import is recorded against the signed-in user. If the "
+                + "supplier is ALREADY in the directory under its own record, do not import — use "
+                + "link_directory_record_to_xero_contact (list_unlinked_directory_records suggests "
+                + "the pairings)."),
+
+        new AiAction(
+            Name: "link_directory_record_to_xero_contact",
+            Area: "Subcontractors",
+            Description: "Links an EXISTING directory record to a Xero contact — the one-field change "
+                + "for a supplier that is already in the directory but was never imported from Xero. "
+                + "Writes only the Xero link; the record's work orders, email tags, contacts and "
+                + "trades are untouched, and no second record is created. Refused when the record "
+                + "already holds a Xero link or the Xero contact is linked to another record (unlink "
+                + "first, or consolidate). Audited with who linked it.",
+            CommandType: typeof(LinkDirectoryRecordToXeroContact),
+            ResultType: typeof(Subcontractor),
+            AuthorisationType: typeof(LinkDirectoryRecordToXeroContactAuthorisation),
+            ValidationType: typeof(LinkDirectoryRecordToXeroContactValidation),
+            VisibleTo: DirectoryCurators,
+            EmailStamps: Array.Empty<string>(),
+            NameStamps: Array.Empty<string>(),
+            Notes: "subcontractorId comes from search_directory or list_unlinked_directory_records; "
+                + "xeroContactId is Xero's ContactID (the suggestions in list_unlinked_directory_records "
+                + "carry it). A name match is a suggestion, not proof — show the user the pairing "
+                + "(record name ↔ Xero contact name) and take their yes before calling, then call "
+                + "once per confirmed pair. unlink_directory_record_from_xero_contact is the undo."),
+
+        new AiAction(
+            Name: "unlink_directory_record_from_xero_contact",
+            Area: "Subcontractors",
+            Description: "Removes the link between a directory record and a Xero contact — the undo "
+                + "of link_directory_record_to_xero_contact or of a mistaken import's link. Only the "
+                + "link goes; the record and everything referencing it stay. Refused when the record "
+                + "is not linked to that contact. Audited.",
+            CommandType: typeof(UnlinkDirectoryRecordFromXeroContact),
+            ResultType: typeof(Subcontractor),
+            AuthorisationType: typeof(UnlinkDirectoryRecordFromXeroContactAuthorisation),
+            ValidationType: typeof(UnlinkDirectoryRecordFromXeroContactValidation),
+            VisibleTo: DirectoryCurators,
+            EmailStamps: Array.Empty<string>(),
+            NameStamps: Array.Empty<string>(),
+            RequiresConfirmation: true,
+            Notes: "subcontractorId and xeroContactId come from search_directory (xeroLinks on the "
+                + "record). Confirm with the user which record and which Xero contact before calling — "
+                + "an unlinked supplier's bills stop reconciling against the record until re-linked."),
 
         new AiAction(
             Name: "upsert_company_contact",

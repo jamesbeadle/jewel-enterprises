@@ -54,6 +54,11 @@ public sealed record SetCostCodeXeroMapping(
 /// skips with its status named — never a second bill. Mapping gaps skip-and-report; nothing is
 /// ever guessed. Every write and every skip is recorded against the worker-month.
 /// DryRun (2026-09-03) reports what the run WOULD do per worker and writes nothing anywhere.
+/// Workers who settle through the same company are coded as one (2026-09-08, item J): the
+/// company's one bill for the month is recoded once to every worker's lines, cover marked per
+/// worker, so naming one worker on a company bill runs — and reports — every worker on it. A
+/// matched bill that Xero says is voided or deleted is followed to its live re-issue under the
+/// same contact, number and period (item K).
 /// </summary>
 public sealed record RunXeroCoding(int Year, int Month, IReadOnlyList<string>? WorkerIds, bool DryRun = false)
     : ICommand<IReadOnlyList<XeroCodingRunResult>>;

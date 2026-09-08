@@ -92,11 +92,14 @@ public sealed class SettlementScheduleBuilder
 
             // Covered bills for this worker's settlement counterparty in the period — the linked
             // company, or the worker themself when flagged a sole trader (2026-08-31). A worker
-            // with neither cannot be reconciled against Xero — verdict says chase the link.
+            // with neither cannot be reconciled against Xero — verdict says chase the link. A
+            // cover the coding run marked per worker (2026-09-08) counts for that worker alone;
+            // a cover without a worker is the counterparty's as a whole.
             var counterparty = WorkerSettlementIdentity.CounterpartyId(
                 worker.SubcontractorId, worker.IsSoleTrader, worker.WorkerId);
             var coveredTotal = counterparty is null ? 0m
                 : coversBySub[counterparty]
+                    .Where(cover => cover.WorkerId is null || cover.WorkerId == worker.WorkerId)
                     .Sum(cover => coveredNetByLine.TryGetValue(cover.XeroLedgerLineId, out var net) ? net : 0m);
 
             var grossTotal = grossLabour + grossOther;

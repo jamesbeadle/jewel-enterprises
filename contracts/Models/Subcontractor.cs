@@ -59,8 +59,14 @@ public sealed record Subcontractor(
     // from the Directory and its pickers until promoted ("Add to directory" on a submitted tender,
     // or automatically when a package is awarded to them), so the directory stays a curated list
     // of companies judged worth working with rather than everyone ever invited to price a job.
-    bool IsProspect = false)
+    bool IsProspect = false,
+    // The Xero contacts this record is linked to (normally one; several only when Xero-imported
+    // records were consolidated together). Null from callers that don't show the link — treat
+    // through XeroLinks, which never answers null.
+    IReadOnlyList<DirectoryXeroLink>? XeroLinks = null)
 {
+    public IReadOnlyList<DirectoryXeroLink> XeroLinks { get; init; } = XeroLinks ?? Array.Empty<DirectoryXeroLink>();
+
     // The letter-style address block for the purchase order's Sub/Vendor panel: street line(s),
     // town, county, postcode — blanks skipped.
     public IReadOnlyList<string> AddressLines =>
@@ -74,6 +80,16 @@ public sealed record Subcontractor(
     public bool HasTrade(string tradeId) =>
         Trades.Any(trade => string.Equals(trade.TradeId, tradeId, StringComparison.OrdinalIgnoreCase));
 }
+
+// One link between a directory record and a Xero contact: written by Import from Xero or by
+// "Link to Xero contact" on an existing record, moved to the master by consolidation. XeroContactName
+// is the contact's name in Xero when the link was made — kept so the record can say which Xero
+// contact it settles through even after either side is renamed.
+public sealed record DirectoryXeroLink(
+    string XeroContactId,
+    string XeroContactName,
+    DateTimeOffset LinkedAt,
+    string LinkedByEmail);
 
 // A person on a company directory record, beyond the record's single primary contact line. A
 // consolidated master record keeps every merged email/phone as one of these, and Purpose is the

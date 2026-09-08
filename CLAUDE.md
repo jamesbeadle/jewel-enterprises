@@ -105,6 +105,24 @@ finds drift.
   frame is read); nothing below `text-xs`; no `uppercase`/`tracking-*` — a label is the `eyebrow`
   class (14/Med G5) or `FormField`'s label.
 
+## Labour settlement & the Xero coding run (api)
+
+- **The run codes one settlement party at a time, never one worker.** `RunXeroCodingHandler`
+  (`Commands/XeroCoding`, one partial per concern) groups the month's schedules by settlement
+  counterparty (`CodingParty`, 2026-09-08): a sole trader is a party of one; every worker a
+  company bills on one invoice is one party, and that invoice is recoded ONCE to every worker's
+  lines — status, total, VAT and attachment kept — with `XeroLineTimesheetCover.WorkerId` stamped
+  per line so `SettlementScheduleBuilder` reconciles each worker on their own lines (a cover
+  without a worker is the counterparty's as a whole, the pre-2026-09-08 meaning). Every gate
+  (sign-off, run-once, mapping) is answered per party: one worker not ready holds the company
+  bill and every outcome says who is waiting for whom. Asking for one worker on a company bill
+  runs and reports every worker on it. Outcomes and run records stay per worker-month.
+- **A matched bill Xero says is gone is followed to its live re-issue** (`.Reissue`): same
+  invoice number (`IXeroClient.FindBillsByNumberAsync`), same contact, same period, DRAFT /
+  SUBMITTED / AUTHORISED; the predecessor's ledger lines and cover move onto the re-issue's fresh
+  lines. Several recognised candidates are read fresh from Xero before the run says "two bills"
+  — the ledger's status can be a night old. Never stage a draft beside a voided bill.
+
 ## Loading states (jpms)
 
 - **Never render a figure, a row count or an empty state from a store that has not loaded.** A `0`
