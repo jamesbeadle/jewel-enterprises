@@ -3,9 +3,12 @@
 
 @* Import from Xero: the supplier list straight out of the accounts system. Each import creates
    a NEW linked record; duplicates are then resolved with Consolidate, so there is one
-   consistent flow for all duplicates. Opened by the page with Open(search) — its search box
+   consistent flow for all duplicates — except that a contact whose name matches ONE unlinked
+   directory record (the API stamps MatchingSubcontractorId) is offered "Link to <record>"
+   first, so a supplier that is already here gets its Xero link without a duplicate being
+   minted and merged away (2026-09-08). Opened by the page with Open(search) — its search box
    starts from whatever is in the directory search box, so "sear" over the directory carries
-   straight into the Xero list — and it owns the read, the filter and the import. *@
+   straight into the Xero list — and it owns the read, the filter, the import and the link. *@
 <Modal IsOpen="open" Title="Import from Xero" ShowFooter="false"
        OnCancel="() => open = false" Class="max-w-2xl w-full">
     @if (error is not null)
@@ -78,18 +81,37 @@
                                 <p class="text-xs text-content-subtle">
                                     @string.Join(" · ", new[] { supplier.EmailAddress, supplier.Town }.Where(x => !string.IsNullOrWhiteSpace(x)))
                                 </p>
+                                @if (!supplier.AlreadyImported && supplier.MatchingSubcontractorId is not null)
+                                {
+                                    <p class="text-xs text-content-muted">Matches the directory record <span class="font-medium">@supplier.MatchingSubcontractorName</span></p>
+                                }
                             </td>
-                            <td class="text-right">
+                            <td class="text-right whitespace-nowrap">
                                 @if (supplier.AlreadyImported)
                                 {
-                                    <Pill Tone="Tone.Muted">Imported</Pill>
+                                    <Pill Tone="Tone.Muted">@(linkedContactIds.Contains(supplier.ContactId) ? "Linked" : "Imported")</Pill>
+                                }
+                                else if (supplier.MatchingSubcontractorId is not null)
+                                {
+                                    <button type="button" class="btn-secondary text-xs px-2.5 py-1.5 mr-1.5"
+                                            title="Link this Xero contact to the existing record — no second record is created"
+                                            disabled="@(busyContactId is not null)"
+                                            @onclick="() => LinkSupplierAsync(supplier)">
+                                        @(busyContactId == supplier.ContactId && busyAction == BusyAction.Link ? "Linking…" : $"Link to {supplier.MatchingSubcontractorName}")
+                                    </button>
+                                    <button type="button" class="btn-secondary text-xs px-2.5 py-1.5"
+                                            title="Create a separate new record from this Xero contact"
+                                            disabled="@(busyContactId is not null)"
+                                            @onclick="() => ImportSupplierAsync(supplier.ContactId)">
+                                        @(busyContactId == supplier.ContactId && busyAction == BusyAction.Import ? "Importing…" : "Import as new")
+                                    </button>
                                 }
                                 else
                                 {
                                     <button type="button" class="btn-secondary text-xs px-2.5 py-1.5"
-                                            disabled="@(importingContactId is not null)"
+                                            disabled="@(busyContactId is not null)"
                                             @onclick="() => ImportSupplierAsync(supplier.ContactId)">
-                                        @(importingContactId == supplier.ContactId ? "Importing…" : "Import")
+                                        @(busyContactId == supplier.ContactId ? "Importing…" : "Import")
                                     </button>
                                 }
                             </td>
@@ -107,7 +129,9 @@
     }
     <p class="text-xs text-content-subtle mt-3">
         Importing copies the supplier into the directory as a new record marked with the
-        Xero link symbol. If it duplicates an existing record, tick both in the directory
-        and use Consolidate to merge them into one master record.
+        Xero link symbol. Where a contact's name matches one record already in the directory,
+        "Link to …" gives that record the Xero link instead — nothing else on it changes. A
+        duplicate created anyway is merged with Consolidate, or linked from the record's own
+        page.
     </p>
 </Modal>

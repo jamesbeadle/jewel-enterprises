@@ -7,6 +7,36 @@ public partial class Subcontractors
 {
     private string search = "";
     private string categoryFilter = ""; // "" = all
+    private string xeroFilter = XeroFilterAll;
+
+    private const string XeroFilterAll = "all";
+    private const string XeroFilterLinked = "linked";
+    private const string XeroFilterUnlinked = "unlinked";
+
+    // Counts only once the directory has loaded — a chip saying "Not linked 0" before the fetch
+    // lands is the zero-then-value flash the loading convention forbids.
+    private IReadOnlyList<TabItem> XeroFilterChips
+    {
+        get
+        {
+            var loaded = SubcontractorStore.IsLoaded;
+            var companies = loaded ? DirectoryCompanies() : Array.Empty<Subcontractor>();
+            return new[]
+            {
+                new TabItem(XeroFilterAll, "All"),
+                new TabItem(XeroFilterLinked, "Linked to Xero", Count: loaded ? companies.Count(s => s.XeroLinked) : null),
+                new TabItem(XeroFilterUnlinked, "Not linked to Xero", Count: loaded ? companies.Count(s => !s.XeroLinked) : null,
+                    Title: "Records with no Xero contact — link each from its page, or from Import from Xero when the names match")
+            };
+        }
+    }
+
+    private static bool PassesXeroFilter(Subcontractor company, string filter) => filter switch
+    {
+        XeroFilterLinked => company.XeroLinked,
+        XeroFilterUnlinked => !company.XeroLinked,
+        _ => true
+    };
 
     // Widened for the unified directory (2026-07-22): Admin, MD, FD and PM may browse.
     private bool CanAccess => Session.AvailableRoles.Any(r =>
@@ -53,7 +83,7 @@ public partial class Subcontractors
     };
 
     private bool FiltersActive =>
-        !string.IsNullOrWhiteSpace(search) || !string.IsNullOrWhiteSpace(categoryFilter);
+        !string.IsNullOrWhiteSpace(search) || !string.IsNullOrWhiteSpace(categoryFilter) || xeroFilter != XeroFilterAll;
 
     // "12 of 118 companies" while the search or Type filter is narrowing the table; the plain
     // total otherwise. Only rendered once SubcontractorStore.IsLoaded, so the figure is real.
@@ -211,6 +241,7 @@ public partial class Subcontractors
         DirectoryCategory? cat = Enum.TryParse<DirectoryCategory>(categoryFilter, out var c) ? c : null;
         return DirectoryCompanies()
             .Where(s => cat is null || s.Category == cat)
+            .Where(s => PassesXeroFilter(s, xeroFilter))
             .Where(s => q.Length == 0
                 || (s.CompanyName ?? "").Contains(q, StringComparison.OrdinalIgnoreCase)
                 || s.Trades.Any(t => t.Name.Contains(q, StringComparison.OrdinalIgnoreCase))

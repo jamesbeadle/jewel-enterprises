@@ -529,12 +529,12 @@ Modals: none — reply/forward is inline, not a dialog.
   - **Architects group:** ArchitectsDirectoryTable ✅
   - **Staff group:** StaffDirectoryTable ✅
   - **Subcontractors group (default):**
-    - FilterBar 🔒 — SearchInput ⚠️, `<select>` Type filter 🔒, live CountSummary text 🔒 (loaded-gated), SecondaryButton "Import from Xero" 🔒 (with inline SVG icon), PrimaryButton "Consolidate (n)" 🔒 (conditional, ≥2 selected)
+    - FilterBar 🔒 — SearchInput ⚠️, `<select>` Type filter 🔒, FilterChips ✅ Xero link (All / Linked to Xero / Not linked to Xero, counts once loaded), live CountSummary text 🔒 (loaded-gated), SecondaryButton "Import from Xero" 🔒 (with inline SVG icon), PrimaryButton "Consolidate (n)" 🔒 (conditional, ≥2 selected)
     - CompaniesDirectoryTable ✅ (SelectedIds, compliance pills)
-- Modals: Add company (Modal ✅ + DirectoryContactForm ✅) 🔒 · XeroImportModal ✅ · ConsolidateRecordsModal ✅
+- Modals: Add company (Modal ✅ + DirectoryContactForm ✅) 🔒 · XeroImportModal ✅ (offers "Link to <record>" beside "Import as new" when a contact's name matches one unlinked record) · ConsolidateRecordsModal ✅
 
 ### Subcontractor Detail — `/directory/{SubcontractorId}`
-`Pages/SubcontractorDetail.razor` (338 lines) — one directory company: trades, contacts, portal invite, statement of account, edit form.
+`Pages/SubcontractorDetail.razor` — one directory company: trades, contacts, portal invite, statement of account, edit form; header actions carry "Link to Xero contact…" (XeroLinkModal ✅) when unlinked and an InlineConfirm ✅ "Unlink from <contact>" per link when linked.
 
 - AuthGate ⚠️ → LoadGate ✅ / RequestAccessView ✅ / role-gate text 🔒 / LoadGate ✅ (directory fetch) / "not found" 🔒
 - Section 🔒

@@ -168,6 +168,20 @@ public sealed class HttpSubcontractorStore : ISubcontractorStore
         return imported;
     }
 
+    public async Task<Subcontractor> LinkToXeroAsync(string subcontractorId, string xeroContactId)
+    {
+        var linked = await commands.SendAsync(new LinkDirectoryRecordToXeroContact(subcontractorId, xeroContactId), CancellationToken.None);
+        await readModel.RefreshAsync(CancellationToken.None);
+        return linked;
+    }
+
+    public async Task<Subcontractor> UnlinkFromXeroAsync(string subcontractorId, string xeroContactId)
+    {
+        var unlinked = await commands.SendAsync(new UnlinkDirectoryRecordFromXeroContact(subcontractorId, xeroContactId), CancellationToken.None);
+        await readModel.RefreshAsync(CancellationToken.None);
+        return unlinked;
+    }
+
     public async Task<Subcontractor> ConsolidateAsync(ConsolidateDirectoryRecords command)
     {
         var master = await commands.SendAsync(command, CancellationToken.None);

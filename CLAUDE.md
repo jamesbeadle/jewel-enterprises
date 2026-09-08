@@ -123,6 +123,23 @@ finds drift.
   lines. Several recognised candidates are read fresh from Xero before the run says "two bills"
   — the ledger's status can be a night old. Never stage a draft beside a voided bill.
 
+## Directory ↔ Xero links (api + jpms)
+
+- **A directory record's Xero link is one `SubcontractorXeroLinks` row, written three ways and
+  read one way.** Import from Xero writes it with a NEW record; `LinkDirectoryRecordToXeroContact`
+  (2026-09-08, the accountant's ask) writes it onto an EXISTING record — the one-field change that
+  replaces "import a duplicate, then Consolidate"; consolidation moves it to the master. Both
+  sides must be free: a record already holding a link, or a contact linked to another record, is
+  refused naming the holder, and `UnlinkDirectoryRecordFromXeroContact` is the only way to free
+  one. `Subcontractor.XeroLinks` carries the contact id/name and who linked it; `XeroLinked` stays
+  the bool every list reads. Every link/unlink is audited (`DirectoryRecordXeroLinkChanged`).
+- **Name matching between the directory and Xero is `DirectoryXeroMatcher`, which IS
+  `WorkerDirectoryMatcher`** — one rule for every "does this name mean that company" question.
+  `ListXeroSuppliers` stamps each unlinked contact with the ONE unlinked record it matches
+  (`MatchingSubcontractorId`), which is what the import modal's "Link to …" and the record page's
+  "Suggested" read; several matches stamp nothing. The connector's `list_unlinked_directory_records`
+  shows every candidate, and a match is a suggestion a human confirms — nothing links by itself.
+
 ## Loading states (jpms)
 
 - **Never render a figure, a row count or an empty state from a store that has not loaded.** A `0`

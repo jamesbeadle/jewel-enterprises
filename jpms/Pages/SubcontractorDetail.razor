@@ -1,5 +1,6 @@
 @page "/directory/{SubcontractorId}"
 @using Jewel.JPMS.Contracts.Subcontractors
+@using Jewel.JPMS.Features.Directory
 @inject AuthService Auth
 @inject SessionService Session
 @inject ISubcontractorStore SubcontractorStore
@@ -43,7 +44,7 @@
                 @if (subcontractor.XeroLinked)
                 {
                     <span class="inline-flex items-center gap-1 rounded-full bg-surface-raised border border-line px-2 py-0.5 text-xs font-medium text-content-muted"
-                          title="This record was imported from Xero (or a Xero-imported record was consolidated into it)">
+                          title="@XeroLinkTitle(subcontractor)">
                         <svg class="w-3 h-3" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
                              stroke-linecap="round" stroke-linejoin="round"><path d="M10 13a5 5 0 0 0 7.54.54l3-3a5 5 0 0 0-7.07-7.07l-1.72 1.71" /><path d="M14 11a5 5 0 0 0-7.54-.54l-3 3a5 5 0 0 0 7.07 7.07l1.71-1.71" /></svg>
                         Linked to Xero
@@ -54,11 +55,33 @@
                 @ContactLine(subcontractor)
             </SubtitleContent>
             <Actions>
+                @if (CanManageXeroLink && !subcontractor.XeroLinked)
+                {
+                    <button type="button" class="btn-secondary shrink-0"
+                            title="Link this record to the Xero contact its bills arrive under — no second record is created"
+                            @onclick="OpenXeroLink">Link to Xero contact…</button>
+                }
+                @if (CanManageXeroLink)
+                {
+                    @foreach (var link in subcontractor.XeroLinks)
+                    {
+                        <InlineConfirm Label="@($"Unlink from {link.XeroContactName}")"
+                                       Question="Remove this Xero link? Click again to confirm"
+                                       Title="@($"Linked {DateText(link.LinkedAt)} by {link.LinkedByEmail}. Only the link is removed; the record stays.")"
+                                       Busy="xeroBusy" OnConfirm="() => UnlinkFromXero(link.XeroContactId)" />
+                    }
+                }
                 <button type="button" class="btn-secondary shrink-0"
                         title="Edit the company name and contact details — rename to match Xero so invoices line up on WO Allocation"
                         @onclick="OpenEdit">Edit details…</button>
             </Actions>
         </PageHeader>
+
+        <XeroLinkModal @ref="xeroLinkModal" />
+        @if (xeroError is not null)
+        {
+            <Notice Tone="Tone.Negative" Class="mb-4">@xeroError</Notice>
+        }
 
         @* Trades are managed here: each is a chip from the curated list, so when a company changes
            what it does (no longer a bricklayer, now a hod carrier) the record is updated in place. *@
