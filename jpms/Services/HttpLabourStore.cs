@@ -390,6 +390,13 @@ public sealed class HttpLabourStore : ILabourStore
         await schedulesReadModel.RefreshAsync(year, month, CancellationToken.None);
     }
 
+    public async Task<LabourBillApproval> ApproveLabourBillAsync(int year, int month, string xeroInvoiceId)
+    {
+        var approval = await commands.SendAsync(new ApproveLabourBill(xeroInvoiceId, year, month), CancellationToken.None);
+        await schedulesReadModel.RefreshAsync(year, month, CancellationToken.None);
+        return approval;
+    }
+
     public IReadOnlyList<LabourSettlementRow> SettlementFor(string projectId)
     {
         if (settlementRequested.Add(projectId)) _ = LoadAsync(() => settlementReadModel.RefreshAsync(projectId, CancellationToken.None), settlementRequested, projectId);

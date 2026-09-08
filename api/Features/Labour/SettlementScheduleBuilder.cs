@@ -136,7 +136,8 @@ public sealed class SettlementScheduleBuilder
                 lastRun?.RunAt));
         }
 
-        return new SettlementScheduleSnapshot(year, month, rows,
+        var rowsWithBills = CoveredBillResolver.Attach(rows, coversBySub, coveredLines.ToDictionary(line => line.XeroLedgerLineId));
+        return new SettlementScheduleSnapshot(year, month, rowsWithBills,
             InvoicesToChase: rows.Count(row => row.Verdict == ScheduleVerdict.NoBillYet),
             WorkersToReconcile: rows.Count(row => row.Verdict is ScheduleVerdict.NoBillYet or ScheduleVerdict.VarianceOpen));
     }

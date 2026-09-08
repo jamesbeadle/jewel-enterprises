@@ -64,6 +64,17 @@ public sealed record RunXeroCoding(int Year, int Month, IReadOnlyList<string>? W
     : ICommand<IReadOnlyList<XeroCodingRunResult>>;
 
 /// <summary>
+/// Approves a covered labour bill in Xero (2026-09-08, the accountant's ask once J and K ran):
+/// DRAFT → AUTHORISED, only once every worker-month the bill covers reads Matches — the
+/// settlement view's own rule, checked again server-side against the bill as Xero holds it
+/// now. The lines stay exactly as coded; nothing is paid. Recorded as BillApproved against
+/// every worker-month on the bill, so the history reads recoded → approved. Confirm-first.
+/// ApprovedByEmail is stamped server-side from the caller.
+/// </summary>
+public sealed record ApproveLabourBill(string XeroInvoiceId, int Year, int Month, string ApprovedByEmail = "")
+    : ICommand<LabourBillApproval>;
+
+/// <summary>
 /// Resets a worker-month's coding outcome (2026-09-03): appends a Reset outcome to the run
 /// history (who, why, what it was) so the run-once gate — which reads the latest outcome —
 /// lets the month be coded again. Touches nothing in Xero; the reason is mandatory.

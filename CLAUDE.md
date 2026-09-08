@@ -131,6 +131,15 @@ finds drift.
   (sign-off, run-once, mapping) is answered per party: one worker not ready holds the company
   bill and every outcome says who is waiting for whom. Asking for one worker on a company bill
   runs and reports every worker on it. Outcomes and run records stay per worker-month.
+- **Approving a covered labour bill is the portal's, once every worker on it reads Matches**
+  (`ApproveLabourBillHandler`, 2026-09-08): DRAFT → AUTHORISED through the same
+  `ApproveInvoiceAsync` the allocation write-back uses, with an EMPTY instruction list so every
+  line passes through untouched. `CoveredBillResolver` tells the settlement view which bill
+  covers each worker and whether the rule is met (`WorkerSettlementSchedule.CoveredBill`); the
+  row's "Approve in Xero" and the `approve_labour_bill` action share the handler. The outcome is
+  recorded per worker as `BillApproved`, and `XeroCodingOutcomes.IsWritten` is the ONE definition
+  of a written month — the run-once gate, the reset, the correction guards, the chase list and
+  the table's Reset button all read it; never re-list the outcomes by hand.
 - **A matched bill Xero says is gone is followed to its live re-issue** (`.Reissue`): same
   invoice number (`IXeroClient.FindBillsByNumberAsync`), same contact, same period, DRAFT /
   SUBMITTED / AUTHORISED; the predecessor's ledger lines and cover move onto the re-issue's fresh

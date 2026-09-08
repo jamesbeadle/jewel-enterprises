@@ -132,6 +132,14 @@ what it shows the signed-in user.
      reconciles them separately.
 4. add_labour_settlement_variance posts any accepted difference between the bill total and the
    settlement schedule.
+5. **approve_labour_bill (confirm-first, WRITES TO XERO; 8 Sep 2026).** Once every worker a
+   covered bill settles reads Matches, view_settlement_month's `coveredBill.isApprovable` is
+   true and this takes the bill DRAFT → AUTHORISED in Xero exactly as coded — no line touched,
+   nothing paid — recording BillApproved against every worker on it. It refuses, naming the
+   worker, while anyone on the bill reads VarianceOpen or NoBillYet: post the variance or fix
+   the bill first, never approve a bill that does not match. In the confirm turn put the bill's
+   label, total, status and the workers with their verdicts in front of the user. The same
+   button is "Approve in Xero" on the Settlement view.
 
 Before any Xero authorisation, read get_aged_payables for duplicate drafts per worker and check
 the bill's account split: labour must sit on the CIS labour account (321) so CIS is deducted;

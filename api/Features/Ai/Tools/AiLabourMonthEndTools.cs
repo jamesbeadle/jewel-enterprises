@@ -76,6 +76,15 @@ internal static class AiLabourMonthEndTools
                             difference = worker.Difference,
                             lastCodingOutcome = string.IsNullOrWhiteSpace(worker.LastCodingOutcome) ? null : worker.LastCodingOutcome,
                             lastCodedAt = worker.LastCodedAt,
+                            coveredBill = worker.CoveredBill is null ? null : new
+                            {
+                                xeroInvoiceId = worker.CoveredBill.XeroInvoiceId,
+                                label = worker.CoveredBill.Label,
+                                status = worker.CoveredBill.Status,
+                                total = worker.CoveredBill.Total,
+                                workerNames = worker.CoveredBill.WorkerNames,
+                                isApprovable = worker.CoveredBill.IsApprovable
+                            },
                             lines = worker.Lines.Select(line => new
                             {
                                 line.ProjectId,
@@ -92,8 +101,10 @@ internal static class AiLabourMonthEndTools
                             + "(2026-09-03) is to find the worker's existing bill — covered, or recognised "
                             + "by contact + period, draft OR authorised — recode it to the schedule and "
                             + "re-point the cover itself, so verdict Matches survives the run; it stages a "
-                            + "DRAFT only where no bill exists, and that draft is approved by a human in "
-                            + "Xero. add_labour_settlement_variance posts an accepted difference. A "
+                            + "DRAFT only where no bill exists. coveredBill names the bill a worker's "
+                            + "month is covered by and its status; once every worker on it reads Matches "
+                            + "(isApprovable), approve_labour_bill (confirm-first) takes it DRAFT → "
+                            + "AUTHORISED in Xero. add_labour_settlement_variance posts an accepted difference. A "
                             + "verdict of NoBillYet with lastCodingOutcome DraftStaged means the staged "
                             + "draft is awaiting approval in Xero, not a missing invoice; lastCodingOutcome "
                             + "Reset means a person reopened the month for the run."

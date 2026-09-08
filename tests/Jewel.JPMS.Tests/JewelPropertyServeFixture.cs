@@ -59,15 +59,31 @@ internal sealed class JewelPropertyServeFixture
     /// <summary>One ledger line for a one-line bill from the company, as the sync stores it.</summary>
     public XeroLedgerLineEntity AddLedgerBill(string billId, string number, DateTime date, decimal net, string status = "AUTHORISED")
     {
-        var line = new XeroLedgerLineEntity
-        {
-            XeroLedgerLineId = $"{billId}:old", XeroInvoiceId = billId, XeroLineItemId = "old", Type = "ACCPAY", InvoiceNumber = number,
-            ContactName = CompanyName, Date = date, InvoiceStatus = status, Net = net, InvoiceTotal = net, AmountDue = net,
-            AccountCode = "321", AccountName = "CIS Labour Expense", FirstSeenAtUtc = date, LastSyncedAtUtc = date,
-        };
+        var line = LedgerLine(billId, "old", number, date, net, net, status);
         Context.XeroLedgerLines.Add(line);
         return line;
     }
+
+    /// <summary>The company's bill as the coding run leaves it: one ledger line per worker for
+    /// their gross, each covered for that worker — the state "Approve in Xero" is offered on.</summary>
+    public void AddCoveredCompanyBill(string billId, string status, decimal danNet = 4200m, decimal finleyNet = 1350m, decimal johnNet = 920m)
+    {
+        var total = danNet + finleyNet + johnNet;
+        foreach (var (workerId, net) in new[] { ("W-DAN", danNet), ("W-FINLEY", finleyNet), ("W-JOHN", johnNet) })
+        {
+            var line = LedgerLine(billId, workerId, "INV-1252", new DateTime(2026, 8, 31), net, total, status);
+            Context.XeroLedgerLines.Add(line);
+            AddCover(line.XeroLedgerLineId, workerId);
+        }
+    }
+
+    private static XeroLedgerLineEntity LedgerLine(string billId, string lineItemId, string number, DateTime date, decimal net, decimal total, string status) =>
+        new()
+        {
+            XeroLedgerLineId = $"{billId}:{lineItemId}", XeroInvoiceId = billId, XeroLineItemId = lineItemId, Type = "ACCPAY", InvoiceNumber = number,
+            ContactName = CompanyName, Date = date, InvoiceStatus = status, Net = net, InvoiceTotal = total, AmountDue = total,
+            AccountCode = "321", AccountName = "CIS Labour Expense", FirstSeenAtUtc = date, LastSyncedAtUtc = date,
+        };
 
     public void AddCover(string ledgerLineId, string? workerId = null) =>
         Context.XeroLineTimesheetCovers.Add(new XeroLineTimesheetCoverEntity
@@ -93,6 +109,10 @@ internal sealed class JewelPropertyServeFixture
     public Task<IReadOnlyList<XeroCodingRunResult>> RunAsync(bool dryRun = false, IReadOnlyList<string>? workerIds = null) =>
         new RunXeroCodingHandler(Context, new SettlementScheduleBuilder(Context), Xero, new XeroOptions())
             .HandleAsync(new RunXeroCoding(2026, 8, workerIds, dryRun), "accounts@jewelbb.co.uk", CancellationToken.None);
+
+    public Task<LabourBillApproval> ApproveAsync(string xeroInvoiceId) =>
+        new ApproveLabourBillHandler(Context, new SettlementScheduleBuilder(Context), Xero)
+            .HandleAsync(new ApproveLabourBill(xeroInvoiceId, 2026, 8), "jeremy@jewelbb.co.uk", CancellationToken.None);
 
     public Task<SettlementScheduleSnapshot> SchedulesAsync() => new SettlementScheduleBuilder(Context).BuildAsync(2026, 8, CancellationToken.None);
 

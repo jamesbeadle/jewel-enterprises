@@ -108,6 +108,9 @@ public interface ILabourStore
     Task<IReadOnlyList<XeroCodingRunResult>> RunXeroCodingAsync(int year, int month, IReadOnlyList<string>? workerIds, bool dryRun = false);
     /// <summary>Reopens a worker-month for the run (appends a Reset outcome, reason recorded).</summary>
     Task ResetXeroCodingOutcomeAsync(int year, int month, string workerId, string reason);
+    /// <summary>Approves a covered labour bill in Xero, DRAFT → AUTHORISED, once every worker on
+    /// it reads Matches (2026-09-08); refreshes the month's schedules afterwards.</summary>
+    Task<LabourBillApproval> ApproveLabourBillAsync(int year, int month, string xeroInvoiceId);
 
     // Settlement reconciliation.
     IReadOnlyList<LabourSettlementRow> SettlementFor(string projectId);

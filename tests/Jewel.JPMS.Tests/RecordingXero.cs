@@ -15,6 +15,7 @@ internal sealed class RecordingXero : IXeroClient
     public string[] RecodedLineIds { get; set; } = Array.Empty<string>();
     public XeroDraftBillRequest? Draft { get; private set; }
     public XeroBillCodingRequest? Recode { get; private set; }
+    public XeroApprovalRequest? Approval { get; private set; }
 
     public bool IsConfigured => true;
 
@@ -61,7 +62,20 @@ internal sealed class RecordingXero : IXeroClient
         return Task.FromResult(new XeroSuppliersSnapshot(true, null, DateTimeOffset.UtcNow, false, Suppliers.ToList()));
     }
     public Task<XeroTrackingCategoriesSnapshot> GetTrackingCategoriesSnapshotAsync(bool force, CancellationToken ct) => throw new NotSupportedException();
-    public Task<XeroApprovalResult> ApproveInvoiceAsync(XeroApprovalRequest request, CancellationToken ct) => throw new NotSupportedException();
+    /// <summary>Approval as the real client answers it: an unknown bill fails, an approved or
+    /// paid one is acknowledged untouched, a voided one refuses, a draft becomes AUTHORISED.</summary>
+    public Task<XeroApprovalResult> ApproveInvoiceAsync(XeroApprovalRequest request, CancellationToken ct)
+    {
+        Calls.Add($"ApproveInvoice:{request.InvoiceId}");
+        Approval = request;
+        if (!Bills.TryGetValue(request.InvoiceId, out var bill) || bill is null)
+            return Task.FromResult(XeroApprovalResult.Failed("Xero returned no invoice for this id — it may have been deleted."));
+        if (bill.Status is "AUTHORISED" or "PAID") return Task.FromResult(XeroApprovalResult.SkippedAlreadyApproved(bill.Status));
+        if (bill.Status is "VOIDED" or "DELETED")
+            return Task.FromResult(XeroApprovalResult.Failed($"The invoice is {bill.Status} in Xero and can't be approved."));
+        Bills[request.InvoiceId] = bill with { Status = "AUTHORISED" };
+        return Task.FromResult(XeroApprovalResult.Ok("AUTHORISED"));
+    }
     public Task<XeroApprovalResult> SetSiteTrackingAsync(XeroSiteTrackingRequest request, CancellationToken ct) => throw new NotSupportedException();
     public Task<XeroApprovalResult> ClearTrackingAsync(string invoiceId, bool isCreditNote, CancellationToken ct)
     {

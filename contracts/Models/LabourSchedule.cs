@@ -52,7 +52,32 @@ public sealed record WorkerSettlementSchedule(
     bool FullySignedOff,
     /// <summary>The latest Xero coding run for this worker-month, empty when none has run.</summary>
     string LastCodingOutcome,
-    DateTimeOffset? LastCodedAt);
+    DateTimeOffset? LastCodedAt,
+    /// <summary>The bill this month is covered by, when its covers all point at one bill
+    /// (2026-09-08) — null while nothing covers it, or while its covers span two bills.</summary>
+    CoveredBill? CoveredBill = null);
+
+/// <summary>
+/// The bill a worker's month is covered by, as the ledger last saw it (2026-09-08): which bill,
+/// its status, the workers it covers — and whether it can be approved from the portal, which it
+/// can while it is still DRAFT (or SUBMITTED) and every worker on it reads Matches.
+/// </summary>
+public sealed record CoveredBill(
+    string XeroInvoiceId,
+    string Label,
+    string Status,
+    decimal Total,
+    IReadOnlyList<string> WorkerNames,
+    bool IsApprovable);
+
+/// <summary>What approving a covered labour bill did (2026-09-08): the bill, its status now,
+/// whether Xero already had it approved, and the workers whose months it settles.</summary>
+public sealed record LabourBillApproval(
+    string XeroInvoiceId,
+    string Label,
+    string Status,
+    bool WasAlreadyApproved,
+    IReadOnlyList<string> WorkerNames);
 
 /// <summary>The month's schedules plus the chase counts the dashboard chips show.</summary>
 public sealed record SettlementScheduleSnapshot(
@@ -112,6 +137,26 @@ public enum XeroCodingOutcome
     /// can take it again — Detail carries who, why and what it was before. Recorded, so the
     /// history reads: staged → reset → recoded.</summary>
     Reset = 6,
+    /// <summary>The covered bill was approved in Xero from the portal (2026-09-08): DRAFT →
+    /// AUTHORISED, once every worker on it read Matches. Recorded against every worker-month
+    /// the bill covers; a written month, like BillRecoded.</summary>
+    BillApproved = 7,
+}
+
+/// <summary>The outcomes that mean a worker-month is WRITTEN to Xero — read the same way by the
+/// run-once gate, the timesheet-correction guards, the chase list, the reset and the settlement
+/// table's Reset button (2026-09-08).</summary>
+public static class XeroCodingOutcomes
+{
+    public static readonly int[] WrittenValues =
+        { (int)XeroCodingOutcome.BillRecoded, (int)XeroCodingOutcome.DraftStaged, (int)XeroCodingOutcome.BillApproved };
+
+    public static bool IsWritten(XeroCodingOutcome outcome) => WrittenValues.Contains((int)outcome);
+
+    public static bool IsWritten(int storedOutcome) => WrittenValues.Contains(storedOutcome);
+
+    public static bool IsWritten(string storedOutcome) =>
+        Enum.TryParse<XeroCodingOutcome>(storedOutcome, out var outcome) && IsWritten(outcome);
 }
 
 public sealed record XeroCodingRunResult(
