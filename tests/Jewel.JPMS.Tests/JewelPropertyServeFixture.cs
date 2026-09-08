@@ -85,6 +85,15 @@ internal sealed class JewelPropertyServeFixture
             AccountCode = "321", AccountName = "CIS Labour Expense", FirstSeenAtUtc = date, LastSyncedAtUtc = date,
         };
 
+    /// <summary>An accepted difference posted the connector's way: signed as paying more (+) or
+    /// less (−) than the timesheets say, against the covered line it explains — or none.</summary>
+    public void AddVariance(decimal amount, string? ledgerLineId, string projectId = "P-ABBOT") =>
+        Context.LabourSettlementVariances.Add(new LabourSettlementVarianceEntity
+        {
+            LabourSettlementVarianceId = $"V-{Guid.NewGuid():N}", ProjectId = projectId, CostCode = "PRELIMS-LAB", SubcontractorId = Company,
+            Amount = amount, Reason = "Agreed with JPS", XeroLedgerLineId = ledgerLineId, CreatedByEmail = "jeremy@jewelbb.co.uk", CreatedAt = August.AddMonths(1),
+        });
+
     public void AddCover(string ledgerLineId, string? workerId = null) =>
         Context.XeroLineTimesheetCovers.Add(new XeroLineTimesheetCoverEntity
         {

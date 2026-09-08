@@ -118,7 +118,47 @@ public sealed class RunXeroCodingReissueTests
     }
 
     [Fact]
-    public async Task TwoLiveReissuesUnderTheSameNumberAreAQuestionForAPerson()
+    public async Task OfTwoLiveReissuesTheOneWhoseNetIsTheSchedulesIsTakenAndTheOutcomeSaysWhy()
+    {
+        var fixture = await CreateAsync();
+        fixture.AddLedgerBill("old-bill", "INV-1252", EndOfAugust, 6270m);
+        await fixture.Context.SaveChangesAsync();
+        fixture.Xero.Bills["old-bill"] = Bill("old-bill", "VOIDED", 6270m);
+        fixture.Xero.Bills["right-bill"] = Bill("right-bill", "AUTHORISED");
+        fixture.Xero.BillsByNumber["INV-1252"] = new() { Bill("wrong-bill", "DRAFT", 6270m), Bill("right-bill", "AUTHORISED") };
+        fixture.Xero.RecodedLineIds = NineLineIds;
+
+        var results = await fixture.RunAsync();
+
+        Assert.All(results, result => Assert.Equal((XeroCodingOutcome.BillRecoded, "right-bill"), (result.Outcome, result.XeroBillId)));
+        Assert.Contains("2 live bills carry the number \"INV-1252\": took right-bill (AUTHORISED, net £6,470.00) because its net is the schedule's, "
+            + "over wrong-bill (DRAFT, net £6,270.00). Bill \"INV-1252\" (old-bill) is voided; its live re-issue", results[0].Detail);
+        Assert.Equal(new[] { "GetBill:old-bill", "FindBills:INV-1252", "RecodeBill:right-bill" }, fixture.Xero.Calls);
+    }
+
+    [Fact]
+    public async Task OfTwoLiveReissuesNeitherMatchingTheNewestIsTaken()
+    {
+        var fixture = await CreateAsync();
+        fixture.AddLedgerBill("old-bill", "INV-1252", EndOfAugust, 6270m);
+        await fixture.Context.SaveChangesAsync();
+        fixture.Xero.Bills["old-bill"] = Bill("old-bill", "VOIDED", 6270m);
+        fixture.Xero.Bills["newer-bill"] = Bill("newer-bill", "DRAFT", 6300m);
+        fixture.Xero.BillsByNumber["INV-1252"] = new()
+        {
+            Bill("older-bill", "DRAFT", 6250m) with { UpdatedUtc = new DateTime(2026, 9, 8, 9, 0, 0) },
+            Bill("newer-bill", "DRAFT", 6300m) with { UpdatedUtc = new DateTime(2026, 9, 8, 10, 0, 0) },
+        };
+        fixture.Xero.RecodedLineIds = NineLineIds;
+
+        var results = await fixture.RunAsync();
+
+        Assert.All(results, result => Assert.Equal((XeroCodingOutcome.BillRecoded, "newer-bill"), (result.Outcome, result.XeroBillId)));
+        Assert.Contains("took newer-bill (DRAFT, net £6,300.00) because none has the schedule's net, so it is the newest, over older-bill (DRAFT, net £6,250.00).", results[0].Detail);
+    }
+
+    [Fact]
+    public async Task TwoLiveReissuesTheRunCannotTellApartAreAQuestionForAPerson()
     {
         var fixture = await CreateAsync();
         fixture.AddLedgerBill("old-bill", "INV-1252", EndOfAugust, 6270m);
@@ -129,8 +169,27 @@ public sealed class RunXeroCodingReissueTests
         var results = await fixture.RunAsync();
 
         Assert.All(results, result => Assert.Equal(XeroCodingOutcome.Skipped, result.Outcome));
-        Assert.Equal("2 live bills from Jewel Property Serve Ltd carry the number \"INV-1252\": new-bill (AUTHORISED, £6,470.00), "
-            + "newer-bill (DRAFT, £6,470.00). Mark the right one as settlement on the Cost allocation page's Labour tab, then re-run.",
+        Assert.Equal("2 live bills from Jewel Property Serve Ltd carry the number \"INV-1252\" and none reads newer or nearer the schedule: "
+            + "new-bill (AUTHORISED, £6,470.00), newer-bill (DRAFT, £6,470.00). Mark the right one as settlement on the Cost allocation page's Labour tab, then re-run.",
             results[0].Detail);
+    }
+
+    [Fact]
+    public async Task TwoLiveBillsInTheLedgerSharingANumberAreChosenBetweenNotHaltedOn()
+    {
+        var fixture = await CreateAsync();
+        fixture.AddLedgerBill("first-keyed", "INV-1252", EndOfAugust, 6270m);
+        fixture.AddLedgerBill("keyed-again", "INV-1252", new DateTime(2026, 9, 2), 6470m);
+        await fixture.Context.SaveChangesAsync();
+        fixture.Xero.Bills["first-keyed"] = Bill("first-keyed", "DRAFT", 6270m);
+        fixture.Xero.Bills["keyed-again"] = Bill("keyed-again", "DRAFT");
+        fixture.Xero.RecodedLineIds = NineLineIds;
+
+        var results = await fixture.RunAsync();
+
+        Assert.All(results, result => Assert.Equal((XeroCodingOutcome.BillRecoded, "keyed-again"), (result.Outcome, result.XeroBillId)));
+        Assert.StartsWith("2 live bills carry the number \"INV-1252\": took keyed-again (DRAFT, net £6,470.00) because its net is the schedule's, "
+            + "over first-keyed (DRAFT, net £6,270.00). Recoded", results[0].Detail);
+        Assert.Equal(new[] { "GetBill:first-keyed", "GetBill:keyed-again", "GetBill:keyed-again", "RecodeBill:keyed-again" }, fixture.Xero.Calls);
     }
 }

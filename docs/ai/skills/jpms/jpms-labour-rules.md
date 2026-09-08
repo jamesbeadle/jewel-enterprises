@@ -122,7 +122,9 @@ what it shows the signed-in user.
    - **A voided bill is followed to its re-issue (8 Sep 2026).** When the bill the ledger or a
      cover names is voided or deleted in Xero and a live DRAFT/AUTHORISED bill exists under the
      same number, contact and period, the run recodes that one and moves the cover onto its
-     lines; two live re-issues, or none, skip with the reason.
+     lines. Of several live bills sharing a number it takes the one whose net is the schedule's,
+     else the newest (by Xero's last change, then date), and the outcome says which it took over
+     which — only two it cannot tell apart stop it; none leaves the month where it was.
    - The manual cover route remains valid where the run cannot act: the FD authorises the
      worker's own bill in Xero, then set_xero_line_timesheet_cover marks the labour line(s)
      against the worker-month. A covered line needs NO allocation on the Allocation page — the
@@ -131,7 +133,11 @@ what it shows the signed-in user.
      workers it counts against every worker's verdict; the run's per-worker cover is what
      reconciles them separately.
 4. add_labour_settlement_variance posts any accepted difference between the bill total and the
-   settlement schedule.
+   settlement schedule — **against one of the worker's covered lines** (view_settlement_month's
+   `coveredBill.lineIds`). That is what nets it into the worker's month (8 Sep 2026): the
+   settlement view's `postedVariance`, `difference` and verdict read net of it, so a bill
+   settled with a variance reads Matches and becomes approvable. A variance posted with no line
+   counts only on the per-project settlement view.
 5. **approve_labour_bill (confirm-first, WRITES TO XERO; 8 Sep 2026).** Once every worker a
    covered bill settles reads Matches, view_settlement_month's `coveredBill.isApprovable` is
    true and this takes the bill DRAFT → AUTHORISED in Xero exactly as coded — no line touched,

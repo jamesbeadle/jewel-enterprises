@@ -130,7 +130,10 @@ public sealed record XeroBillSummary(
     decimal AmountCredited,
     decimal AmountDue,
     int LineCount,
-    string? TaxType)
+    string? TaxType,
+    /// <summary>When Xero last changed the bill (2026-09-08) — how the coding run tells the newer
+    /// of two live bills that share a number.</summary>
+    DateTime? UpdatedUtc = null)
 {
     /// <summary>Editable in Xero: draft, submitted or authorised with nothing paid or credited.</summary>
     public bool IsRecodable =>

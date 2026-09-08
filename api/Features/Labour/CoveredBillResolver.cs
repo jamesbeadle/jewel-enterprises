@@ -15,22 +15,22 @@ public static class CoveredBillResolver
         ILookup<string, XeroLineTimesheetCoverEntity> coversBySub,
         IReadOnlyDictionary<string, XeroLedgerLineEntity> coveredLinesById)
     {
-        var lineByWorker = rows.ToDictionary(row => row.WorkerId, row => CoveredLineOf(row, coversBySub, coveredLinesById));
+        var linesByWorker = rows.ToDictionary(row => row.WorkerId, row => CoveredLinesOf(row, coversBySub, coveredLinesById));
         var rowsByBill = rows
-            .Where(row => lineByWorker[row.WorkerId] is not null)
-            .ToLookup(row => lineByWorker[row.WorkerId]!.XeroInvoiceId);
-        return rows.Select(row => row with { CoveredBill = Describe(lineByWorker[row.WorkerId], rowsByBill) }).ToList();
+            .Where(row => linesByWorker[row.WorkerId].Count > 0)
+            .ToLookup(row => linesByWorker[row.WorkerId][0].XeroInvoiceId);
+        return rows.Select(row => row with { CoveredBill = Describe(linesByWorker[row.WorkerId], rowsByBill) }).ToList();
     }
 
-    /// <summary>One of the ledger lines the worker's covers point at — when they all point at the
-    /// same bill. Per-worker covers count for their worker; a cover without a worker is the
-    /// counterparty's as a whole.</summary>
-    private static XeroLedgerLineEntity? CoveredLineOf(
+    /// <summary>The ledger lines the worker's covers point at — when they all point at the same
+    /// bill; empty otherwise. Per-worker covers count for their worker; a cover without a worker
+    /// is the counterparty's as a whole.</summary>
+    private static List<XeroLedgerLineEntity> CoveredLinesOf(
         WorkerSettlementSchedule row,
         ILookup<string, XeroLineTimesheetCoverEntity> coversBySub,
         IReadOnlyDictionary<string, XeroLedgerLineEntity> coveredLinesById)
     {
-        if (row.SubcontractorId is null) return null;
+        if (row.SubcontractorId is null) return new List<XeroLedgerLineEntity>();
         var lines = coversBySub[row.SubcontractorId]
             .Where(cover => cover.WorkerId is null || cover.WorkerId == row.WorkerId)
             .Select(cover => coveredLinesById.TryGetValue(cover.XeroLedgerLineId, out var line) ? line : null)
@@ -38,12 +38,13 @@ public static class CoveredBillResolver
             .Select(line => line!)
             .ToList();
         var bills = lines.Select(line => line.XeroInvoiceId).Distinct().Count();
-        return bills == 1 ? lines[0] : null;
+        return bills == 1 ? lines : new List<XeroLedgerLineEntity>();
     }
 
-    private static CoveredBill? Describe(XeroLedgerLineEntity? line, ILookup<string, WorkerSettlementSchedule> rowsByBill)
+    private static CoveredBill? Describe(List<XeroLedgerLineEntity> lines, ILookup<string, WorkerSettlementSchedule> rowsByBill)
     {
-        if (line is null) return null;
+        if (lines.Count == 0) return null;
+        var line = lines[0];
         var workersOnBill = rowsByBill[line.XeroInvoiceId].ToList();
         var isApprovable = IsAwaitingApproval(line.InvoiceStatus)
             && workersOnBill.All(worker => worker.Verdict == ScheduleVerdict.Matches);
@@ -53,7 +54,8 @@ public static class CoveredBillResolver
             line.InvoiceStatus,
             line.InvoiceTotal,
             workersOnBill.Select(worker => worker.WorkerName).ToList(),
-            isApprovable);
+            isApprovable,
+            lines.Select(covered => covered.XeroLedgerLineId).OrderBy(id => id).ToList());
     }
 
     public static bool IsAwaitingApproval(string status) =>

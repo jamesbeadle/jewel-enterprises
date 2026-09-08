@@ -3,7 +3,8 @@ namespace Jewel.JPMS.Models;
 /// <summary>The per-worker monthly reconciliation verdict (scope §6).</summary>
 public enum ScheduleVerdict
 {
-    /// <summary>Covered bill total equals the schedule gross (to the penny).</summary>
+    /// <summary>Covered bill total equals the schedule gross (to the penny), net of any
+    /// variance posted against the covered lines.</summary>
     Matches = 0,
     /// <summary>A bill is covered but its total differs from the schedule.</summary>
     VarianceOpen = 1,
@@ -55,7 +56,11 @@ public sealed record WorkerSettlementSchedule(
     DateTimeOffset? LastCodedAt,
     /// <summary>The bill this month is covered by, when its covers all point at one bill
     /// (2026-09-08) — null while nothing covers it, or while its covers span two bills.</summary>
-    CoveredBill? CoveredBill = null);
+    CoveredBill? CoveredBill = null,
+    /// <summary>The accepted difference posted against this month's covered lines (2026-09-08),
+    /// signed as add_labour_settlement_variance signs it (positive = paying more than the
+    /// timesheets say). Difference and Verdict read net of it.</summary>
+    decimal PostedVariance = 0m);
 
 /// <summary>
 /// The bill a worker's month is covered by, as the ledger last saw it (2026-09-08): which bill,
@@ -68,7 +73,10 @@ public sealed record CoveredBill(
     string Status,
     decimal Total,
     IReadOnlyList<string> WorkerNames,
-    bool IsApprovable);
+    bool IsApprovable,
+    /// <summary>The worker's own covered lines on the bill — what a settlement variance is
+    /// posted against so it nets into this month.</summary>
+    IReadOnlyList<string> LineIds);
 
 /// <summary>What approving a covered labour bill did (2026-09-08): the bill, its status now,
 /// whether Xero already had it approved, and the workers whose months it settles.</summary>

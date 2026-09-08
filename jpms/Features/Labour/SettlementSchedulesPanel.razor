@@ -83,6 +83,10 @@
                             <td class="text-right tabular-nums font-semibold text-content">@schedule.NetPayable.ToString("N2")</td>
                             <td class="text-right tabular-nums">
                                 @(schedule.CoveredBillTotal == 0m ? "—" : schedule.CoveredBillTotal.ToString("N2"))
+                                @if (schedule.PostedVariance != 0m)
+                                {
+                                    <span class="block text-xs text-content-subtle whitespace-nowrap" title="Accepted difference posted against the covered lines">variance @schedule.PostedVariance.ToString("N2") posted</span>
+                                }
                                 @if (schedule.CoveredBill is { } bill)
                                 {
                                     <span class="block text-xs text-content-subtle whitespace-nowrap" title="@BillTitle(bill)">

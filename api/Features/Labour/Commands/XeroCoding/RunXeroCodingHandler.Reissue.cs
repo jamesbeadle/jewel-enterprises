@@ -41,8 +41,9 @@ public sealed partial class RunXeroCodingHandler
     /// <summary>
     /// The live re-issue of a bill that is voided, deleted or gone: the DRAFT / SUBMITTED /
     /// AUTHORISED bill under the same number, from the party's contact, for the same month —
-    /// what the accountant keys after voiding one. One is the bill; several is a skip; none
-    /// leaves the month where it was. No number, nothing to look for.
+    /// what the accountant keys after voiding one. One is the bill; of several,
+    /// <see cref="ReissueChoice"/> picks (and every worker's outcome says why); none leaves the
+    /// month where it was. No number, nothing to look for.
     /// </summary>
     private async Task<(XeroBillSummary? Reissue, string? Refusal)> FindReissueAsync(
         CodingParty party, string? invoiceNumber, string predecessorBillId, CancellationToken cancellationToken)
@@ -59,12 +60,17 @@ public sealed partial class RunXeroCodingHandler
                 && bill.ContactName is not null && IsOneOf(bill.ContactName, party.ContactNames)
                 && IsForMonth(bill.InvoiceNumber, bill.Reference, bill.Date, party.Month))
             .ToList();
-        if (live.Count > 1)
-            return (null, $"{live.Count} live bills from {party.Owner} carry the number \"{invoiceNumber}\": "
-                + string.Join(", ", live.Select(bill => $"{bill.InvoiceId} ({bill.Status}, £{bill.Total:N2})"))
-                + ". Mark the right one as settlement on the Cost allocation page's Labour tab, then re-run.");
-        return (live.SingleOrDefault(), null);
+        if (live.Count == 0) return (null, null);
+        var (chosen, why) = ReissueChoice.Choose(live, party.ScheduleTotal);
+        if (chosen is null) return (null, CannotTellApart(party, live, invoiceNumber));
+        foreach (var worker in party.Workers) worker.Preface += why;
+        return (chosen, null);
     }
+
+    private static string CannotTellApart(CodingParty party, IReadOnlyList<XeroBillSummary> live, string invoiceNumber) =>
+        $"{live.Count} live bills from {party.Owner} carry the number \"{invoiceNumber}\" and none reads newer or nearer the schedule: "
+        + string.Join(", ", live.Select(bill => $"{bill.InvoiceId} ({bill.Status}, £{bill.Total:N2})"))
+        + ". Mark the right one as settlement on the Cost allocation page's Labour tab, then re-run.";
 
     private static string ReissuedPreface(XeroBillSummary? gone, string goneBillId, XeroBillSummary reissue) =>
         (gone is null ? $"Bill {goneBillId} is no longer in Xero" : $"Bill {BillLabel(gone)} ({goneBillId}) is {gone.Status.ToLowerInvariant()}")

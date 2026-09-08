@@ -44,6 +44,7 @@ public sealed class SettlementScheduleBuilder
             ? new List<Data.Entities.XeroLedgerLineEntity>()
             : await context.XeroLedgerLines.Where(line => coveredLineIds.Contains(line.XeroLedgerLineId))
                 .ToListAsync(cancellationToken);
+        var variancesByCoveredLine = await SettlementVariances.ByCoveredLineAsync(context, coveredLineIds, cancellationToken);
         var runs = await context.XeroCodingRuns
             .Where(run => run.Month == monthStart).OrderBy(run => run.RunAt)
             .ToListAsync(cancellationToken);
@@ -102,8 +103,12 @@ public sealed class SettlementScheduleBuilder
                     .Where(cover => cover.WorkerId is null || cover.WorkerId == worker.WorkerId)
                     .Sum(cover => coveredNetByLine.TryGetValue(cover.XeroLedgerLineId, out var net) ? net : 0m);
 
+            // A posted variance is the accepted part of the difference (2026-09-08): what is left
+            // is what still needs explaining, so a bill settled with a variance reads Matches.
+            var postedVariance = counterparty is null ? 0m
+                : SettlementVariances.PostedFor(worker.WorkerId, coversBySub[counterparty], variancesByCoveredLine);
             var grossTotal = grossLabour + grossOther;
-            var difference = decimal.Round(coveredTotal - grossTotal, 2);
+            var difference = decimal.Round(coveredTotal - grossTotal - postedVariance, 2);
             var verdict =
                 grossTotal == 0m && coveredTotal == 0m ? ScheduleVerdict.Nothing
                 : coveredTotal == 0m ? ScheduleVerdict.NoBillYet
@@ -133,7 +138,8 @@ public sealed class SettlementScheduleBuilder
                 decimal.Round(grossTotal - cisDeduction, 2),
                 coveredTotal, difference, verdict, fullySignedOff,
                 lastRun is null ? "" : ((XeroCodingOutcome)lastRun.Outcome).ToString(),
-                lastRun?.RunAt));
+                lastRun?.RunAt,
+                PostedVariance: postedVariance));
         }
 
         var rowsWithBills = CoveredBillResolver.Attach(rows, coversBySub, coveredLines.ToDictionary(line => line.XeroLedgerLineId));

@@ -45,7 +45,8 @@ public sealed partial class XeroClient
             DecimalOf(invoice, "AmountCredited"),
             DecimalOf(invoice, "AmountDue"),
             lineCount,
-            taxType);
+            taxType,
+            DateOf(invoice, "UpdatedDateUTCString", "UpdatedDateUTC"));
     }
 
     /// <summary>The tax type the bill's lines carry — the one on the largest line when they

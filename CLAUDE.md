@@ -144,7 +144,14 @@ finds drift.
   invoice number (`IXeroClient.FindBillsByNumberAsync`), same contact, same period, DRAFT /
   SUBMITTED / AUTHORISED; the predecessor's ledger lines and cover move onto the re-issue's fresh
   lines. Several recognised candidates are read fresh from Xero before the run says "two bills"
-  — the ledger's status can be a night old. Never stage a draft beside a voided bill.
+  — the ledger's status can be a night old. Of several LIVE bills sharing one number,
+  `ReissueChoice` takes the one whose net is the schedule's, else the newest (`UpdatedUtc`, then
+  date), and the preface says which over which; a tie is a skip. Different numbers stay a skip.
+  Never stage a draft beside a voided bill.
+- **A settlement variance follows the cover of the line it names** (`SettlementVariances`,
+  2026-09-08): the builder nets it into that worker's month (`PostedVariance`), so
+  `Difference`/`Verdict` read what is still unexplained. A variance with no line has no month —
+  the connector notes tell the accountant to post against `coveredBill.lineIds`.
 
 ## Work Order bills on the Cost allocation page (api + jpms)
 
