@@ -49,6 +49,25 @@ public static class SiteFeatureRegistration
         services.AddScoped<RemoveProgrammeBaselineAuthorisation>();
         services.AddScoped<RemoveProgrammeBaselineValidation>();
 
+        // Draft programme updates from the certified valuation (2026-09-08). One authorisation
+        // for the five commands — they are all edits of the programme in waiting.
+        services.AddScoped<IQueryHandler<GetOpenProgrammeDraft, ProgrammeDraftDetail?>, GetOpenProgrammeDraftHandler>();
+        services.AddScoped<ProgrammeDraftAuthorisation>();
+
+        services.AddScoped<ICommandHandler<DraftProgrammeFromValuation, ProgrammeDraftDetail>, DraftProgrammeFromValuationHandler>();
+        services.AddScoped<DraftProgrammeFromValuationValidation>();
+
+        services.AddScoped<ICommandHandler<SuggestProgrammeDraftMappings, ProgrammeDraftDetail>, SuggestProgrammeDraftMappingsHandler>();
+
+        services.AddScoped<ICommandHandler<ReviewProgrammeDraftLine, ProgrammeDraftLine>, ReviewProgrammeDraftLineHandler>();
+        services.AddScoped<ReviewProgrammeDraftLineValidation>();
+
+        services.AddScoped<ICommandHandler<ApplyProgrammeDraft, ProgrammeDraft>, ApplyProgrammeDraftHandler>();
+        services.AddScoped<ApplyProgrammeDraftValidation>();
+
+        services.AddScoped<ICommandHandler<DiscardProgrammeDraft, ProgrammeDraft>, DiscardProgrammeDraftHandler>();
+        services.AddScoped<DiscardProgrammeDraftValidation>();
+
         return services;
     }
 }

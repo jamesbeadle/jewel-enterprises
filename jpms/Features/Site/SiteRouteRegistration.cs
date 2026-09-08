@@ -60,5 +60,30 @@ public static class SiteRouteRegistration
         commands.Register<RemoveProgrammeBaseline, Acknowledgement>(
             new CommandRoute("DELETE", "/api/programme-baselines/{programmeBaselineId}",
                 command => $"/api/programme-baselines/{((RemoveProgrammeBaseline)command).ProgrammeBaselineId}"));
+
+        // Draft programme updates from the certified valuation (2026-09-08).
+        queries.Register<GetOpenProgrammeDraft, ProgrammeDraftDetail?>(
+            new QueryRoute("/api/projects/{projectId}/programme/draft",
+                query => $"/api/projects/{((GetOpenProgrammeDraft)query).ProjectId}/programme/draft"));
+
+        commands.Register<DraftProgrammeFromValuation, ProgrammeDraftDetail>(
+            new CommandRoute("POST", "/api/projects/{projectId}/programme/drafts",
+                command => $"/api/projects/{((DraftProgrammeFromValuation)command).ProjectId}/programme/drafts"));
+
+        commands.Register<SuggestProgrammeDraftMappings, ProgrammeDraftDetail>(
+            new CommandRoute("POST", "/api/programme-drafts/{programmeDraftId}/suggestions",
+                command => $"/api/programme-drafts/{((SuggestProgrammeDraftMappings)command).ProgrammeDraftId}/suggestions"));
+
+        commands.Register<ReviewProgrammeDraftLine, ProgrammeDraftLine>(
+            new CommandRoute("PUT", "/api/programme-draft-lines/{programmeDraftLineId}",
+                command => $"/api/programme-draft-lines/{((ReviewProgrammeDraftLine)command).ProgrammeDraftLineId}"));
+
+        commands.Register<ApplyProgrammeDraft, ProgrammeDraft>(
+            new CommandRoute("POST", "/api/programme-drafts/{programmeDraftId}/apply",
+                command => $"/api/programme-drafts/{((ApplyProgrammeDraft)command).ProgrammeDraftId}/apply"));
+
+        commands.Register<DiscardProgrammeDraft, ProgrammeDraft>(
+            new CommandRoute("POST", "/api/programme-drafts/{programmeDraftId}/discard",
+                command => $"/api/programme-drafts/{((DiscardProgrammeDraft)command).ProgrammeDraftId}/discard"));
     }
 }

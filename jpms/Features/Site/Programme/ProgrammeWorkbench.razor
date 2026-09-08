@@ -1,10 +1,11 @@
 @namespace Jewel.JPMS.Features.Site
 @using Jewel.JPMS.Contracts.Site
 
-@* The programme itself: movement against the latest baseline, the three doors (add task, add
-   dependency, baselines) and the Gantt. The workbench owns the programme — it reads it, writes
-   every change through and re-reads — and hands the page one thing: a delay event the human
-   wants to raise a Notice of Delay from. *@
+@* The programme itself: movement against the latest baseline, the four doors (add task, add
+   dependency, baselines, draft from valuation) and the Gantt — or, while a draft programme
+   update is being reviewed, the review pane in the Gantt's place. The workbench owns the
+   programme and its open draft — it reads them, writes every change through and re-reads — and
+   hands the page one thing: a delay event the human wants to raise a Notice of Delay from. *@
 @if (error is not null)
 {
     <Notice Tone="Tone.Negative" Class="mb-4">@error</Notice>
@@ -61,10 +62,26 @@
         </Notice>
     }
 
+    @* The draft programme update awaiting review — opened when the architect's approval was
+       recorded on the valuation (or by hand below). Reviewing swaps the Gantt for the draft. *@
+    @if (draft is { } openDraft)
+    {
+        <Notice Tone="Tone.Warning" Class="mb-5">
+            <div class="flex flex-wrap items-center gap-3">
+                <p class="text-sm text-content">
+                    <span class="font-semibold">Draft programme update from @openDraft.Draft.ClaimName awaits review</span>
+                    <span class="text-content-muted"> — @openDraft.MappedCount of @openDraft.Lines.Count @(openDraft.Lines.Count == 1 ? "task" : "tasks") matched to cost centres, @openDraft.ChangeCount would change; opened @DateTimeText(openDraft.Draft.CreatedAt) by @openDraft.Draft.CreatedByEmail.</span>
+                </p>
+                <button type="button" class="btn-secondary" @onclick="ToggleReview">@(reviewingDraft ? "Back to programme" : "Review draft")</button>
+            </div>
+        </Notice>
+    }
+
     <div class="flex flex-wrap gap-2 mb-5">
         <button type="button" class="btn-secondary" @onclick="() => ToggleForm(Form.AddTask)">Add task</button>
         <button type="button" class="btn-secondary" disabled="@(Tasks.Count < 2)" @onclick="() => ToggleForm(Form.AddLink)">Add dependency</button>
         <button type="button" class="btn-secondary" disabled="@(Tasks.Count == 0 && Baselines.Count == 0)" @onclick="() => ToggleForm(Form.Baseline)">Baselines</button>
+        <button type="button" class="btn-secondary" disabled="@(Tasks.Count == 0 || !CanEditProgramme)" title="Propose each task's progress from a locked valuation claim, for review" @onclick="() => ToggleForm(Form.DraftFromValuation)">Draft from valuation…</button>
     </div>
 
     @if (openForm == Form.AddTask)
@@ -177,6 +194,42 @@
             }
         </div>
     }
+    else if (openForm == Form.DraftFromValuation)
+    {
+        <div class="panel p-4 mb-5 space-y-3">
+            <p class="text-sm font-semibold text-content">Draft from valuation <span class="font-normal text-content-subtle">— proposes each task's progress from the percentages on a locked claim, for review before anything changes</span></p>
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-3">
+                <FormField Label="Valuation claim" Hint="Only locked claims are offered — a draft claim's percentages are still moving.">
+                    <select class="field" @bind="draftClaimId" disabled="@(!ClaimsLoaded)">
+                        @if (!ClaimsLoaded)
+                        {
+                            <option value="">Loading…</option>
+                        }
+                        else
+                        {
+                            <option value="">Select claim…</option>
+                            @foreach (var claim in LockedClaims)
+                            {
+                                <option value="@claim.ValuationClaimId">@claim.DisplayName — @claim.Status.DisplayName() (@DateText(claim.ClaimDate))</option>
+                            }
+                        }
+                    </select>
+                </FormField>
+            </div>
+            @if (ClaimsLoaded && LockedClaims.Count == 0)
+            {
+                <p class="text-xs text-content-subtle">No locked claim yet — value and lock a claim ("We're claiming this") on the Valuation tab first.</p>
+            }
+            @if (draft is not null)
+            {
+                <p class="text-xs text-content-subtle">The draft awaiting review will be superseded by the new one.</p>
+            }
+            <div class="flex gap-2">
+                <button type="button" class="btn-primary" disabled="@(busy || string.IsNullOrWhiteSpace(draftClaimId))" @onclick="DraftFromValuationAsync">Create draft</button>
+                <button type="button" class="btn-neutral" @onclick="() => ToggleForm(Form.None)">Cancel</button>
+            </div>
+        </div>
+    }
 
     @if (Tasks.Count == 0)
     {
@@ -184,6 +237,11 @@
             <p class="text-sm text-content">No programme tasks yet.</p>
             <p class="text-xs text-content-subtle mt-1">Add the first task to start building the programme, then take a baseline so movement can be tracked.</p>
         </div>
+    }
+    else if (reviewingDraft && draft is { } reviewed)
+    {
+        <ProgrammeDraftReview ProjectId="@ProjectId" Detail="reviewed" CanEdit="CanEditProgramme"
+                              OnChanged="DraftChanged" OnClosed="DraftClosedAsync" />
     }
     else
     {

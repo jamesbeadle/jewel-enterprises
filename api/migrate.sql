@@ -3,65 +3,131 @@ GO
 
 IF NOT EXISTS (
     SELECT * FROM [__EFMigrationsHistory]
-    WHERE [MigrationId] = N'20260902120000_SplitLabourWeekSignOffAtMonthEnd'
+    WHERE [MigrationId] = N'20260908120000_AddWorkerToXeroLineTimesheetCovers'
 )
 BEGIN
-    DROP INDEX [IX_LabourWeekSignOffs_WorkerId_WeekStart] ON [LabourWeekSignOffs];
+    ALTER TABLE [XeroLineTimesheetCovers] ADD [WorkerId] nvarchar(64) NULL;
 END;
 GO
 
 IF NOT EXISTS (
     SELECT * FROM [__EFMigrationsHistory]
-    WHERE [MigrationId] = N'20260902120000_SplitLabourWeekSignOffAtMonthEnd'
-)
-BEGIN
-    ALTER TABLE [LabourWeekSignOffs] ADD [MonthStart] datetimeoffset NOT NULL DEFAULT '0001-01-01T00:00:00.0000000+00:00';
-END;
-GO
-
-IF NOT EXISTS (
-    SELECT * FROM [__EFMigrationsHistory]
-    WHERE [MigrationId] = N'20260902120000_SplitLabourWeekSignOffAtMonthEnd'
-)
-BEGIN
-
-    EXEC sp_executesql N'
-    UPDATE [LabourWeekSignOffs]
-    SET [MonthStart] = DATETIMEOFFSETFROMPARTS(YEAR([WeekStart]), MONTH([WeekStart]), 1, 0, 0, 0, 0, 0, 0, 7)
-    WHERE [MonthStart] = DATETIMEOFFSETFROMPARTS(1, 1, 1, 0, 0, 0, 0, 0, 0, 7);
-
-    INSERT INTO [LabourWeekSignOffs] ([LabourWeekSignOffId], [WorkerId], [WeekStart], [MonthStart], [SignedOffByEmail], [SignedOffAt])
-    SELECT LOWER(REPLACE(CONVERT(nvarchar(36), NEWID()), N''-'', N'''')),
-           [WorkerId], [WeekStart],
-           DATEADD(month, 1, [MonthStart]),
-           [SignedOffByEmail], [SignedOffAt]
-    FROM [LabourWeekSignOffs] AS existing
-    WHERE MONTH(DATEADD(day, 6, [WeekStart])) <> MONTH([WeekStart])
-      AND NOT EXISTS (
-          SELECT 1 FROM [LabourWeekSignOffs] AS twin
-          WHERE twin.[WorkerId] = existing.[WorkerId]
-            AND twin.[WeekStart] = existing.[WeekStart]
-            AND twin.[MonthStart] = DATEADD(month, 1, existing.[MonthStart]));
-    ';
-END;
-GO
-
-IF NOT EXISTS (
-    SELECT * FROM [__EFMigrationsHistory]
-    WHERE [MigrationId] = N'20260902120000_SplitLabourWeekSignOffAtMonthEnd'
-)
-BEGIN
-    EXEC(N'CREATE UNIQUE INDEX [IX_LabourWeekSignOffs_WorkerId_WeekStart_MonthStart] ON [LabourWeekSignOffs] ([WorkerId], [WeekStart], [MonthStart]) WHERE [WorkerId] IS NOT NULL AND [WeekStart] IS NOT NULL AND [MonthStart] IS NOT NULL');
-END;
-GO
-
-IF NOT EXISTS (
-    SELECT * FROM [__EFMigrationsHistory]
-    WHERE [MigrationId] = N'20260902120000_SplitLabourWeekSignOffAtMonthEnd'
+    WHERE [MigrationId] = N'20260908120000_AddWorkerToXeroLineTimesheetCovers'
 )
 BEGIN
     INSERT INTO [__EFMigrationsHistory] ([MigrationId], [ProductVersion])
-    VALUES (N'20260902120000_SplitLabourWeekSignOffAtMonthEnd', N'8.0.10');
+    VALUES (N'20260908120000_AddWorkerToXeroLineTimesheetCovers', N'8.0.10');
+END;
+GO
+
+COMMIT;
+GO
+
+BEGIN TRANSACTION;
+GO
+
+IF NOT EXISTS (
+    SELECT * FROM [__EFMigrationsHistory]
+    WHERE [MigrationId] = N'20260908150000_AddProgrammeDrafts'
+)
+BEGIN
+    CREATE TABLE [ProgrammeTaskCostCentres] (
+        [ProgrammeTaskCostCentreId] nvarchar(64) NOT NULL,
+        [ProjectId] nvarchar(64) NOT NULL,
+        [ProgrammeTaskId] nvarchar(64) NOT NULL,
+        [CostCode] nvarchar(32) NOT NULL,
+        CONSTRAINT [PK_ProgrammeTaskCostCentres] PRIMARY KEY ([ProgrammeTaskCostCentreId])
+    );
+END;
+GO
+
+IF NOT EXISTS (
+    SELECT * FROM [__EFMigrationsHistory]
+    WHERE [MigrationId] = N'20260908150000_AddProgrammeDrafts'
+)
+BEGIN
+    CREATE INDEX [IX_ProgrammeTaskCostCentres_ProjectId] ON [ProgrammeTaskCostCentres] ([ProjectId]);
+END;
+GO
+
+IF NOT EXISTS (
+    SELECT * FROM [__EFMigrationsHistory]
+    WHERE [MigrationId] = N'20260908150000_AddProgrammeDrafts'
+)
+BEGIN
+    CREATE INDEX [IX_ProgrammeTaskCostCentres_ProgrammeTaskId] ON [ProgrammeTaskCostCentres] ([ProgrammeTaskId]);
+END;
+GO
+
+IF NOT EXISTS (
+    SELECT * FROM [__EFMigrationsHistory]
+    WHERE [MigrationId] = N'20260908150000_AddProgrammeDrafts'
+)
+BEGIN
+    CREATE TABLE [ProgrammeDrafts] (
+        [ProgrammeDraftId] nvarchar(64) NOT NULL,
+        [ProjectId] nvarchar(64) NOT NULL,
+        [ValuationClaimId] nvarchar(64) NOT NULL,
+        [ClaimName] nvarchar(128) NOT NULL,
+        [Status] int NOT NULL,
+        [CreatedAt] datetimeoffset NOT NULL,
+        [CreatedByEmail] nvarchar(256) NOT NULL,
+        [ResolvedAt] datetimeoffset NULL,
+        [ResolvedByEmail] nvarchar(256) NOT NULL,
+        [SuggestionsRequestedAt] datetimeoffset NULL,
+        [SuggestionsNote] nvarchar(512) NOT NULL,
+        CONSTRAINT [PK_ProgrammeDrafts] PRIMARY KEY ([ProgrammeDraftId])
+    );
+END;
+GO
+
+IF NOT EXISTS (
+    SELECT * FROM [__EFMigrationsHistory]
+    WHERE [MigrationId] = N'20260908150000_AddProgrammeDrafts'
+)
+BEGIN
+    CREATE INDEX [IX_ProgrammeDrafts_ProjectId_Status] ON [ProgrammeDrafts] ([ProjectId], [Status]);
+END;
+GO
+
+IF NOT EXISTS (
+    SELECT * FROM [__EFMigrationsHistory]
+    WHERE [MigrationId] = N'20260908150000_AddProgrammeDrafts'
+)
+BEGIN
+    CREATE TABLE [ProgrammeDraftLines] (
+        [ProgrammeDraftLineId] nvarchar(64) NOT NULL,
+        [ProgrammeDraftId] nvarchar(64) NOT NULL,
+        [ProgrammeTaskId] nvarchar(64) NOT NULL,
+        [TaskTitle] nvarchar(256) NOT NULL,
+        [CurrentPercent] decimal(18,4) NOT NULL,
+        [ProposedPercent] decimal(18,4) NULL,
+        [CostCodes] nvarchar(512) NOT NULL,
+        [MappingSource] int NOT NULL,
+        [Evidence] nvarchar(1024) NOT NULL,
+        [IsIncluded] bit NOT NULL,
+        [ReviewedPercent] decimal(18,4) NULL,
+        CONSTRAINT [PK_ProgrammeDraftLines] PRIMARY KEY ([ProgrammeDraftLineId])
+    );
+END;
+GO
+
+IF NOT EXISTS (
+    SELECT * FROM [__EFMigrationsHistory]
+    WHERE [MigrationId] = N'20260908150000_AddProgrammeDrafts'
+)
+BEGIN
+    CREATE INDEX [IX_ProgrammeDraftLines_ProgrammeDraftId] ON [ProgrammeDraftLines] ([ProgrammeDraftId]);
+END;
+GO
+
+IF NOT EXISTS (
+    SELECT * FROM [__EFMigrationsHistory]
+    WHERE [MigrationId] = N'20260908150000_AddProgrammeDrafts'
+)
+BEGIN
+    INSERT INTO [__EFMigrationsHistory] ([MigrationId], [ProductVersion])
+    VALUES (N'20260908150000_AddProgrammeDrafts', N'8.0.10');
 END;
 GO
 

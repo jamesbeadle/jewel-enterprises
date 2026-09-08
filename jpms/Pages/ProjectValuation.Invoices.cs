@@ -28,6 +28,9 @@ public partial class ProjectValuation
         }, "Couldn't record the claim as sent — the server may be restarting. Please try again.");
     }
 
+    // Recording the architect's approval is the certification moment: the API opens a draft
+    // programme update from the claim behind the invoice, and the banner says so — the review
+    // happens on the Programme tab, not here.
     private Task ApproveInvoiceAsync()
     {
         if (busy || SelectedInvoice is not { } invoice) return Task.CompletedTask;
@@ -35,7 +38,26 @@ public partial class ProjectValuation
         {
             await Invoices.ApproveAsync(invoice.ValuationInvoiceId);
             await ReloadInvoicePanelsAsync();
+            programmeDraftOpened = await OpenedProgrammeDraftForAsync(invoice.ValuationClaimId);
         }, "Couldn't record the approval — the server may be restarting. Please try again.");
+    }
+
+    // The draft programme update the approval just opened, when the project has a programme.
+    private ProgrammeDraftDetail? programmeDraftOpened;
+
+    private async Task<ProgrammeDraftDetail?> OpenedProgrammeDraftForAsync(string? valuationClaimId)
+    {
+        if (string.IsNullOrWhiteSpace(valuationClaimId)) return null;
+        try
+        {
+            var draft = await Queries.AskAsync(new Jewel.JPMS.Contracts.Site.GetOpenProgrammeDraft(ProjectId), CancellationToken.None);
+            return draft is not null && draft.Draft.ValuationClaimId == valuationClaimId ? draft : null;
+        }
+        catch
+        {
+            // The approval is recorded either way; the banner is a courtesy, not a gate.
+            return null;
+        }
     }
 
     private Task IssueInvoiceAsync()

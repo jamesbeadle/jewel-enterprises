@@ -19,6 +19,20 @@
   the prototype's satellite CRM tables (QualificationAssessments, SiteVisits, InfoChaseItems,
   BidDecisions, Proposals, LeadOutcomes) stay in the database, unread.
 
+- **Draft programme update** (Programme tab, 2026-09-08) is the canonical term for the
+  certified valuation's percentages proposed onto the programme's tasks for review — never
+  "sync", "auto-update" or "programme import". One opens automatically when **Record approval**
+  is taken on the claim card (the architect's certification: `ApproveValuationInvoiceHandler`,
+  best effort, after the approval is committed) and by hand from the Programme tab's "Draft from
+  valuation…" door against any locked claim. A task's progress is proposed as the £-weighted
+  completion of the valuation lines on its **cost centres**; the mapping comes from the task's
+  saved mapping (`ProgrammeTaskCostCentres`, written when a draft is applied), else the
+  trade-word rulebook (`ProgrammeCostCentreRules`), else Claude (asked once per draft), else the
+  reviewer. Progress only — planned dates never move. Only the newest draft on a project is
+  Open; the rest are Applied / Discarded / Superseded, never deleted. Code: `contracts/Site/
+  ProgrammeDrafts.cs`, `api/Features/Site/Drafts`, `jpms/Features/Site/Programme/
+  ProgrammeDraftReview`; spec `docs/Programme-Draft-From-Valuation-Spec.md`.
+
 ## Record tabs & the in-view toolbar (jpms)
 
 - **The request chain renders as document tabs, not chips.** `RecordTabBar` (Components) is on

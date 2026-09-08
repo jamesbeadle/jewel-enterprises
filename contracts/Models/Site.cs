@@ -50,13 +50,26 @@ public sealed record ProgrammeBaselineTask(
     DateTimeOffset PlannedStart,
     DateTimeOffset PlannedEnd);
 
+// A programme task's confirmed link to one cost centre on the valuation report — the saved half
+// of the mapping a draft programme update works from (decision 2026-09-08: rules + Claude
+// propose, the reviewer confirms, the confirmation is kept on the task so the next valuation's
+// draft never asks again). A task may sit on several centres ("Insulation, UFH & Screed") and a
+// centre may feed several tasks (plumbing on every floor). No FK, by-id, like every JPMS link.
+public sealed record ProgrammeTaskCostCentre(
+    string ProgrammeTaskCostCentreId,
+    string ProjectId,
+    string ProgrammeTaskId,
+    string CostCode);
+
 // Everything the Programme tab's programme view needs in one round trip: the live tasks, their
 // dependency links, and the latest baseline (with its task snapshots) to overlay movement against.
 // Baselines lists every baseline taken, newest first (so Baselines[0] is the current yardstick,
-// the same one Baseline carries), for the tab's baseline-management view.
+// the same one Baseline carries), for the tab's baseline-management view. CostCentres is every
+// task's confirmed cost-centre mapping — the saved half of the valuation-to-programme draft.
 public sealed record ProgrammeDetail(
     IReadOnlyList<ProgrammeTask> Tasks,
     IReadOnlyList<ProgrammeTaskLink> Links,
     ProgrammeBaseline? Baseline,
     IReadOnlyList<ProgrammeBaselineTask> BaselineTasks,
-    IReadOnlyList<ProgrammeBaseline> Baselines);
+    IReadOnlyList<ProgrammeBaseline> Baselines,
+    IReadOnlyList<ProgrammeTaskCostCentre> CostCentres);

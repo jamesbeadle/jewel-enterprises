@@ -119,6 +119,11 @@ public sealed partial class JpmsContext : DbContext
     public DbSet<ProgrammeTaskLinkEntity> ProgrammeTaskLinks => Set<ProgrammeTaskLinkEntity>();
     public DbSet<ProgrammeBaselineEntity> ProgrammeBaselines => Set<ProgrammeBaselineEntity>();
     public DbSet<ProgrammeBaselineTaskEntity> ProgrammeBaselineTasks => Set<ProgrammeBaselineTaskEntity>();
+    // Draft programme updates from the certified valuation (2026-09-08): a task's confirmed
+    // cost-centre mappings, and the drafts (with their per-task lines) awaiting review.
+    public DbSet<ProgrammeTaskCostCentreEntity> ProgrammeTaskCostCentres => Set<ProgrammeTaskCostCentreEntity>();
+    public DbSet<ProgrammeDraftEntity> ProgrammeDrafts => Set<ProgrammeDraftEntity>();
+    public DbSet<ProgrammeDraftLineEntity> ProgrammeDraftLines => Set<ProgrammeDraftLineEntity>();
     public DbSet<PhotoEntity> Photos => Set<PhotoEntity>();
 
     public DbSet<ProgressUpdateEntity> ProgressUpdates => Set<ProgressUpdateEntity>();

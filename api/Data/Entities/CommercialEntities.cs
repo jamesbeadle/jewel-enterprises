@@ -60,6 +60,55 @@ public sealed class ProgrammeBaselineTaskEntity
     public DateTimeOffset PlannedEnd { get; set; }
 }
 
+// A programme task's confirmed link to one cost centre on the valuation report — the saved half
+// of a draft programme update's mapping (AddProgrammeDrafts, 2026-09-08). One row per task per
+// code; replaced wholesale when a draft is applied. No FK, by-id, like every JPMS link.
+public sealed class ProgrammeTaskCostCentreEntity
+{
+    [Key, MaxLength(64)] public string ProgrammeTaskCostCentreId { get; set; } = "";
+    [MaxLength(64)]      public string ProjectId { get; set; } = "";
+    [MaxLength(64)]      public string ProgrammeTaskId { get; set; } = "";
+    [MaxLength(32)]      public string CostCode { get; set; } = "";
+}
+
+// A draft programme update: the certified valuation's percentages proposed onto the programme's
+// tasks, awaiting a person's review (Jewel.JPMS.Models.ProgrammeDraft). Opened automatically
+// when a valuation invoice's approval is recorded, or by hand from the Programme tab. Status
+// mirrors ProgrammeDraftStatus; only the newest draft on a project is ever Open.
+public sealed class ProgrammeDraftEntity
+{
+    [Key, MaxLength(64)] public string ProgrammeDraftId { get; set; } = "";
+    [MaxLength(64)]      public string ProjectId { get; set; } = "";
+    [MaxLength(64)]      public string ValuationClaimId { get; set; } = "";
+    [MaxLength(128)]     public string ClaimName { get; set; } = "";
+    public int Status { get; set; }
+    public DateTimeOffset CreatedAt { get; set; }
+    [MaxLength(256)]     public string CreatedByEmail { get; set; } = "";
+    public DateTimeOffset? ResolvedAt { get; set; }
+    [MaxLength(256)]     public string ResolvedByEmail { get; set; } = "";
+    public DateTimeOffset? SuggestionsRequestedAt { get; set; }
+    [MaxLength(512)]     public string SuggestionsNote { get; set; } = "";
+}
+
+// One task on a draft: the task's progress when the draft opened, the proposal computed from
+// the mapped cost centres, and the reviewer's decision. CostCodes is a comma-separated list —
+// the mapping is read and written as a whole and never queried by code, so a child table would
+// be a join for nothing. Evidence is the £-claimed-of-£-amount trail behind the proposal.
+public sealed class ProgrammeDraftLineEntity
+{
+    [Key, MaxLength(64)] public string ProgrammeDraftLineId { get; set; } = "";
+    [MaxLength(64)]      public string ProgrammeDraftId { get; set; } = "";
+    [MaxLength(64)]      public string ProgrammeTaskId { get; set; } = "";
+    [MaxLength(256)]     public string TaskTitle { get; set; } = "";
+    public decimal CurrentPercent { get; set; }
+    public decimal? ProposedPercent { get; set; }
+    [MaxLength(512)]     public string CostCodes { get; set; } = "";
+    public int MappingSource { get; set; }
+    [MaxLength(1024)]    public string Evidence { get; set; } = "";
+    public bool IsIncluded { get; set; }
+    public decimal? ReviewedPercent { get; set; }
+}
+
 public sealed class ValuationEntity
 {
     [Key, MaxLength(64)] public string ValuationId { get; set; } = "";

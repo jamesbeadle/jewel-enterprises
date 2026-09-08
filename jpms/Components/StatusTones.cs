@@ -148,4 +148,23 @@ public static class StatusTones
         DefectStatus.Open => Tone.Negative,
         _ => Tone.Muted
     };
+
+    public static Tone ToTone(this ProgrammeDraftStatus status) => status switch
+    {
+        ProgrammeDraftStatus.Open => Tone.Warning,
+        ProgrammeDraftStatus.Applied => Tone.Positive,
+        _ => Tone.Muted
+    };
+
+    /// <summary>How far to trust a draft line's mapping: confirmed by a person (saved earlier or
+    /// set now) is positive, a rule match is neutral, Claude's suggestion is a warning to check,
+    /// and nothing matched is negative — the task needs a hand before the draft can move it.</summary>
+    public static Tone ToTone(this ProgrammeMappingSource source) => source switch
+    {
+        ProgrammeMappingSource.Saved => Tone.Positive,
+        ProgrammeMappingSource.Person => Tone.Positive,
+        ProgrammeMappingSource.Rule => Tone.Info,
+        ProgrammeMappingSource.Claude => Tone.Warning,
+        _ => Tone.Negative
+    };
 }

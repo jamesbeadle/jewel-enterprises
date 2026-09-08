@@ -11,6 +11,7 @@
 @inject IVariationStore Variations
 @inject IClientCostReferenceStore ClientReferences
 @inject NavigationManager Nav
+@inject IQueryClient Queries
 @inject IJSRuntime JS
 @implements IDisposable
 
@@ -76,6 +77,13 @@
             <Notice Tone="Tone.Negative" Class="mb-2">
                 @actionError
                 <button @onclick="@(() => actionError = null)" class="ml-2 underline underline-offset-2">Dismiss</button>
+            </Notice>
+        }
+        @if (programmeDraftOpened is { } programmeDraft)
+        {
+            <Notice Tone="Tone.Positive" Class="mb-2" Dismissible="true" OnDismiss="@(() => programmeDraftOpened = null)">
+                Approval recorded. A draft programme update from @programmeDraft.Draft.ClaimName is awaiting review — @programmeDraft.MappedCount of @programmeDraft.Lines.Count tasks matched to cost centres.
+                <a href="/projects/@ProjectId/programme" class="ml-2 underline underline-offset-2">Review it on the Programme tab</a>
             </Notice>
         }
 

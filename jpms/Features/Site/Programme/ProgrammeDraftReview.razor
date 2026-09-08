@@ -1,0 +1,135 @@
+@namespace Jewel.JPMS.Features.Site
+@using Jewel.JPMS.Contracts.Site
+
+@* The draft programme update under review: every programme task with the progress it has today,
+   the progress the certified claim proposes (£-weighted across the task's cost centres, with the
+   lines behind the figure spelled out), and the reviewer's say — the tick, the figure, the
+   mapping. Applying writes the ticked figures onto the tasks and saves the mappings for the next
+   valuation's draft; discarding changes nothing. Claude is asked once, automatically, about the
+   tasks nothing matched. *@
+<div class="space-y-4">
+    @if (error is not null)
+    {
+        <Notice Tone="Tone.Negative">@error</Notice>
+    }
+
+    <SectionHeader Title="@($"Draft programme update — {Detail.Draft.ClaimName}")"
+                   Subtitle="@Strapline">
+        <Actions>
+            @if (CanEdit)
+            {
+                <Toolbar>
+                    <ToolbarButton Icon="refresh" Label="Ask Claude to suggest cost centres for the unmatched tasks"
+                                   OnClick="SuggestAsync" Busy="suggesting" Disabled="@(busy || Detail.UnmappedCount == 0)" />
+                </Toolbar>
+                <InlineConfirm Label="Discard draft" Question="Discard this draft? Click again to confirm"
+                               Title="Close the draft without changing the programme" Danger="true"
+                               Busy="busy" Disabled="suggesting" OnConfirm="DiscardAsync" />
+                <button type="button" class="btn-primary" disabled="@(busy || suggesting || Detail.ChangeCount == 0)"
+                        @onclick="() => showApplyDialog = true">
+                    @ApplyLabel
+                </button>
+            }
+            else
+            {
+                <Pill Tone="Tone.Muted" Title="Reviewing and applying a draft is for the Director and Project Manager roles">Read only</Pill>
+            }
+        </Actions>
+    </SectionHeader>
+
+    @if (!string.IsNullOrWhiteSpace(Detail.Draft.SuggestionsNote))
+    {
+        <Notice Tone="Tone.Info">@Detail.Draft.SuggestionsNote</Notice>
+    }
+
+    <LoadGate Overlay="true" IsLoading="suggesting" Label="Asking Claude to match the remaining tasks">
+        <RecordsTable Dense="true" IsEmpty="@(Detail.Lines.Count == 0)" EmptyMessage="This draft has no tasks.">
+            <thead>
+                <tr>
+                    <th class="w-10"></th>
+                    <th>Task</th>
+                    <th>Cost centres</th>
+                    <th class="text-right">Now</th>
+                    <th class="text-right">Proposed</th>
+                    <th class="text-right w-28">Apply %</th>
+                    <th>Mapping</th>
+                </tr>
+            </thead>
+            <tbody>
+                @foreach (var line in Detail.Lines)
+                {
+                    var row = line;
+                    <tr class="@(row.IsIncluded ? "" : "opacity-60")">
+                        <td>
+                            <Checkbox Value="row.IsIncluded" ValueChanged="included => SetIncludedAsync(row, included)"
+                                      Disabled="@(!CanEdit || busy || row.PercentToApply is null)"
+                                      Title="@(row.PercentToApply is null ? "Map the task or type a percentage first" : "Apply this task when the draft is applied")" />
+                        </td>
+                        <td>
+                            <div class="text-sm text-content">@row.TaskTitle</div>
+                            @if (!string.IsNullOrWhiteSpace(row.Evidence))
+                            {
+                                <div class="text-xs text-content-subtle">@row.Evidence</div>
+                            }
+                        </td>
+                        <td>
+                            <div class="flex flex-wrap items-center gap-1">
+                                @foreach (var costCode in row.CostCodes)
+                                {
+                                    <Pill Tone="Tone.Muted" Title="@NameFor(costCode)">@costCode</Pill>
+                                }
+                                @if (CanEdit)
+                                {
+                                    <button type="button" class="text-xs text-accent hover:underline" disabled="@busy"
+                                            @onclick="() => OpenMappingEditor(row)">@(row.IsMapped ? "Change" : "Map…")</button>
+                                }
+                            </div>
+                        </td>
+                        <td class="text-right font-mono">@PercentText(row.CurrentPercent)</td>
+                        <td class="text-right font-mono">@(row.ProposedPercent is { } proposed ? PercentText(proposed) : "—")</td>
+                        <td class="text-right">
+                            <input type="number" min="0" max="100" step="0.1" class="field text-right"
+                                   value="@EditText(row.ReviewedPercent)" placeholder="@EditText(row.ProposedPercent)"
+                                   disabled="@(!CanEdit || busy)" title="Your own figure — leave blank to take the proposal"
+                                   @onchange="e => SetPercentAsync(row, e.Value?.ToString())" />
+                        </td>
+                        <td><Pill Tone="@row.MappingSource.ToTone()">@row.MappingSource.DisplayName()</Pill></td>
+                    </tr>
+                    @if (mappingEditorLineId == row.ProgrammeDraftLineId)
+                    {
+                        <tr>
+                            <td colspan="7">
+                                <div class="space-y-3 py-2">
+                                    <p class="text-sm text-content">Cost centres for <span class="font-semibold">@row.TaskTitle</span> <span class="text-content-subtle">— tick the centres whose lines contain this work; the proposal is their £-weighted completion on @Detail.Draft.ClaimName.</span></p>
+                                    <div class="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-x-4 gap-y-1">
+                                        @foreach (var centre in Detail.CostCentres)
+                                        {
+                                            var option = centre;
+                                            <Checkbox Value="@editorCodes.Contains(option.CostCode)" ValueChanged="ticked => TickCentre(option.CostCode, ticked)"
+                                                      Label="@($"{option.CostCode} {option.Name} · {PercentText(option.Percent)} · {WholeMoney(option.Amount)}")" />
+                                        }
+                                    </div>
+                                    <div class="flex gap-2">
+                                        <button type="button" class="btn-secondary" disabled="@busy" @onclick="() => SaveMappingAsync(row)">Save mapping</button>
+                                        <button type="button" class="btn-ghost" @onclick="CloseMappingEditor">Cancel</button>
+                                    </div>
+                                </div>
+                            </td>
+                        </tr>
+                    }
+                }
+            </tbody>
+        </RecordsTable>
+    </LoadGate>
+
+    <p class="text-xs text-content-subtle">
+        Proposed % is the £ claimed to date over the £ amount of every priced line on the task's cost centres, as certified on the claim.
+        Tasks sharing a cost centre are offered the same figure — a floor-by-floor split is the reviewer's call. Planned dates are not changed.
+    </p>
+</div>
+
+<ConfirmDialog IsOpen="showApplyDialog" Title="Apply this draft to the programme?"
+               ConfirmLabel="@ApplyLabel" BusyLabel="Applying…"
+               Busy="busy" OnConfirm="ApplyAsync" OnCancel="() => showApplyDialog = false">
+    @ApplySummary Confirmed cost centres are saved on the tasks, so the next valuation's draft starts from them. Planned dates don't change.
+</ConfirmDialog>

@@ -3798,6 +3798,151 @@ namespace Jewel.JPMS.Api.Migrations
                     b.ToTable("ProgrammeBaselineTasks");
                 });
 
+            modelBuilder.Entity("Jewel.JPMS.Api.Data.Entities.ProgrammeDraftEntity", b =>
+                {
+                    b.Property<string>("ProgrammeDraftId")
+                        .HasMaxLength(64)
+                        .HasColumnType("nvarchar(64)");
+
+                    b.Property<string>("ClaimName")
+                        .IsRequired()
+                        .HasMaxLength(128)
+                        .HasColumnType("nvarchar(128)");
+
+                    b.Property<DateTimeOffset>("CreatedAt")
+                        .HasColumnType("datetimeoffset");
+
+                    b.Property<string>("CreatedByEmail")
+                        .IsRequired()
+                        .HasMaxLength(256)
+                        .HasColumnType("nvarchar(256)");
+
+                    b.Property<string>("ProjectId")
+                        .IsRequired()
+                        .HasMaxLength(64)
+                        .HasColumnType("nvarchar(64)");
+
+                    b.Property<DateTimeOffset?>("ResolvedAt")
+                        .HasColumnType("datetimeoffset");
+
+                    b.Property<string>("ResolvedByEmail")
+                        .IsRequired()
+                        .HasMaxLength(256)
+                        .HasColumnType("nvarchar(256)");
+
+                    b.Property<int>("Status")
+                        .HasColumnType("int");
+
+                    b.Property<string>("SuggestionsNote")
+                        .IsRequired()
+                        .HasMaxLength(512)
+                        .HasColumnType("nvarchar(512)");
+
+                    b.Property<DateTimeOffset?>("SuggestionsRequestedAt")
+                        .HasColumnType("datetimeoffset");
+
+                    b.Property<string>("ValuationClaimId")
+                        .IsRequired()
+                        .HasMaxLength(64)
+                        .HasColumnType("nvarchar(64)");
+
+                    b.HasKey("ProgrammeDraftId");
+
+                    b.HasIndex("ProjectId", "Status")
+                        .HasDatabaseName("IX_ProgrammeDrafts_ProjectId_Status");
+
+                    b.ToTable("ProgrammeDrafts");
+                });
+
+            modelBuilder.Entity("Jewel.JPMS.Api.Data.Entities.ProgrammeDraftLineEntity", b =>
+                {
+                    b.Property<string>("ProgrammeDraftLineId")
+                        .HasMaxLength(64)
+                        .HasColumnType("nvarchar(64)");
+
+                    b.Property<string>("CostCodes")
+                        .IsRequired()
+                        .HasMaxLength(512)
+                        .HasColumnType("nvarchar(512)");
+
+                    b.Property<decimal>("CurrentPercent")
+                        .HasPrecision(18, 4)
+                        .HasColumnType("decimal(18,4)");
+
+                    b.Property<string>("Evidence")
+                        .IsRequired()
+                        .HasMaxLength(1024)
+                        .HasColumnType("nvarchar(1024)");
+
+                    b.Property<bool>("IsIncluded")
+                        .HasColumnType("bit");
+
+                    b.Property<int>("MappingSource")
+                        .HasColumnType("int");
+
+                    b.Property<string>("ProgrammeDraftId")
+                        .IsRequired()
+                        .HasMaxLength(64)
+                        .HasColumnType("nvarchar(64)");
+
+                    b.Property<string>("ProgrammeTaskId")
+                        .IsRequired()
+                        .HasMaxLength(64)
+                        .HasColumnType("nvarchar(64)");
+
+                    b.Property<decimal?>("ProposedPercent")
+                        .HasPrecision(18, 4)
+                        .HasColumnType("decimal(18,4)");
+
+                    b.Property<decimal?>("ReviewedPercent")
+                        .HasPrecision(18, 4)
+                        .HasColumnType("decimal(18,4)");
+
+                    b.Property<string>("TaskTitle")
+                        .IsRequired()
+                        .HasMaxLength(256)
+                        .HasColumnType("nvarchar(256)");
+
+                    b.HasKey("ProgrammeDraftLineId");
+
+                    b.HasIndex("ProgrammeDraftId")
+                        .HasDatabaseName("IX_ProgrammeDraftLines_ProgrammeDraftId");
+
+                    b.ToTable("ProgrammeDraftLines");
+                });
+
+            modelBuilder.Entity("Jewel.JPMS.Api.Data.Entities.ProgrammeTaskCostCentreEntity", b =>
+                {
+                    b.Property<string>("ProgrammeTaskCostCentreId")
+                        .HasMaxLength(64)
+                        .HasColumnType("nvarchar(64)");
+
+                    b.Property<string>("CostCode")
+                        .IsRequired()
+                        .HasMaxLength(32)
+                        .HasColumnType("nvarchar(32)");
+
+                    b.Property<string>("ProgrammeTaskId")
+                        .IsRequired()
+                        .HasMaxLength(64)
+                        .HasColumnType("nvarchar(64)");
+
+                    b.Property<string>("ProjectId")
+                        .IsRequired()
+                        .HasMaxLength(64)
+                        .HasColumnType("nvarchar(64)");
+
+                    b.HasKey("ProgrammeTaskCostCentreId");
+
+                    b.HasIndex("ProgrammeTaskId")
+                        .HasDatabaseName("IX_ProgrammeTaskCostCentres_ProgrammeTaskId");
+
+                    b.HasIndex("ProjectId")
+                        .HasDatabaseName("IX_ProgrammeTaskCostCentres_ProjectId");
+
+                    b.ToTable("ProgrammeTaskCostCentres");
+                });
+
             modelBuilder.Entity("Jewel.JPMS.Api.Data.Entities.ProgrammeTaskEntity", b =>
                 {
                     b.Property<string>("ProgrammeTaskId")

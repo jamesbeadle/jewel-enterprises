@@ -301,6 +301,23 @@ public sealed partial class JpmsContext
             .HasIndex(row => row.LeadId)
             .HasDatabaseName("IX_SalesProposals_LeadId");
 
+        // ---- Draft programme updates (2026-09-08) ---------------------------------------------
+        // Mappings read per project (the draft capture and the programme detail) and are replaced
+        // per task when a draft is applied; the open draft is found by project + status; lines
+        // read per draft.
+        modelBuilder.Entity<ProgrammeTaskCostCentreEntity>()
+            .HasIndex(row => row.ProjectId)
+            .HasDatabaseName("IX_ProgrammeTaskCostCentres_ProjectId");
+        modelBuilder.Entity<ProgrammeTaskCostCentreEntity>()
+            .HasIndex(row => row.ProgrammeTaskId)
+            .HasDatabaseName("IX_ProgrammeTaskCostCentres_ProgrammeTaskId");
+        modelBuilder.Entity<ProgrammeDraftEntity>()
+            .HasIndex(row => new { row.ProjectId, row.Status })
+            .HasDatabaseName("IX_ProgrammeDrafts_ProjectId_Status");
+        modelBuilder.Entity<ProgrammeDraftLineEntity>()
+            .HasIndex(row => row.ProgrammeDraftId)
+            .HasDatabaseName("IX_ProgrammeDraftLines_ProgrammeDraftId");
+
         // ---- KPI emails --------------------------------------------------------------------------
         // People resolve by portal email (a user's KpiPerson is found, never duplicated); emails
         // read per person (the admin register's filter); Number resolves KPI-#### references; the
