@@ -136,6 +136,13 @@ finds drift.
   through `js/boot-screen.js`, with a failsafe that dismisses it anyway once the app has rendered.
   There is no in-app full-page loader: `ApprovedSessionGate` reads `SessionService.IsLoaded`
   synchronously, so an in-app navigation never flashes a session check nobody is waiting on.
+  The app never calls `jpmsBoot` directly — `BootScreen.DismissAsync` (Services) swallows the
+  missing-global case, because **`index.html` and the assemblies are fetched separately**: a client
+  can run today's DLLs against yesterday's shell (JPMS-4BF13E, 2026-09-08 — an installed PWA/deep
+  link served a cached shell that predated `js/boot-screen.js`). `staticwebapp.config.json` now
+  sends `no-cache, must-revalidate` on every path (`/*`), not only the literal `/index.html`, so
+  deep links served through the navigation fallback revalidate too. Any NEW JS global that .NET
+  calls must tolerate being absent until every client has refetched the shell.
 - **Restraint: one jewel per screen.** A gate is for a REGION that will definitely render something
   and occupies real space. In particular:
   - **Never gate a control.** A filter, a picker, a form field: render it `disabled` with a

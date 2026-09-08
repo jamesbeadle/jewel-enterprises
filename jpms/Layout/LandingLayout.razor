@@ -16,6 +16,6 @@
     // route that is not behind ApprovedSessionGate takes the boot screen down here.
     protected override async Task OnAfterRenderAsync(bool firstRender)
     {
-        if (firstRender) await JS.InvokeVoidAsync("jpmsBoot.dismiss");
+        if (firstRender) await BootScreen.DismissAsync(JS);
     }
 }

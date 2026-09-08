@@ -55,6 +55,6 @@ else
     {
         if (bootDismissed || !sessionReady) return;
         bootDismissed = true;
-        await JS.InvokeVoidAsync("jpmsBoot.dismiss");
+        await BootScreen.DismissAsync(JS);
     }
 }

@@ -25,13 +25,7 @@
       "rewrite": "/api/well-known/oauth-authorization-server"
     },
     {
-      "route": "/index.html",
-      "headers": {
-        "Cache-Control": "no-cache, must-revalidate"
-      }
-    },
-    {
-      "route": "/_framework/*",
+      "route": "/*",
       "headers": {
         "Cache-Control": "no-cache, must-revalidate"
       }
