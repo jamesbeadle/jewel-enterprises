@@ -66,8 +66,8 @@ else
     /// <summary>Float the mark over its position:relative parent, veiling and blocking the content.</summary>
     [Parameter] public bool Overlay { get; set; }
 
-    /// <summary>Extra classes: padding on the inline wrapper, a stacking context on the veil.</summary>
-    [Parameter] public string Class { get; set; } = "py-8";
+    /// <summary>Extra classes: layout on the inline wrapper, a stacking context on the veil.</summary>
+    [Parameter] public string Class { get; set; } = "";
 
     private string IconClass => $"{IconSize} animate-jewel-pulse";
 }

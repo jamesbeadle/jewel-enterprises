@@ -54,8 +54,9 @@ else if (!IsLoading)
 }
 else if (ShowsMark)
 {
-    <div class="@MinHeight flex items-center justify-center @Class" role="status" aria-live="polite" aria-busy="true">
-        <JewelSpinner Size="@SpinnerSize" IconSize="@IconSize" Label="@Label" Class="py-0" />
+    @* The spinner is the live region; the wrapper only reserves the space. *@
+    <div class="@MinHeight flex items-center justify-center @Class">
+        <JewelSpinner Size="@SpinnerSize" IconSize="@IconSize" Label="@Label" />
     </div>
 }
 else

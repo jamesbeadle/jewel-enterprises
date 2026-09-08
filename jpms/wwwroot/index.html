@@ -34,14 +34,15 @@
 
     <!--
         The boot screen: a sibling overlay, held up until the app has something real to show and
-        then faded out by the app itself (js/boot-screen.js, called from ApprovedSessionGate and
-        LandingLayout). It mirrors the in-app jewel exactly — same ring, same pulse — so the
-        handover is a crossfade onto a drawn screen rather than a flicker between two designs.
+        then faded out by the app itself (js/boot-screen.js, called from ApprovedSessionGate,
+        LandingLayout and ReportingErrorBoundary). It mirrors the in-app jewel exactly — same
+        ring, same pulse — so the handover is a crossfade onto a drawn screen rather than a
+        flicker between two designs.
     -->
     <div id="boot" class="fixed inset-0 z-50 flex flex-col items-center justify-center gap-5 bg-canvas">
         <div class="relative w-16 h-16 grid place-items-center">
-            <div class="absolute inset-0 rounded-full border-2 border-surface-field border-t-content/70 animate-spin"></div>
-            <svg class="w-6 h-6 animate-jewel-pulse" viewBox="0 0 530 460" fill="none" stroke="currentColor"
+            <div data-boot-ring class="absolute inset-0 rounded-full border-2 border-surface-field border-t-content/70 animate-spin"></div>
+            <svg data-boot-jewel class="w-6 h-6 animate-jewel-pulse" viewBox="0 0 530 460" fill="none" stroke="currentColor"
                  stroke-width="34" stroke-linejoin="miter" stroke-linecap="butt"
                  xmlns="http://www.w3.org/2000/svg" aria-hidden="true">
                 <path d="M 140 30 L 390 30 L 510 175 L 265 430 L 20 175 Z" />
@@ -52,8 +53,21 @@
                 <path d="M 345 175 L 265 430" />
             </svg>
         </div>
-        <p class="text-sm text-content-subtle">Loading JPMS</p>
+        <p data-boot-message class="text-sm text-content-subtle">Loading JPMS</p>
     </div>
+
+    <!--
+        What the boot screen says when Blazor itself could not start (js/blazor-start.js). The ring
+        stops, the jewel stays, and this replaces the "Loading JPMS" line. A reload also picks up a
+        fresh index.html and boot manifest — the cure when a deploy landed mid-download.
+    -->
+    <template id="boot-failed">
+        <div class="flex flex-col gap-1.5 px-6 text-center">
+            <p class="text-sm text-content">JPMS couldn't finish loading.</p>
+            <p class="text-xs text-content-subtle">Usually a connection blip — trying again normally sorts it.</p>
+        </div>
+        <button type="button" onclick="location.reload()" class="btn-primary">Try again</button>
+    </template>
 
     <!--
         Last resort only. Anything the app can catch is reported in the full-width toast at the top
@@ -85,55 +99,7 @@
     <script src="js/chat-scroll.js"></script>
     <script src="js/lead-qr.js"></script>
     <script src="_framework/blazor.webassembly.js" autostart="false"></script>
-    <script>
-        // Manual boot, for resilience Blazor doesn't provide on its own. Safari in particular can
-        // drop the download of dotnet.native.wasm (the one multi-megabyte boot file) with a bare
-        // "TypeError: Load failed", and the stock loader just gives up — leaving the jewel pulsing
-        // forever over a blank page. Two defences:
-        //
-        //   1. loadBootResource retries each failed download, backing off briefly and switching to
-        //      cache: 'reload' plus a cache-busting query so the retry cannot be served whatever
-        //      truncated or stale response broke the first attempt.
-        //   2. If boot still fails, the loading screen is swapped for a plain "couldn't load /
-        //      try again" prompt — a reload also picks up a fresh index.html and boot manifest,
-        //      which is the cure when a deploy landed mid-download and the file no longer matched
-        //      its integrity hash.
-        (function () {
-            const fetchWithRetry = (defaultUri, integrity) => {
-                const attempt = (n) =>
-                    fetch(n === 0 ? defaultUri : defaultUri + '?retry=' + n, {
-                        cache: n === 0 ? 'no-cache' : 'reload',
-                        integrity: integrity || undefined
-                    }).then((response) => {
-                        if (!response.ok) throw new Error(response.status + ' ' + defaultUri);
-                        return response;
-                    }).catch((error) => {
-                        if (n >= 2) throw error;
-                        return new Promise((resolve) => setTimeout(resolve, 500 * (n + 1)))
-                            .then(() => attempt(n + 1));
-                    });
-                return attempt(0);
-            };
-
-            Blazor.start({
-                loadBootResource: (type, name, defaultUri, integrity) =>
-                    type === 'dotnetjs' ? defaultUri : fetchWithRetry(defaultUri, integrity)
-            }).catch((error) => {
-                console.error('JPMS failed to boot', error);
-                window.jpmsBoot.fail(
-                    '<div class="min-h-dvh flex flex-col items-center justify-center gap-5 bg-canvas px-6 text-center">' +
-                        '<svg class="w-8 h-8 text-content-subtle" viewBox="0 0 530 460" fill="none" stroke="currentColor" stroke-width="34" stroke-linejoin="miter" stroke-linecap="butt" xmlns="http://www.w3.org/2000/svg" aria-hidden="true">' +
-                            '<path d="M 140 30 L 390 30 L 510 175 L 265 430 L 20 175 Z" /><path d="M 55 175 L 475 175" /><path d="M 185 30 L 185 175" /><path d="M 345 30 L 345 175" /><path d="M 185 175 L 265 430" /><path d="M 345 175 L 265 430" />' +
-                        '</svg>' +
-                        '<div class="flex flex-col gap-1.5">' +
-                            '<p class="text-sm text-content">JPMS couldn\'t finish loading.</p>' +
-                            '<p class="text-xs text-content-subtle">Usually a connection blip — trying again normally sorts it.</p>' +
-                        '</div>' +
-                        '<button type="button" onclick="location.reload()" class="rounded bg-accent hover:bg-accent-hover text-accent-ink px-4 py-2 text-sm font-medium transition">Try again</button>' +
-                    '</div>');
-            });
-        })();
-    </script>
+    <script src="js/blazor-start.js"></script>
 </body>
 
 </html>

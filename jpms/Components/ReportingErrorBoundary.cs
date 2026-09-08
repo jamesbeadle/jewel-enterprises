@@ -13,6 +13,7 @@ namespace Jewel.JPMS.Components;
 public sealed class ReportingErrorBoundary : ErrorBoundaryBase
 {
     [Inject] private ErrorReporter Reporter { get; set; } = default!;
+    [Inject] private IJSRuntime Js { get; set; } = default!;
 
     /// <summary>
     /// Clear the error and re-render the page. ErrorBoundaryBase.Recover() is protected, so this is
@@ -21,10 +22,16 @@ public sealed class ReportingErrorBoundary : ErrorBoundaryBase
     /// </summary>
     public void Reset() => Recover();
 
-    protected override Task OnErrorAsync(Exception exception)
+    /// <summary>
+    /// Report, then make sure the screen below is visible. On a cold load the failure can happen
+    /// while the boot overlay is still up — the session check itself throwing, say — and nothing
+    /// else will take it down, so the user would watch the jewel pulse over a fully drawn error
+    /// screen until the failsafe fired.
+    /// </summary>
+    protected override async Task OnErrorAsync(Exception exception)
     {
         Reporter.ReportUnhandled(exception, "Page render");
-        return Task.CompletedTask;
+        await BootScreen.DismissAsync(Js);
     }
 
     protected override void BuildRenderTree(RenderTreeBuilder builder)
@@ -70,8 +77,7 @@ public sealed class ReportingErrorBoundary : ErrorBoundaryBase
 
         builder.OpenElement(12, "button");
         builder.AddAttribute(13, "type", "button");
-        builder.AddAttribute(14, "class",
-            "rounded bg-accent text-accent-ink font-medium px-4 py-2.5 hover:bg-accent-hover transition");
+        builder.AddAttribute(14, "class", "btn-primary");
         builder.AddAttribute(15, "onclick", EventCallback.Factory.Create(this, Recover));
         builder.AddContent(16, "Try again");
         builder.CloseElement();

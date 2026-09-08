@@ -33,7 +33,6 @@ else
     [Parameter] public RenderFragment? ChildContent { get; set; }
 
     private bool sessionReady;
-    private bool bootDismissed;
 
     protected override void OnInitialized() => sessionReady = Session.IsLoaded;
 
@@ -53,8 +52,6 @@ else
 
     protected override async Task OnAfterRenderAsync(bool firstRender)
     {
-        if (bootDismissed || !sessionReady) return;
-        bootDismissed = true;
-        await BootScreen.DismissAsync(JS);
+        if (sessionReady) await BootScreen.DismissAsync(JS);
     }
 }
