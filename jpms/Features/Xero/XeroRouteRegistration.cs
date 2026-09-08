@@ -80,5 +80,8 @@ public static class XeroRouteRegistration
         commands.Register<SetXeroAllocation, int>(CommandRoute.Post("/api/xero/allocations"));
         commands.Register<AllocateSuggestedXeroLines, int>(CommandRoute.Post("/api/xero/allocations/suggested"));
         commands.Register<RetryXeroWriteBack, XeroWriteBackOutcome>(CommandRoute.Post("/api/xero/writeback/retry"));
+        // Work Order bills (2026-09-08): the FD's one-press approval and its undo.
+        commands.Register<ApproveWorkOrderBill, WorkOrderBillApprovalOutcome>(CommandRoute.Post("/api/xero/work-order-bills/approve"));
+        commands.Register<UndoWorkOrderBillApproval, WorkOrderBillUndoOutcome>(CommandRoute.Post("/api/xero/work-order-bills/undo"));
     }
 }

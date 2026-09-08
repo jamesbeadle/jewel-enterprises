@@ -95,6 +95,10 @@ public sealed partial class JpmsContext : DbContext
     // The discussion thread on disputed ledger lines (the allocation page's Disputed bucket).
     public DbSet<XeroDisputeMessageEntity> XeroDisputeMessages => Set<XeroDisputeMessageEntity>();
 
+    // Work Order bill approvals (2026-09-08): one row per Approve on the allocation page's Work
+    // Order bills tab — the undo's handle and the audit's "which rule matched".
+    public DbSet<WorkOrderBillApprovalEntity> WorkOrderBillApprovals => Set<WorkOrderBillApprovalEntity>();
+
     // The stored site P&L: per project per month, from Xero's profit & loss report filtered by
     // the project's Sites tracking option — feeds the Profit Summary's cumulative chart.
     public DbSet<XeroSitePnlMonthEntity> XeroSitePnlMonths => Set<XeroSitePnlMonthEntity>();

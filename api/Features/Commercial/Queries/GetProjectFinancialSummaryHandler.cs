@@ -93,20 +93,13 @@ public sealed class GetProjectFinancialSummaryHandler : IQueryHandler<GetProject
             })
             .ToListAsync(cancellationToken);
 
-        // Work-order-linked spend, slice by slice: each row in XeroLineWorkOrderLinks pays an
-        // order from a whole-line allocation (links never exist on centre-split lines).
-        // Non-WO cost of sales per centre = total actual spend less these linked slices —
-        // a partially split bill only counts its unallocated remainder. The linked slices
-        // themselves are then re-attributed to the order's cost centres pro-rata, so the
-        // Actual Cost of Sales column lines up with the Work Orders column.
-        var linkSlices = await context.XeroLineWorkOrderLinks.AsNoTracking()
-            .Where(link => link.ProjectId == query.ProjectId)
-            .Join(context.XeroLedgerLines,
-                link => link.XeroLedgerLineId,
-                line => line.XeroLedgerLineId,
-                (link, line) => new { link.WorkOrderId, link.Amount, InvoiceCode = line.CostCenterCode })
-            .Where(joined => joined.InvoiceCode != null)
-            .ToListAsync(cancellationToken);
+        // Work-order-linked spend, slice by slice, each on the invoice's own centre (a link on a
+        // line split across the order's codes arrives as one slice per share — see
+        // WorkOrderLinkSlices). Non-WO cost of sales per centre = total actual spend less these
+        // linked slices — a partially split bill only counts its unallocated remainder. The
+        // linked slices themselves are then re-attributed to the order's cost centres pro-rata,
+        // so the Actual Cost of Sales column lines up with the Work Orders column.
+        var linkSlices = await WorkOrderLinkSlices.ForProjectAsync(context, query.ProjectId, cancellationToken);
 
         var codeTotalsByOrder = await WorkOrderCostApportionment.CodeTotalsByOrderAsync(context, query.ProjectId, cancellationToken);
 
@@ -248,7 +241,7 @@ public sealed class GetProjectFinancialSummaryHandler : IQueryHandler<GetProject
         // centre — computed BEFORE the re-attribution below moves the linked spend around.
         var nonWoActualByCode = new Dictionary<string, decimal>(actualByCode, StringComparer.OrdinalIgnoreCase);
         foreach (var slice in linkSlices)
-            nonWoActualByCode[slice.InvoiceCode!] = nonWoActualByCode.TryGetValue(slice.InvoiceCode!, out var beforeLink)
+            nonWoActualByCode[slice.InvoiceCode] = nonWoActualByCode.TryGetValue(slice.InvoiceCode, out var beforeLink)
                 ? beforeLink - slice.Amount
                 : -slice.Amount;
 
@@ -264,11 +257,11 @@ public sealed class GetProjectFinancialSummaryHandler : IQueryHandler<GetProject
 
             if (!codeTotalsByOrder.TryGetValue(slice.WorkOrderId, out var codeTotals))
             {
-                if (isPackaged) Accumulate(packagedActualByCode, slice.InvoiceCode!, slice.Amount);
+                if (isPackaged) Accumulate(packagedActualByCode, slice.InvoiceCode, slice.Amount);
                 continue;
             }
 
-            actualByCode[slice.InvoiceCode!] = actualByCode.TryGetValue(slice.InvoiceCode!, out var sourceTotal)
+            actualByCode[slice.InvoiceCode] = actualByCode.TryGetValue(slice.InvoiceCode, out var sourceTotal)
                 ? sourceTotal - slice.Amount
                 : -slice.Amount;
 

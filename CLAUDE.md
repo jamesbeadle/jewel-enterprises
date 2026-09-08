@@ -137,6 +137,42 @@ finds drift.
   lines. Several recognised candidates are read fresh from Xero before the run says "two bills"
   — the ledger's status can be a night old. Never stage a draft beside a voided bill.
 
+## Work Order bills on the Cost allocation page (api + jpms)
+
+- **A Work Order bill is coded from its order — the one place the ORDER drives the invoice.**
+  Everywhere else the invoice drives the order (`WorkOrderInvoiceRecoding`: linking recodes the
+  order's lines to the invoice's centre); `ApproveWorkOrderBillHandler` (2026-09-08, the
+  accountant's ask) never calls it. `WorkOrderBillRecognition` runs on every unallocated read
+  beside `LabourSupplierRecognition` and stamps `XeroLedgerLine.WorkOrderMatch` / 
+  `WorkOrderExceptionReason` per BILL (decided once per invoice, memoised): the labour registry
+  wins → the supplier resolves to its directory record through `DirectoryXeroMatcher` → a WO
+  number on the bill (`WorkOrderBillReference`: Reference, then descriptions, then invoice
+  number; supplier + number, since numbers are per project; the bill's own Sites hint breaks a
+  tie) → else exactly one open order → the value gate. "Open" = Released with remaining value
+  > 0 (decision 2026-09-08). Nothing is persisted for the match, so Sync and Re-check re-run it
+  for free; the sweep (`AllocateSuggestedXeroLinesHandler`, page button and nightly worker
+  alike) skips matched bills exactly as it skips labour lines.
+- **Approve is per bill, undo is per bill, both FD/Director/Admin only** (`WorkOrderBillRoles`).
+  Approve re-runs the match server-side, refuses a foreign code (the shares may only move
+  between the order's own codes), stamps every line `Note = "Work order WO-0026"`, links each
+  line for its signed net, writes one `WorkOrderBillApprovals` row (the audit's "which rule
+  matched" and the undo's handle), then `IXeroWriteBackService.WriteBackWorkOrderBillAsync`
+  (tolerates an AUTHORISED-unpaid bill via `XeroApprovalRequest.RecodeApproved` — the
+  re-approval after an undo). Undo reverses lines, splits, links and package slices in one
+  save and clears the tracking off the bill in Xero (`IXeroClient.ClearTrackingAsync`, by bill,
+  not by line id — a split approval replaced the Xero lines); **Xero never un-approves**, so
+  the outcome and the toast say the bill stays awaiting payment there. Never void from the undo.
+- **Links may sit on a same-project centre split since 2026-09-08** (a Work Order bill against a
+  multi-code order). `KeepOrClearLinksAsync` keeps links through a same-project re-cut and
+  recodes the orders only for a whole-line move; `WorkOrderLinkSlices` expands a split line's
+  link into one slice per share for the financial summary. A cross-project split still clears.
+  The WO Allocation tab's hand link (`SetXeroLineWorkOrderLinks`) still refuses centre splits.
+- On the page the tab is a sub-view of Unallocated like Labour (`workOrderBillsTab`, token
+  `WorkOrderBills` in the tab memory); the cards (`WorkOrderBillCard` + `…OrderFigures`,
+  `…LinesTable`, `…ShareEditor`) render instead of the table; `notWorkOrderBillInvoiceIds` is
+  the this-visit escape to the plain queue; the Allocated row's Undo becomes "Undo bill"
+  (`ConfirmDialog`, Danger) when `WorkOrderApproval` is set.
+
 ## Directory ↔ Xero links (api + jpms)
 
 - **A directory record's Xero link is one `SubcontractorXeroLinks` row, written three ways and

@@ -12,19 +12,19 @@ public partial class XeroAllocation
     // the user elsewhere, and a remembered tab restored on load may be empty.
 
     private IReadOnlyList<(string ProjectId, string Name, int Count)>? projectTabsCache;
-    private (IReadOnlyList<XeroLedgerLine>? Lines, object Projects, string? ProjectTab, int NotLabour) projectTabsCacheKey;
+    private (IReadOnlyList<XeroLedgerLine>? Lines, object Projects, string? ProjectTab, int NotLabour, int NotWorkOrderBill) projectTabsCacheKey;
 
     private IReadOnlyList<(string ProjectId, string Name, int Count)> ProjectTabs
     {
         get
         {
-            var key = ((IReadOnlyList<XeroLedgerLine>?)UnallocatedLines, (object)Projects, activeProjectId, notLabourIds.Count);
+            var key = ((IReadOnlyList<XeroLedgerLine>?)UnallocatedLines, (object)Projects, activeProjectId, notLabourIds.Count, notWorkOrderBillInvoiceIds.Count);
             if (projectTabsCache is null || key != projectTabsCacheKey)
             {
-                // Labour-recognised lines belong to the Labour section, never to a project tab —
-                // even when their Xero tracking suggests a site.
+                // Labour-recognised lines belong to the Labour section, and Work Order bills to
+                // theirs — never to a project tab, even when their Xero tracking suggests a site.
                 var tabs = UnallocatedLines
-                    .Where(line => !IsLabourLine(line))
+                    .Where(line => !IsLabourLine(line) && !IsWorkOrderBillLine(line))
                     .GroupBy(GroupProjectFor)
                     .Where(group => group.Key != "")
                     .Select(group => (ProjectId: group.Key, Name: ProjectName(group.Key), Count: group.Count()))
@@ -48,7 +48,7 @@ public partial class XeroAllocation
     }
 
     private int UnassignedCount =>
-        UnallocatedLines.Count(line => !IsLabourLine(line) && GroupProjectFor(line) == "");
+        UnallocatedLines.Count(line => !IsLabourLine(line) && !IsWorkOrderBillLine(line) && GroupProjectFor(line) == "");
 
     // -- Labour section (scope §6 recognition) ----------------------------------
     // Recognition itself is server-side, on the line (matched worker + covered flag, computed
@@ -77,13 +77,16 @@ public partial class XeroAllocation
     // Whether the empty tab is empty because of a filter the user set, or just empty.
     private bool HasTabFilters =>
         !string.IsNullOrWhiteSpace(search) || bucketFilter is not null
-        || allocatedProjectFilter != "" || activeProjectId is not null || labourTab;
+        || allocatedProjectFilter != "" || activeProjectId is not null || labourTab || workOrderBillsTab;
 
-    private void SwitchTab(XeroAllocationStatus tab, string? projectId = null, bool labour = false)
+    private void SwitchTab(XeroAllocationStatus tab, string? projectId = null, bool labour = false, bool workOrderBills = false)
     {
         activeTab = tab;
         labourTab = tab == XeroAllocationStatus.Unallocated && labour;
-        activeProjectId = tab == XeroAllocationStatus.Unallocated && !labour ? projectId : null;
+        workOrderBillsTab = tab == XeroAllocationStatus.Unallocated && workOrderBills;
+        workOrderBillError = null;
+        workOrderBillErrorInvoiceId = null;
+        activeProjectId = tab == XeroAllocationStatus.Unallocated && !labour && !workOrderBills ? projectId : null;
         showCoveredLabour = false;
         selectedIds.Clear();
         bucketFilter = null;
@@ -109,6 +112,7 @@ public partial class XeroAllocation
 
     private const string ProjectTabPrefix = "Project:";
     private const string LabourTabToken = "Labour";
+    private const string WorkOrderBillsTabToken = "WorkOrderBills";
 
     private async Task RestoreLastTabAsync()
     {
@@ -125,6 +129,11 @@ public partial class XeroAllocation
             activeTab = XeroAllocationStatus.Unallocated;
             labourTab = true;
         }
+        else if (stored == WorkOrderBillsTabToken)
+        {
+            activeTab = XeroAllocationStatus.Unallocated;
+            workOrderBillsTab = true;
+        }
         else if (Enum.TryParse<XeroAllocationStatus>(stored, out var status))
         {
             activeTab = status;
@@ -136,6 +145,7 @@ public partial class XeroAllocation
             ? Task.CompletedTask
             : TabStorage.WriteAsync(Auth.CurrentUser.Email,
                 labourTab ? LabourTabToken
+                : workOrderBillsTab ? WorkOrderBillsTabToken
                 : activeProjectId is not null ? $"{ProjectTabPrefix}{activeProjectId}" : activeTab.ToString());
 
     // -- display helpers ------------------------------------------------------

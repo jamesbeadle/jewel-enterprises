@@ -100,7 +100,20 @@
     <Compile Include="..\api\Features\Labour\WorkerDirectoryMatcher.cs" Link="Shared\Labour\WorkerDirectoryMatcher.cs" />
     <Compile Include="..\api\Features\Xero\Ledger\LabourSupplierRecognition.cs" Link="Shared\Xero\LabourSupplierRecognition.cs" />
     <Compile Include="..\api\Features\Xero\Ledger\XeroAllocationSuggester.cs" Link="Shared\Xero\XeroAllocationSuggester.cs" />
+    <!-- Work Order bill recognition (2026-09-08): the sweep skips bills matched to an open work
+         order — they leave the queue through Approve on the Work Order bills tab, linked to the
+         order — so the nightly run and the page's button apply the same rule. The recogniser
+         reads through XeroLedgerReads and the directory's name rule (DirectoryXeroMatcher). -->
+    <Compile Include="..\api\Features\Xero\Ledger\XeroLedgerReads.cs" Link="Shared\Xero\XeroLedgerReads.cs" />
+    <Compile Include="..\api\Features\Xero\Ledger\XeroLedgerReads.WorkOrderBills.cs" Link="Shared\Xero\XeroLedgerReads.WorkOrderBills.cs" />
+    <Compile Include="..\api\Features\Xero\Ledger\WorkOrderBillRecognition*.cs" Link="Shared\Xero\%(Filename)%(Extension)" />
+    <Compile Include="..\api\Features\Xero\Ledger\WorkOrderBillReference.cs" Link="Shared\Xero\WorkOrderBillReference.cs" />
+    <Compile Include="..\api\Features\Subcontractors\DirectoryXeroMatcher.cs" Link="Shared\Subcontractors\DirectoryXeroMatcher.cs" />
     <Compile Include="..\api\Features\Xero\Ledger\XeroWriteBackService.cs" Link="Shared\Xero\XeroWriteBackService.cs" />
+    <!-- The service is partial since 2026-09-08 (the Work Order bill write and the tracking
+         clear live in their own file); both halves must ride together or the worker's copy
+         fails to implement the interface. -->
+    <Compile Include="..\api\Features\Xero\Ledger\XeroWriteBackService.WorkOrderBills.cs" Link="Shared\Xero\XeroWriteBackService.WorkOrderBills.cs" />
     <Compile Include="..\api\Features\Xero\SitePnl\SyncXeroSitePnlHandler.cs" Link="Shared\Xero\SyncXeroSitePnlHandler.cs" />
     <!-- Shared Bluebeam source: the extraction consumer and the nightly token keep-alive run the
          SAME client, token service and runner the api compiles, so the two apps can never drift on

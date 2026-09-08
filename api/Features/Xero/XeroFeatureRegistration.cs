@@ -1,4 +1,5 @@
 using Jewel.JPMS.Api.Features.Xero.Ledger;
+using Jewel.JPMS.Api.Features.Xero.Ledger.WorkOrderBills;
 using Jewel.JPMS.Api.Features.Xero.Queries;
 using Jewel.JPMS.Contracts.Xero;
 using Microsoft.Extensions.Configuration;
@@ -90,6 +91,15 @@ public static class XeroFeatureRegistration
         // tracking is confirmed onto the Xero invoice and the invoice is approved.
         services.AddScoped<IXeroWriteBackService, XeroWriteBackService>();
         services.AddScoped<ICommandHandler<RetryXeroWriteBack, XeroWriteBackOutcome>, RetryXeroWriteBackHandler>();
+
+        // Work Order bills (2026-09-08): the FD's one-press approval of a bill matched to an open
+        // work order, and its undo. Gates as classes for the endpoint and the connector alike.
+        services.AddScoped<ICommandHandler<ApproveWorkOrderBill, WorkOrderBillApprovalOutcome>, ApproveWorkOrderBillHandler>();
+        services.AddScoped<ApproveWorkOrderBillAuthorisation>();
+        services.AddScoped<ApproveWorkOrderBillValidation>();
+        services.AddScoped<ICommandHandler<UndoWorkOrderBillApproval, WorkOrderBillUndoOutcome>, UndoWorkOrderBillApprovalHandler>();
+        services.AddScoped<UndoWorkOrderBillApprovalAuthorisation>();
+        services.AddScoped<UndoWorkOrderBillApprovalValidation>();
 
         // Site P&L: the stored monthly income/cost per project from Xero's P&L report filtered
         // by Sites tracking — the Profit Summary's cumulative chart. Synced nightly + on demand.

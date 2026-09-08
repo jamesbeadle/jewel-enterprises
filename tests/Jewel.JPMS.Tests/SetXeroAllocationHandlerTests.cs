@@ -154,7 +154,7 @@ public sealed class SetXeroAllocationHandlerTests
 
     [Theory]
     [InlineData("other-project")]
-    [InlineData("split")]
+    [InlineData("split-across-projects")]
     [InlineData("bucket")]
     [InlineData("ignore")]
     [InlineData("reset")]
@@ -167,7 +167,7 @@ public sealed class SetXeroAllocationHandlerTests
         var command = move switch
         {
             "other-project" => Command(new[] { "inv-1:a" }, XeroAllocationAction.Allocate, projectId: "P2", costCenterCode: "SUB-GWK"),
-            "split" => Command(new[] { "inv-1:a" }, XeroAllocationAction.Allocate, projectId: "P1", splits: new[] { new XeroCostSplit("SUB-GWK", 400m), new XeroCostSplit("SUB-BRK", 600m) }),
+            "split-across-projects" => Command(new[] { "inv-1:a" }, XeroAllocationAction.Allocate, projectId: "P1", splits: new[] { new XeroCostSplit("SUB-GWK", 400m, "P1"), new XeroCostSplit("SUB-BRK", 600m, "P2") }),
             "bucket" => Command(new[] { "inv-1:a" }, XeroAllocationAction.AllocateToBucket, bucket: XeroBuckets.Fuel),
             "ignore" => Command(new[] { "inv-1:a" }, XeroAllocationAction.Ignore),
             "reset" => Command(new[] { "inv-1:a" }, XeroAllocationAction.Reset),
@@ -178,6 +178,24 @@ public sealed class SetXeroAllocationHandlerTests
 
         Assert.Empty(fixture.Context.XeroLineWorkOrderLinks);
         Assert.Empty(fixture.Context.ReconciliationPackageCostLines);
+        Assert.All(fixture.Context.WorkOrderLines.Where(line => line.WorkOrderId == "WO-1"), line => Assert.Equal("SUB-GWK", line.CostCode));
+    }
+
+    // A Work Order bill against a multi-code order is a same-project centre split with links
+    // (2026-09-08), so re-cutting the centres within the project keeps the links — only the
+    // whole-line move recodes the orders, because a split has no single centre to recode to.
+    [Fact]
+    public async Task ASplitAcrossCentresOnTheSameProjectKeepsTheLinksWithoutRecodingTheOrders()
+    {
+        var fixture = await Fixture.CreateAsync();
+        await fixture.HandleAsync(Command(new[] { "inv-1:a" }, XeroAllocationAction.Allocate, projectId: "P1", costCenterCode: "SUB-GWK"));
+        await fixture.LinkToOrderAsync("inv-1:a", "P1", "WO-1");
+
+        await fixture.HandleAsync(Command(new[] { "inv-1:a" }, XeroAllocationAction.Allocate, projectId: "P1",
+            splits: new[] { new XeroCostSplit("SUB-GWK", 400m), new XeroCostSplit("SUB-BRK", 600m) }));
+
+        Assert.Single(fixture.Context.XeroLineWorkOrderLinks);
+        Assert.Single(fixture.Context.ReconciliationPackageCostLines);
         Assert.All(fixture.Context.WorkOrderLines.Where(line => line.WorkOrderId == "WO-1"), line => Assert.Equal("SUB-GWK", line.CostCode));
     }
 
@@ -386,24 +404,5 @@ public sealed class SetXeroAllocationHandlerTests
 
         public XeroLedgerLineEntity Line(string id) => Context.XeroLedgerLines.AsNoTracking().Single(line => line.XeroLedgerLineId == id);
         public List<XeroLedgerLineEntity> Lines(params string[] ids) => ids.Select(Line).ToList();
-    }
-
-    private sealed class RecordingWriteBack : IXeroWriteBackService
-    {
-        public List<string> Calls { get; } = new();
-
-        public Task TryWriteBackAsync(IReadOnlyCollection<string> xeroInvoiceIds, CancellationToken ct)
-        {
-            Calls.Add("WriteBack:" + string.Join(",", xeroInvoiceIds));
-            return Task.CompletedTask;
-        }
-
-        public Task TrySetSiteAsync(IReadOnlyCollection<string> xeroLedgerLineIds, CancellationToken ct)
-        {
-            Calls.Add("SetSite:" + string.Join(",", xeroLedgerLineIds));
-            return Task.CompletedTask;
-        }
-
-        public Task<XeroWriteBackOutcome> RetryAsync(string xeroInvoiceId, CancellationToken ct) => throw new NotSupportedException();
     }
 }

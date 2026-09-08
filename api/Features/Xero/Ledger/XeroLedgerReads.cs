@@ -1,3 +1,5 @@
+using Microsoft.EntityFrameworkCore;
+using Jewel.JPMS.Api.Data;
 using Jewel.JPMS.Api.Data.Entities;
 using Jewel.JPMS.Contracts.Xero;
 
@@ -8,7 +10,7 @@ namespace Jewel.JPMS.Api.Features.Xero.Ledger;
 /// the entity → model projection. Pulled out so the whole-ledger read, the per-status read and the
 /// per-project read can't drift apart in how they shape a line.
 /// </summary>
-internal static class XeroLedgerReads
+internal static partial class XeroLedgerReads
 {
     /// <summary>
     /// The cost splits belonging to the lines being returned, keyed by line id.
@@ -85,7 +87,9 @@ internal static class XeroLedgerReads
     public static XeroLedgerLine ToModel(
         XeroLedgerLineEntity entity, IReadOnlyList<XeroCostSplit>? splits, XeroAllocationSuggester? suggester,
         IReadOnlyList<XeroDisputeMessage>? disputeMessages = null,
-        LabourSupplierRecognition.LineRecognition? labour = null)
+        LabourSupplierRecognition.LineRecognition? labour = null,
+        WorkOrderBillRecognition.LineVerdict? workOrderBill = null,
+        WorkOrderBillApprovalStamp? workOrderApproval = null)
     {
         // Suggestions only matter while a line still needs a decision.
         var unallocated = entity.AllocationStatus == (int)XeroAllocationStatus.Unallocated;
@@ -127,6 +131,9 @@ internal static class XeroLedgerReads
             labour?.MatchedWorkerName,
             labour?.MatchedSubcontractorId,
             labour?.CoveredByTimesheets ?? false,
-            labour?.CoveredPeriodStart);
+            labour?.CoveredPeriodStart,
+            workOrderBill?.Match,
+            workOrderBill?.ExceptionReason,
+            workOrderApproval);
     }
 }

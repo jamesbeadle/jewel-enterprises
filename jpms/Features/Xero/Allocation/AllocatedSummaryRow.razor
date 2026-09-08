@@ -34,6 +34,14 @@
                 <span class="text-content">@ProjectName(Line.ProjectId)</span>
                 <span class="block text-xs text-content-subtle">@CostCenterText(Line.CostCenterCode)</span>
             }
+            @if (Line.WorkOrderApproval is { } approval)
+            {
+                @* Approved as a Work Order bill (2026-09-08): the order it pays and who pressed
+                   Approve. Undo on this row reverses the whole bill's approval. *@
+                <span class="block text-xs text-content-subtle mt-0.5" title="@approval.Rule.Label()">
+                    Work Order bill · @approval.WorkOrderReference · approved by @approval.ApprovedBy @DateText(approval.ApprovedAtUtc.ToLocalTime())
+                </span>
+            }
             @if (WriteBackBadge is { } badge)
             {
                 <span class="block text-xs mt-0.5 @badge.Css" title="@badge.Tooltip">@badge.Text</span>
@@ -66,7 +74,8 @@
                     @onclick="() => OnRetryWriteBack.InvokeAsync()">Retry Xero</button>
         }
         <button class="text-xs text-content-subtle underline underline-offset-4 ml-2"
-                disabled="@Busy" @onclick="() => OnUndo.InvokeAsync()">Undo</button>
+                title="@(Line.WorkOrderApproval is null ? null : "Undo the whole bill's Work Order approval — every line back to the queue, links removed, Xero tracking cleared")"
+                disabled="@Busy" @onclick="() => OnUndo.InvokeAsync()">@(Line.WorkOrderApproval is null ? "Undo" : "Undo bill")</button>
         @if (Mode == XeroAllocationStatus.Allocated)
         {
             <button class="text-xs text-content-subtle underline underline-offset-4 ml-2"

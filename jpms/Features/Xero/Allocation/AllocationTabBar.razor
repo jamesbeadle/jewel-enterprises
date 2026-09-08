@@ -25,6 +25,15 @@
             Labour (@LabourOutstandingCount)
         </button>
     }
+    @* Work Order bills (2026-09-08): bills whose supplier has an open work order were decided
+       when the order was approved — they sit here pre-filled from the order, one card per
+       bill, waiting for one Approve. The count is bills, not lines. *@
+    @if (ShowWorkOrderBills)
+    {
+        <button class="@WorkOrderBillsClass" @onclick="() => OnSwitchWorkOrderBills.InvokeAsync()">
+            Work Order bills (@WorkOrderBillCount)
+        </button>
+    }
     <button class="@StatusClass(XeroAllocationStatus.Allocated)" @onclick="() => OnSwitchStatus.InvokeAsync(XeroAllocationStatus.Allocated)">
         Allocated (@AllocatedCount)
     </button>
@@ -51,6 +60,9 @@
         = Array.Empty<(string, string, int)>();
     [Parameter] public bool ShowLabour { get; set; }
     [Parameter] public int LabourOutstandingCount { get; set; }
+    [Parameter] public bool WorkOrderBillsTab { get; set; }
+    [Parameter] public bool ShowWorkOrderBills { get; set; }
+    [Parameter] public int WorkOrderBillCount { get; set; }
     [Parameter] public int AllocatedCount { get; set; }
     [Parameter] public int BucketedCount { get; set; }
     [Parameter] public int DisputedCount { get; set; }
@@ -59,16 +71,21 @@
     [Parameter] public EventCallback<XeroAllocationStatus> OnSwitchStatus { get; set; }
     [Parameter] public EventCallback<string> OnSwitchProject { get; set; }
     [Parameter] public EventCallback OnSwitchLabour { get; set; }
+    [Parameter] public EventCallback OnSwitchWorkOrderBills { get; set; }
 
-    // The plain Unallocated tab is active only when neither a project tab nor Labour is open.
+    // The plain Unallocated tab is active only when neither a project tab, Labour nor Work
+    // Order bills is open.
     private string StatusClass(XeroAllocationStatus tab) =>
-        TabCss(Active == tab && (tab != XeroAllocationStatus.Unallocated || (ActiveProjectId is null && !LabourTab)));
+        TabCss(Active == tab && (tab != XeroAllocationStatus.Unallocated || (ActiveProjectId is null && !LabourTab && !WorkOrderBillsTab)));
 
     private string ProjectClass(string projectId) =>
         TabCss(Active == XeroAllocationStatus.Unallocated && ActiveProjectId == projectId);
 
     private string LabourClass =>
         TabCss(Active == XeroAllocationStatus.Unallocated && LabourTab);
+
+    private string WorkOrderBillsClass =>
+        TabCss(Active == XeroAllocationStatus.Unallocated && WorkOrderBillsTab);
 
     private static string TabCss(bool active) =>
         (active ? "chip chip-active" : "chip");

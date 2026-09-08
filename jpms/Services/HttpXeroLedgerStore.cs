@@ -70,6 +70,20 @@ public sealed class HttpXeroLedgerStore : IXeroLedgerStore
         return outcome;
     }
 
+    public async Task<WorkOrderBillApprovalOutcome> ApproveWorkOrderBillAsync(ApproveWorkOrderBill command, CancellationToken cancellationToken = default)
+    {
+        var outcome = await commands.SendAsync(command, cancellationToken);
+        await ReloadAfterWriteAsync(cancellationToken);
+        return outcome;
+    }
+
+    public async Task<WorkOrderBillUndoOutcome> UndoWorkOrderBillApprovalAsync(string xeroInvoiceId, CancellationToken cancellationToken = default)
+    {
+        var outcome = await commands.SendAsync(new UndoWorkOrderBillApproval(xeroInvoiceId), cancellationToken);
+        await ReloadAfterWriteAsync(cancellationToken);
+        return outcome;
+    }
+
     /// <summary>
     /// A write can move a line from any status to any other — allocating takes a row out of
     /// Unallocated and puts it in Allocated — so every status already in hand is reloaded, along

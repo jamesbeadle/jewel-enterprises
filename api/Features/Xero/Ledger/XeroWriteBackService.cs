@@ -37,9 +37,28 @@ public interface IXeroWriteBackService
     /// their lines once payments are applied, so those move portal-side only.
     /// </summary>
     Task TrySetSiteAsync(IReadOnlyCollection<string> xeroLedgerLineIds, CancellationToken ct);
+
+    /// <summary>
+    /// The Work Order bill approval's write (2026-09-08): the same tracking + approval as
+    /// <see cref="TryWriteBackAsync"/>, reported back to the caller — and, because Xero never
+    /// un-approves, a bill re-approved after an undo is still AUTHORISED there, so an approved
+    /// bill with nothing paid against it takes the tracking rewrite too. Never throws.
+    /// </summary>
+    Task<XeroWriteBackOutcome> WriteBackWorkOrderBillAsync(string xeroInvoiceId, CancellationToken ct);
+
+    /// <summary>
+    /// The undo's write (2026-09-08): strips Sites and Cost Code tracking off every line of the
+    /// bill in Xero, status untouched. Never throws; the outcome carries Xero's answer and the
+    /// bill's status as Xero reported it, so the caller can say plainly that an approved bill
+    /// stays approved.
+    /// </summary>
+    Task<XeroTrackingClearOutcome> TryClearTrackingAsync(string xeroInvoiceId, CancellationToken ct);
 }
 
-public sealed class XeroWriteBackService : IXeroWriteBackService
+/// <summary>What the tracking clear did; XeroStatus is the bill's status as Xero reported it ("" when unknown).</summary>
+public sealed record XeroTrackingClearOutcome(bool Succeeded, string? Error, string XeroStatus);
+
+public sealed partial class XeroWriteBackService : IXeroWriteBackService
 {
     // Only invoices still awaiting approval in Xero are written back.
     private static readonly string[] AwaitingApprovalStatuses = { "DRAFT", "SUBMITTED" };
@@ -173,7 +192,8 @@ public sealed class XeroWriteBackService : IXeroWriteBackService
         await StampFailureAsync(lines, result.Error ?? "Xero rejected the tracking update.", ct);
     }
 
-    private async Task<XeroWriteBackOutcome> WriteBackInvoiceAsync(string invoiceId, bool explicitRetry, CancellationToken ct)
+    private async Task<XeroWriteBackOutcome> WriteBackInvoiceAsync(
+        string invoiceId, bool explicitRetry, CancellationToken ct, bool recodeApproved = false)
     {
         var lines = await context.XeroLedgerLines
             .Where(line => line.XeroInvoiceId == invoiceId)
@@ -182,7 +202,8 @@ public sealed class XeroWriteBackService : IXeroWriteBackService
             return new XeroWriteBackOutcome(false, "No stored ledger lines for this invoice.");
 
         var status = lines[0].InvoiceStatus;
-        if (!AwaitingApprovalStatuses.Contains(status, StringComparer.OrdinalIgnoreCase))
+        var takesApprovedRecode = recodeApproved && status.Equals("AUTHORISED", StringComparison.OrdinalIgnoreCase);
+        if (!AwaitingApprovalStatuses.Contains(status, StringComparer.OrdinalIgnoreCase) && !takesApprovedRecode)
         {
             // Approved/paid outside JPMS: the allocation stays portal-side, nothing to do —
             // a retry that races an out-of-band approval is a success, not an error.
@@ -260,7 +281,7 @@ public sealed class XeroWriteBackService : IXeroWriteBackService
         }
 
         var result = await xero.ApproveInvoiceAsync(
-            new XeroApprovalRequest(invoiceId, lines[0].Type == "ACCPAYCREDIT", instructions), ct);
+            new XeroApprovalRequest(invoiceId, lines[0].Type == "ACCPAYCREDIT", instructions, recodeApproved), ct);
 
         var now = DateTimeOffset.UtcNow;
         if (result.Succeeded)

@@ -20,6 +20,19 @@ public static class StatusTones
         _ => Tone.Muted
     };
 
+    /// <summary>How a Work Order bill was matched: a reference on the bill is the firmer fact.</summary>
+    public static Tone ToTone(this WorkOrderMatchRule rule) => rule switch
+    {
+        WorkOrderMatchRule.ByReference => Tone.Positive,
+        _ => Tone.Info
+    };
+
+    public static string Label(this WorkOrderMatchRule rule) => rule switch
+    {
+        WorkOrderMatchRule.ByReference => "Matched by reference",
+        _ => "Matched by supplier"
+    };
+
     public static Tone ToTone(this WorkOrderStatus status) => status switch
     {
         WorkOrderStatus.Released => Tone.Positive,

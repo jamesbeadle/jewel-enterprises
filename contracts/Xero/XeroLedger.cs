@@ -195,7 +195,18 @@ public sealed record XeroLedgerLine(
     // is the actual, this line is settlement of it, and the covered value is excluded from the
     // cost-of-sales aggregations. CoveredPeriodStart is the cover's month.
     bool CoveredByTimesheets = false,
-    DateTimeOffset? CoveredPeriodStart = null);
+    DateTimeOffset? CoveredPeriodStart = null,
+    // Work Order bill recognition (2026-09-08): set on UNALLOCATED lines whose bill matched an
+    // open work order — the bill belongs on the allocation page's Work Order bills tab, coded
+    // from the order. Computed on every unallocated read beside labour recognition, so Sync and
+    // Re-check both re-run it. WorkOrderExceptionReason is the other outcome: a candidate order
+    // existed but the rule refused (over value, several fit, labour registry), shown on the
+    // queue row so the FD sees why it stayed. Both null when no order comes into it.
+    WorkOrderBillMatch? WorkOrderMatch = null,
+    string? WorkOrderExceptionReason = null,
+    // Set on lines approved as a Work Order bill and still standing: who approved, against
+    // which order, by which rule. Null on lines allocated any other way.
+    WorkOrderBillApprovalStamp? WorkOrderApproval = null);
 
 /// <summary>
 /// The attachments Xero holds for one purchase invoice or credit note — the

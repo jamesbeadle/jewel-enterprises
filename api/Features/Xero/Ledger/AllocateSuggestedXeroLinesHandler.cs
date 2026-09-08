@@ -43,6 +43,11 @@ public sealed class AllocateSuggestedXeroLinesHandler : ICommandHandler<Allocate
         // the approved timesheets already carry. Skipping here keeps the one-shot consistent
         // with the Labour section the allocation page draws from the same read.
         var labour = await LabourSupplierRecognition.ForAsync(context, unallocated, cancellationToken);
+        // Likewise a bill matched to an open work order (2026-09-08): it leaves the queue through
+        // Approve on the Work Order bills tab — allocated from the order AND linked to it — never
+        // through this sweep, which would code it from its tracking and leave the order unlinked.
+        var workOrderBills = XeroLedgerReads.WorkOrderBillsFor(
+            await WorkOrderBillRecognition.ForAsync(context, unallocated, cancellationToken), unallocated, labour, suggester);
 
         var now = DateTimeOffset.UtcNow;
         var allocated = 0;
@@ -50,6 +55,7 @@ public sealed class AllocateSuggestedXeroLinesHandler : ICommandHandler<Allocate
         foreach (var line in unallocated)
         {
             if (labour?.For(line) is not null) continue;
+            if (workOrderBills.TryGetValue(line.XeroLedgerLineId, out var workOrderBill) && workOrderBill.Match is not null) continue;
 
             // Coding already set on the queued line (the SetProject half-step, or the
             // agreement carried out of a resolved dispute) is a human decision — it

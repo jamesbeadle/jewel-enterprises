@@ -50,7 +50,7 @@
         }
         else
         {
-            @if (activeTab == XeroAllocationStatus.Unallocated && !labourTab && FullyMatchedCount > 0)
+            @if (activeTab == XeroAllocationStatus.Unallocated && !labourTab && !workOrderBillsTab && FullyMatchedCount > 0)
             {
                 <MatchedLinesBanner Count="FullyMatchedCount" Busy="isBusy" OnAllocate="AllocateMatchedAsync" />
             }
@@ -71,13 +71,17 @@
                                   ProjectTabs="ProjectTabs"
                                   ShowLabour="@(LabourTotalCount > 0 || labourTab)"
                                   LabourOutstandingCount="LabourOutstandingCount"
+                                  WorkOrderBillsTab="workOrderBillsTab"
+                                  ShowWorkOrderBills="@(WorkOrderBillCount > 0 || workOrderBillsTab)"
+                                  WorkOrderBillCount="WorkOrderBillCount"
                                   AllocatedCount="CountOf(XeroAllocationStatus.Allocated)"
                                   BucketedCount="CountOf(XeroAllocationStatus.Bucketed)"
                                   DisputedCount="CountOf(XeroAllocationStatus.Disputed)"
                                   IgnoredCount="CountOf(XeroAllocationStatus.Ignored)"
                                   OnSwitchStatus="status => SwitchTab(status)"
                                   OnSwitchProject="projectId => SwitchTab(XeroAllocationStatus.Unallocated, projectId)"
-                                  OnSwitchLabour="() => SwitchTab(XeroAllocationStatus.Unallocated, labour: true)" />
+                                  OnSwitchLabour="() => SwitchTab(XeroAllocationStatus.Unallocated, labour: true)"
+                                  OnSwitchWorkOrderBills="() => SwitchTab(XeroAllocationStatus.Unallocated, workOrderBills: true)" />
                 <div class="flex items-center gap-4">
                     <ExportToExcelButton FileName="Cost allocation"
                                          Disabled="@(Visible.Count == 0)"
@@ -103,13 +107,18 @@
                 <LabourSectionStrip CoveredCount="LabourCoveredCount" @bind-ShowCovered="showCoveredLabour" />
             }
 
+            @if (activeTab == XeroAllocationStatus.Unallocated && workOrderBillsTab)
+            {
+                <WorkOrderBillsStrip />
+            }
+
             @if (activeTab == XeroAllocationStatus.Unallocated && labourTab && selectedIds.Count > 0)
             {
                 <LabourBulkActions Count="selectedIds.Count" Busy="isBusy" OnClear="() => selectedIds.Clear()"
                                    OnMarkCover="BulkMarkCoverAsync" OnUnmarkCover="BulkUnmarkCoverAsync" />
             }
 
-            @if (activeTab == XeroAllocationStatus.Unallocated && !labourTab && selectedIds.Count > 0)
+            @if (activeTab == XeroAllocationStatus.Unallocated && !labourTab && !workOrderBillsTab && selectedIds.Count > 0)
             {
                 <QueueBulkActions Count="selectedIds.Count" Busy="isBusy" OnClear="() => selectedIds.Clear()"
                                   ProjectOptions="@ProjectOptions" CostCenterOptions="@CostCenterOptions"
@@ -142,6 +151,26 @@
                While a row's menu is open the overflow cap is lifted: the menu positions
                absolutely inside this container, and with the overflow active its bottom
                entries would be clipped at the container's edge. *@
+            @if (activeTab == XeroAllocationStatus.Unallocated && workOrderBillsTab)
+            {
+                @* One card per bill, not a row per line: Approve applies to the whole bill. *@
+                foreach (var bill in WorkOrderBillCards)
+                {
+                    <WorkOrderBillCard @key="bill[0].XeroInvoiceId"
+                                       Lines="bill"
+                                       Busy="isBusy"
+                                       Approving="@(approvingInvoiceId == bill[0].XeroInvoiceId)"
+                                       Error="@WorkOrderBillErrorFor(bill)"
+                                       ProjectName="ProjectName"
+                                       CostCenterText="CostCenterText"
+                                       SharesFor="SharesFor"
+                                       OnOpenInvoice="OpenInvoiceView"
+                                       OnApprove="() => ApproveWorkOrderBillAsync(bill)"
+                                       OnNotWorkOrderBill="() => MarkNotWorkOrderBill(bill)" />
+                }
+            }
+            else
+            {
             <div class="panel @(IsRowMenuOpen ?"" : "overflow-x-auto overflow-y-auto max-h-[85vh]")">
                 <table class="data-table">
                     <AllocationTableHeader Tab="activeTab" LabourTab="labourTab"
@@ -224,13 +253,14 @@
                                                      ProjectName="ProjectName"
                                                      CostCenterText="CostCenterText"
                                                      OnRetryWriteBack="() => RetryWriteBackAsync(line)"
-                                                     OnUndo="() => ResetAsync(line)"
+                                                     OnUndo="() => UndoAllocatedAsync(line)"
                                                      OnOpenDispute="() => OpenDispute(line)" />
                             }
                         }
                     </tbody>
                 </table>
             </div>
+            }
 
             @* Tabs load independently now, so a tab can be mid-fetch or genuinely empty while the
                ledger as a whole is neither. Say which. *@
@@ -250,7 +280,9 @@
                     and approves it. Moving a line between projects (Set, or Send to project) rewrites its
                     Xero Sites tracking on draft and approved bills alike; paid bills are locked in Xero
                     and move in JPMS only. A disputed line waits on the Disputed tab — its bill is never
-                    auto-approved — until either side returns it to allocation.
+                    auto-approved — until either side returns it to allocation. A bill from a supplier
+                    with an open work order waits on the Work Order bills tab, coded from the order, for
+                    one Approve.
                 </p>
                 @if (PageCount > 1)
                 {
@@ -324,6 +356,16 @@
                           Error="@disputeError" Busy="@isBusy" Applying="@isApplying"
                           @bind-Message="disputeMessage"
                           OnConfirm="ConfirmDisputeAsync" OnCancel="CloseDispute" />
+
+        @* Undo of a Work Order bill approval (2026-09-08): the whole bill reverses — allocation,
+           links, Xero tracking — but Xero never un-approves, so the bill stays approved there. *@
+        <ConfirmDialog IsOpen="@(undoWorkOrderBillInvoiceId is not null)" Title="Undo this bill's Work Order approval?"
+                       ConfirmLabel="Undo bill" BusyLabel="Undoing…" Danger="true" Busy="@isBusy"
+                       OnConfirm="ConfirmUndoWorkOrderBillAsync" OnCancel="CloseUndoWorkOrderBill">
+            Every line of the bill goes back to the Work Order bills tab, its links to the order are removed
+            and its Sites / Cost Code tracking is cleared in Xero. Xero cannot un-approve a bill: if it has
+            already been approved there it stays awaiting payment until you deal with it in Xero.
+        </ConfirmDialog>
 
         <DisputeDiscussionModal IsOpen="@(discussLineId is not null)"
                                 Line="DiscussLine"
