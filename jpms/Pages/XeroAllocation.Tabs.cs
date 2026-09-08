@@ -77,7 +77,7 @@ public partial class XeroAllocation
     // Whether the empty tab is empty because of a filter the user set, or just empty.
     private bool HasTabFilters =>
         !string.IsNullOrWhiteSpace(search) || bucketFilter is not null
-        || allocatedProjectFilter != "" || activeProjectId is not null || labourTab || workOrderBillsTab;
+        || allocatedProjectFilter != "" || allocatedXeroFilter != "" || activeProjectId is not null || labourTab || workOrderBillsTab;
 
     private void SwitchTab(XeroAllocationStatus tab, string? projectId = null, bool labour = false, bool workOrderBills = false)
     {
@@ -91,6 +91,7 @@ public partial class XeroAllocation
         selectedIds.Clear();
         bucketFilter = null;
         allocatedProjectFilter = "";
+        allocatedXeroFilter = "";
         CloseSendToCostCentre();
         CloseSendToProject();
         CloseDispute();

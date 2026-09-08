@@ -171,6 +171,10 @@ public sealed record XeroLedgerLine(
     // projects/centres (CostCenterCode is then null, ProjectId holds the common
     // project or null when the split spans projects, and the split nets sum to Net).
     IReadOnlyList<XeroCostSplit>? Splits = null,
+    // WriteBackStatus is where the write-back stands now; WriteBackError / WriteBackFailedAtUtc
+    // are the LAST failure, kept through a later success (2026-09-08) so a retry that worked
+    // still shows what went wrong first. InvoiceStatus above is the bill's status as Xero last
+    // reported it — refreshed by every sync and stamped after every write.
     XeroWriteBackStatus WriteBackStatus = XeroWriteBackStatus.None,
     string? WriteBackError = null,
     DateTimeOffset? WriteBackAtUtc = null,
@@ -206,7 +210,8 @@ public sealed record XeroLedgerLine(
     string? WorkOrderExceptionReason = null,
     // Set on lines approved as a Work Order bill and still standing: who approved, against
     // which order, by which rule. Null on lines allocated any other way.
-    WorkOrderBillApprovalStamp? WorkOrderApproval = null);
+    WorkOrderBillApprovalStamp? WorkOrderApproval = null,
+    DateTimeOffset? WriteBackFailedAtUtc = null);
 
 /// <summary>
 /// The attachments Xero holds for one purchase invoice or credit note — the

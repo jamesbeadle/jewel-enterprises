@@ -39,6 +39,9 @@ public partial class XeroAllocation
         {
             columns.Add(new ExcelColumn("Allocated to"));
             columns.Add(new ExcelColumn("Cost centre"));
+            columns.Add(new ExcelColumn("Xero status"));
+            columns.Add(new ExcelColumn("Write-back"));
+            columns.Add(new ExcelColumn("Last write-back error"));
         }
         else if (activeTab == XeroAllocationStatus.Bucketed)
         {
@@ -97,6 +100,9 @@ public partial class XeroAllocation
                     cells.Add(ProjectName(line.ProjectId));
                     cells.Add(CostCenterText(line.CostCenterCode));
                 }
+                cells.Add(XeroStatusText(line));
+                cells.Add(WriteBackText(line));
+                cells.Add(line.WriteBackError);
             }
             else if (activeTab == XeroAllocationStatus.Bucketed)
             {

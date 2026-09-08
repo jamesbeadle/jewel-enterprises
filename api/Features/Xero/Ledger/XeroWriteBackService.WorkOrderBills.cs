@@ -24,13 +24,15 @@ public sealed partial class XeroWriteBackService
     {
         try
         {
-            var line = await context.XeroLedgerLines.AsNoTracking()
-                .FirstOrDefaultAsync(candidate => candidate.XeroInvoiceId == xeroInvoiceId, ct);
-            if (line is null)
+            var lines = await context.XeroLedgerLines
+                .Where(candidate => candidate.XeroInvoiceId == xeroInvoiceId)
+                .ToListAsync(ct);
+            if (lines.Count == 0)
                 return new XeroTrackingClearOutcome(false, "No stored ledger lines for this invoice.", "");
 
-            var result = await xero.ClearTrackingAsync(xeroInvoiceId, line.Type == "ACCPAYCREDIT", ct);
-            var status = result.FreshStatus ?? line.InvoiceStatus;
+            var result = await xero.ClearTrackingAsync(xeroInvoiceId, lines[0].Type == "ACCPAYCREDIT", ct);
+            var status = result.FreshStatus ?? lines[0].InvoiceStatus;
+            if (StampXeroStatus(lines, result.FreshStatus)) await context.SaveChangesAsync(ct);
             if (result.Succeeded)
             {
                 logger.LogInformation("Xero tracking cleared off invoice {InvoiceId} ({Status}).", xeroInvoiceId, status);

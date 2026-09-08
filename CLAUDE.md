@@ -189,6 +189,21 @@ finds drift.
   the this-visit escape to the plain queue; the Allocated row's Undo becomes "Undo bill"
   (`ConfirmDialog`, Danger) when `WorkOrderApproval` is set.
 
+## Xero write-back state on a ledger line (api + jpms)
+
+- **`InvoiceStatus` is what Xero holds; `WriteBackStatus` is what the portal did.** Two facts,
+  never one: `None` covers "approved outside JPMS" AND "still draft, nothing written yet", so a
+  "still draft in Xero?" question reads `InvoiceStatus` (`IsAwaitingApproval`), never the
+  write-back status. Sync refreshes `InvoiceStatus`; every write (`XeroWriteBackService`:
+  approval, site write, tracking clear) stamps Xero's `FreshStatus` back onto the lines through
+  `StampXeroStatus` so the ledger does not wait a night to agree with Xero.
+- **A failure is never forgotten by the success that cures it** (2026-09-08, the accountant's
+  ask): `WriteBackError` + `WriteBackFailedAtUtc` are the LAST failure and survive a later
+  Approved / None; only a fresh failure rewrites them and only the Work Order bill undo clears them. The
+  Allocated row reads "Approved in Xero by JPMS · Earlier attempt failed <when>: <error>"; the
+  `Draft in Xero` / `Write-back failed` chips (`XeroAllocation.XeroState.cs`, `FilterChips`) and
+  the export's Xero status / Write-back / Last write-back error columns read the same fields.
+
 ## Directory ↔ Xero links (api + jpms)
 
 - **A directory record's Xero link is one `SubcontractorXeroLinks` row, written three ways and

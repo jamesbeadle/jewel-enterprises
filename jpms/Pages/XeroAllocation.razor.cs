@@ -113,7 +113,7 @@ public partial class XeroAllocation
     private IReadOnlyList<XeroLedgerLine>? visibleCache;
     private (IReadOnlyList<XeroLedgerLine>? Lines, object Projects, string Search, XeroAllocationStatus Tab,
              string? ProjectTab, string? Bucket, string AllocatedProject,
-             bool LabourTab, bool ShowCovered, int NotLabour, bool WorkOrderBillsTab, int NotWorkOrderBill) visibleCacheKey;
+             bool LabourTab, bool ShowCovered, int NotLabour, bool WorkOrderBillsTab, int NotWorkOrderBill, string XeroFilter) visibleCacheKey;
 
     private IReadOnlyList<XeroLedgerLine> Visible
     {
@@ -121,7 +121,7 @@ public partial class XeroAllocation
         {
             // Projects is in the key because GroupProjectFor validates against it.
             var key = (Lines, (object)Projects, search, activeTab, activeProjectId, bucketFilter, allocatedProjectFilter,
-                       labourTab, showCoveredLabour, notLabourIds.Count, workOrderBillsTab, notWorkOrderBillInvoiceIds.Count);
+                       labourTab, showCoveredLabour, notLabourIds.Count, workOrderBillsTab, notWorkOrderBillInvoiceIds.Count, allocatedXeroFilter);
             if (visibleCache is null || key != visibleCacheKey)
             {
                 visibleCache = Lines is null
@@ -146,6 +146,7 @@ public partial class XeroAllocation
                            .Where(line => activeTab != XeroAllocationStatus.Allocated
                                           || allocatedProjectFilter == ""
                                           || MatchesAllocatedProjectFilter(line))
+                           .Where(line => activeTab != XeroAllocationStatus.Allocated || MatchesAllocatedXeroFilter(line))
                            .Where(MatchesSearch)
                            .ToList();
                 visibleCacheKey = key;

@@ -172,14 +172,15 @@ public sealed partial class XeroWriteBackService : IXeroWriteBackService
 
         if (result.Succeeded)
         {
-            // Clear any earlier failure mark; these lines are queued, so their
-            // write-back story starts clean again (None, not Approved — nothing
-            // was approved here).
-            var changed = false;
+            // Lift any earlier failure mark; these lines are queued, so their write-back story
+            // goes back to None (not Approved — nothing was approved here). The last error and
+            // when it failed stay on the line (2026-09-08): a failure must not vanish the moment
+            // a later write works. Xero's fresh status is stamped too, so the ledger reads what
+            // Xero last said without waiting for a sync.
+            var changed = StampXeroStatus(lines, result.FreshStatus);
             foreach (var line in lines.Where(line => line.WriteBackStatus == (int)XeroWriteBackStatus.Failed))
             {
                 line.WriteBackStatus = (int)XeroWriteBackStatus.None;
-                line.WriteBackError = null;
                 line.WriteBackAtUtc = null;
                 changed = true;
             }
@@ -286,10 +287,11 @@ public sealed partial class XeroWriteBackService : IXeroWriteBackService
         var now = DateTimeOffset.UtcNow;
         if (result.Succeeded)
         {
+            // WriteBackError and WriteBackFailedAtUtc are deliberately left as they are: the
+            // line now reads "approved — after a failed attempt at …" rather than forgetting.
             foreach (var line in lines)
             {
                 line.WriteBackStatus = (int)XeroWriteBackStatus.Approved;
-                line.WriteBackError = null;
                 line.WriteBackAtUtc = now;
                 // Reflect the approval immediately; the next sync re-confirms from Xero.
                 line.InvoiceStatus = result.FreshStatus ?? "AUTHORISED";
@@ -312,9 +314,23 @@ public sealed partial class XeroWriteBackService : IXeroWriteBackService
             line.WriteBackStatus = (int)XeroWriteBackStatus.Failed;
             line.WriteBackError = error.Length <= 1024 ? error : error[..1024];
             line.WriteBackAtUtc = now;
+            line.WriteBackFailedAtUtc = now;
         }
         await context.SaveChangesAsync(ct);
         logger.LogWarning("Xero write-back failed for invoice {InvoiceId}: {Error}", lines[0].XeroInvoiceId, error);
         return new XeroWriteBackOutcome(false, error);
+    }
+
+    /// <summary>The bill's status as Xero just reported it, onto every stored line; false when Xero said nothing new.</summary>
+    private static bool StampXeroStatus(List<XeroLedgerLineEntity> lines, string? freshStatus)
+    {
+        if (string.IsNullOrWhiteSpace(freshStatus)) return false;
+        var changed = false;
+        foreach (var line in lines.Where(line => !line.InvoiceStatus.Equals(freshStatus, StringComparison.OrdinalIgnoreCase)))
+        {
+            line.InvoiceStatus = freshStatus;
+            changed = true;
+        }
+        return changed;
     }
 }

@@ -62,12 +62,18 @@ internal sealed class RecordingXero : IXeroClient
         return Task.FromResult(new XeroSuppliersSnapshot(true, null, DateTimeOffset.UtcNow, false, Suppliers.ToList()));
     }
     public Task<XeroTrackingCategoriesSnapshot> GetTrackingCategoriesSnapshotAsync(bool force, CancellationToken ct) => throw new NotSupportedException();
+    /// <summary>A fixed answer for the next approval / site write when a test sets one (the
+    /// write-back tests); otherwise approval answers as the real client would, off Bills.</summary>
+    public XeroApprovalResult? ApprovalResult { get; set; }
+    public XeroApprovalResult SiteTrackingResult { get; set; } = XeroApprovalResult.Ok("DRAFT");
+
     /// <summary>Approval as the real client answers it: an unknown bill fails, an approved or
     /// paid one is acknowledged untouched, a voided one refuses, a draft becomes AUTHORISED.</summary>
     public Task<XeroApprovalResult> ApproveInvoiceAsync(XeroApprovalRequest request, CancellationToken ct)
     {
         Calls.Add($"ApproveInvoice:{request.InvoiceId}");
         Approval = request;
+        if (ApprovalResult is { } fixedAnswer) return Task.FromResult(fixedAnswer);
         if (!Bills.TryGetValue(request.InvoiceId, out var bill) || bill is null)
             return Task.FromResult(XeroApprovalResult.Failed("Xero returned no invoice for this id — it may have been deleted."));
         if (bill.Status is "AUTHORISED" or "PAID") return Task.FromResult(XeroApprovalResult.SkippedAlreadyApproved(bill.Status));
@@ -76,7 +82,12 @@ internal sealed class RecordingXero : IXeroClient
         Bills[request.InvoiceId] = bill with { Status = "AUTHORISED" };
         return Task.FromResult(XeroApprovalResult.Ok("AUTHORISED"));
     }
-    public Task<XeroApprovalResult> SetSiteTrackingAsync(XeroSiteTrackingRequest request, CancellationToken ct) => throw new NotSupportedException();
+
+    public Task<XeroApprovalResult> SetSiteTrackingAsync(XeroSiteTrackingRequest request, CancellationToken ct)
+    {
+        Calls.Add($"SetSite:{request.InvoiceId}");
+        return Task.FromResult(SiteTrackingResult);
+    }
     public Task<XeroApprovalResult> ClearTrackingAsync(string invoiceId, bool isCreditNote, CancellationToken ct)
     {
         Calls.Add($"ClearTracking:{invoiceId}");

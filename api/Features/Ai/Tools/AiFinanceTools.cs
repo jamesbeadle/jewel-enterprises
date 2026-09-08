@@ -199,7 +199,9 @@ internal static class AiFinanceTools
         line.SuggestedBucket,
         line.Note,
         splits = line.Splits,
+        xeroStatus = line.InvoiceStatus,
         writeBackStatus = line.WriteBackStatus.ToString(),
-        line.WriteBackError
+        line.WriteBackError,
+        line.WriteBackFailedAtUtc
     };
 }
