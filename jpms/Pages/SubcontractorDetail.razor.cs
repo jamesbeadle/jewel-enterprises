@@ -1,4 +1,5 @@
 using Jewel.JPMS.Contracts.Subcontractors;
+using Jewel.JPMS.Features.Directory;
 
 namespace Jewel.JPMS.Pages;
 
@@ -69,6 +70,43 @@ public partial class SubcontractorDetail
     // the roles allowed to edit directory records (mirrors the API's UpdateSubcontractor gate).
     private bool CanAccess => Session.AvailableRoles.Any(r =>
         r is Role.Admin or Role.ManagingDirector or Role.FinanceDirector or Role.ProjectManager);
+
+    // ---- Xero link ----
+
+    // Linking decides which Xero supplier the company's bills reconcile against — the Directory
+    // page's management gate (Admin, MD, FD), mirroring the API's link/import authorisation.
+    private bool CanManageXeroLink => Session.AvailableRoles.Any(r =>
+        r is Role.Admin or Role.ManagingDirector or Role.FinanceDirector);
+
+    private XeroLinkModal? xeroLinkModal;
+    private bool xeroBusy;
+    private string? xeroError;
+
+    private static string XeroLinkTitle(Subcontractor sub) =>
+        sub.XeroLinks.Count == 0
+            ? "This record holds a Xero link"
+            : "Linked to Xero contact " + string.Join(" and ", sub.XeroLinks.Select(link => link.XeroContactName));
+
+    private void OpenXeroLink()
+    {
+        if (subcontractor is null) return;
+        xeroError = null;
+        xeroLinkModal?.Open(subcontractor.SubcontractorId, subcontractor.CompanyName);
+    }
+
+    private async Task UnlinkFromXero(string xeroContactId)
+    {
+        if (xeroBusy || subcontractor is null) return;
+        xeroError = null;
+        try
+        {
+            xeroBusy = true;
+            await SubcontractorStore.UnlinkFromXeroAsync(subcontractor.SubcontractorId, xeroContactId);
+        }
+        catch (CommandFailedException ex) { xeroError = $"Couldn't unlink: {ex.Message}"; }
+        catch { xeroError = "Couldn't remove the Xero link. Please try again."; }
+        finally { xeroBusy = false; }
+    }
 
     private string PageTitleText => subcontractor?.CompanyName ?? "Subcontractor";
 

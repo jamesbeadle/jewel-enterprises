@@ -11,7 +11,13 @@ public partial class XeroImportModal
     private XeroSuppliersSnapshot? snapshot;
     private bool loading;
     private string? error;
-    private string? importingContactId;
+    private string? busyContactId;
+    private BusyAction busyAction;
+    // Contacts linked to an existing record from THIS dialog — their row says "Linked", not
+    // "Imported", because no record was created.
+    private readonly HashSet<string> linkedContactIds = new(StringComparer.OrdinalIgnoreCase);
+
+    private enum BusyAction { Import, Link }
 
     /// <summary>Opens the dialog, its search seeded with the directory's own search text.</summary>
     public void Open(string directorySearch)
@@ -53,27 +59,48 @@ public partial class XeroImportModal
 
     private async Task ImportSupplierAsync(string contactId)
     {
-        if (importingContactId is not null) return;
+        if (busyContactId is not null) return;
         error = null;
         try
         {
-            importingContactId = contactId;
+            busyContactId = contactId;
+            busyAction = BusyAction.Import;
             await SubcontractorStore.ImportFromXeroAsync(contactId);
-            // Mark the row imported in place rather than re-reading Xero for a flag we already know.
-            if (snapshot is not null)
-            {
-                snapshot = snapshot with
-                {
-                    Suppliers = snapshot.Suppliers
-                        .Select(supplier => supplier.ContactId == contactId
-                            ? supplier with { AlreadyImported = true }
-                            : supplier)
-                        .ToList()
-                };
-            }
+            MarkImported(contactId);
         }
         catch (CommandFailedException ex) { error = $"Couldn't import: {ex.Message}"; }
         catch { error = "Couldn't import that supplier. Please try again."; }
-        finally { importingContactId = null; }
+        finally { busyContactId = null; }
+    }
+
+    private async Task LinkSupplierAsync(XeroSupplier supplier)
+    {
+        if (busyContactId is not null || supplier.MatchingSubcontractorId is null) return;
+        error = null;
+        try
+        {
+            busyContactId = supplier.ContactId;
+            busyAction = BusyAction.Link;
+            await SubcontractorStore.LinkToXeroAsync(supplier.MatchingSubcontractorId, supplier.ContactId);
+            linkedContactIds.Add(supplier.ContactId);
+            MarkImported(supplier.ContactId);
+        }
+        catch (CommandFailedException ex) { error = $"Couldn't link: {ex.Message}"; }
+        catch { error = "Couldn't link that contact. Please try again."; }
+        finally { busyContactId = null; }
+    }
+
+    // Mark the row in place rather than re-reading Xero for a flag we already know.
+    private void MarkImported(string contactId)
+    {
+        if (snapshot is null) return;
+        snapshot = snapshot with
+        {
+            Suppliers = snapshot.Suppliers
+                .Select(supplier => supplier.ContactId == contactId
+                    ? supplier with { AlreadyImported = true }
+                    : supplier)
+                .ToList()
+        };
     }
 }

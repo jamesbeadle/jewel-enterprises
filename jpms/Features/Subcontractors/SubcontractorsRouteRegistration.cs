@@ -52,6 +52,18 @@ public static class SubcontractorsRouteRegistration
         // Xero import + consolidation (the duplicate-resolution flow) + company contacts.
         commands.Register<ImportXeroSupplier, Subcontractor>(CommandRoute.Post("/api/subcontractors/import-from-xero"));
 
+        commands.Register<LinkDirectoryRecordToXeroContact, Subcontractor>(
+            new CommandRoute("POST", "/api/subcontractors/{subcontractorId}/xero-link",
+                command => $"/api/subcontractors/{((LinkDirectoryRecordToXeroContact)command).SubcontractorId}/xero-link"));
+
+        commands.Register<UnlinkDirectoryRecordFromXeroContact, Subcontractor>(
+            new CommandRoute("DELETE", "/api/subcontractors/{subcontractorId}/xero-link/{xeroContactId}",
+                command =>
+                {
+                    var c = (UnlinkDirectoryRecordFromXeroContact)command;
+                    return $"/api/subcontractors/{c.SubcontractorId}/xero-link/{c.XeroContactId}";
+                }));
+
         commands.Register<ConsolidateDirectoryRecords, Subcontractor>(CommandRoute.Post("/api/subcontractors/consolidate"));
 
         queries.Register<ListCompanyContacts, IReadOnlyList<CompanyContact>>(

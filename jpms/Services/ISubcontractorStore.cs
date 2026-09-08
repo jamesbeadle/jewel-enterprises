@@ -52,6 +52,15 @@ public interface ISubcontractorStore
     /// the directory list. Duplicates are resolved afterwards via ConsolidateAsync.</summary>
     Task<Subcontractor> ImportFromXeroAsync(string xeroContactId);
 
+    /// <summary>Links an existing directory record to a Xero contact — the one-field change for a
+    /// supplier already in the directory — and refreshes the directory list. Server-side this is
+    /// LinkDirectoryRecordToXeroContact: refused when either side is already linked.</summary>
+    Task<Subcontractor> LinkToXeroAsync(string subcontractorId, string xeroContactId);
+
+    /// <summary>Removes one Xero link from a directory record (the undo of LinkToXeroAsync or of
+    /// a mistaken import's link) and refreshes the directory list.</summary>
+    Task<Subcontractor> UnlinkFromXeroAsync(string subcontractorId, string xeroContactId);
+
     /// <summary>Merges duplicate records into the chosen master with the chosen winning values,
     /// then refreshes the directory list. Server-side this re-points every reference and deletes
     /// the merged-away records; restricted to Admin, MD and FD.</summary>

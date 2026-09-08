@@ -53,7 +53,13 @@ internal sealed class RecordingXero : IXeroClient
     public Task<XeroCashSummarySnapshot> GetCashSummaryAsync(bool force, CancellationToken ct) => throw new NotSupportedException();
     public Task<XeroAgedPayablesSnapshot> GetAgedPayablesAsync(bool force, CancellationToken ct) => throw new NotSupportedException();
     public Task<XeroAgedReceivablesSnapshot> GetAgedReceivablesAsync(bool force, CancellationToken ct) => throw new NotSupportedException();
-    public Task<XeroSuppliersSnapshot> GetSuppliersAsync(bool force, CancellationToken ct) => throw new NotSupportedException();
+    public List<XeroSupplier> Suppliers { get; } = new();
+
+    public Task<XeroSuppliersSnapshot> GetSuppliersAsync(bool force, CancellationToken ct)
+    {
+        Calls.Add(force ? "GetSuppliers:force" : "GetSuppliers");
+        return Task.FromResult(new XeroSuppliersSnapshot(true, null, DateTimeOffset.UtcNow, false, Suppliers.ToList()));
+    }
     public Task<XeroTrackingCategoriesSnapshot> GetTrackingCategoriesSnapshotAsync(bool force, CancellationToken ct) => throw new NotSupportedException();
     public Task<XeroApprovalResult> ApproveInvoiceAsync(XeroApprovalRequest request, CancellationToken ct) => throw new NotSupportedException();
     public Task<XeroApprovalResult> SetSiteTrackingAsync(XeroSiteTrackingRequest request, CancellationToken ct) => throw new NotSupportedException();

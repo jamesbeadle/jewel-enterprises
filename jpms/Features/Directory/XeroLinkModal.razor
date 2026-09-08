@@ -1,0 +1,89 @@
+@namespace Jewel.JPMS.Features.Directory
+@inject ISubcontractorStore SubcontractorStore
+
+@* Link to Xero contact: gives an EXISTING directory record its Xero link without importing a
+   second record (the accountant's one-field change, 2026-09-08). Lists the Xero contacts no
+   record holds yet, search seeded with the company name; the contact the API matched to this
+   record by name (MatchingSubcontractorId) leads the list as "Suggested". Owns the read, the
+   filter and the link; the page it sits on re-reads the record from the store afterwards. *@
+<Modal IsOpen="open" Title="Link to Xero contact" ShowFooter="false"
+       OnCancel="Close" Class="max-w-2xl w-full">
+    <p class="text-sm text-content-muted mb-3">
+        Choose the Xero contact <span class="font-medium text-content">@companyName</span> settles through.
+        Only the link is written — the record's work orders, contacts and trades stay as they are.
+    </p>
+    @if (error is not null)
+    {
+        <Notice Tone="Tone.Negative" Class="mb-3">@error</Notice>
+    }
+    <div class="flex flex-wrap items-end gap-3 mb-4">
+        <div class="grow min-w-[14rem]">
+            <FormField Label="Search">
+            <input class="field" placeholder="Xero contact name, email, town…" value="@search"
+                   @oninput="args => search = args.Value?.ToString() ?? string.Empty" />
+            </FormField>
+        </div>
+        <button type="button" class="btn-secondary shrink-0" disabled="@loading"
+                title="Re-read the contact list from Xero"
+                @onclick="() => LoadSuppliersAsync(force: true)">
+            @(loading ? "Refreshing…" : "Refresh")
+        </button>
+    </div>
+
+    @if (snapshot is null)
+    {
+        @if (error is null)
+        {
+            <LoadGate IsLoading="true" Prominent="true" Label="Reading Xero" />
+        }
+    }
+    else if (!snapshot.IsConfigured)
+    {
+        <p class="text-sm text-content-subtle italic">
+            Xero isn't connected — the Xero__ClientId / Xero__ClientSecret app settings are missing.
+        </p>
+    }
+    else if (snapshot.Error is not null)
+    {
+        <Notice Tone="Tone.Negative">@snapshot.Error</Notice>
+    }
+    else if (Candidates().Count == 0)
+    {
+        <p class="text-sm text-content-subtle italic">
+            No unlinked Xero contacts match — clear the search, or Refresh if the contact was just created in Xero.
+        </p>
+    }
+    else
+    {
+        <div class="border border-line overflow-y-auto max-h-[50vh]">
+            <table class="data-table">
+                <tbody>
+                    @foreach (var supplier in Candidates())
+                    {
+                        <tr>
+                            <td>
+                                <p class="text-content font-medium inline-flex items-center gap-1.5">
+                                    @supplier.Name
+                                    @if (IsSuggested(supplier))
+                                    {
+                                        <Pill Tone="Tone.Info" Title="The name matches this record">Suggested</Pill>
+                                    }
+                                </p>
+                                <p class="text-xs text-content-subtle">
+                                    @string.Join(" · ", new[] { supplier.EmailAddress, supplier.Town }.Where(x => !string.IsNullOrWhiteSpace(x)))
+                                </p>
+                            </td>
+                            <td class="text-right">
+                                <button type="button" class="btn-secondary text-xs px-2.5 py-1.5"
+                                        disabled="@(linkingContactId is not null)"
+                                        @onclick="() => LinkAsync(supplier.ContactId)">
+                                    @(linkingContactId == supplier.ContactId ? "Linking…" : "Link")
+                                </button>
+                            </td>
+                        </tr>
+                    }
+                </tbody>
+            </table>
+        </div>
+    }
+</Modal>

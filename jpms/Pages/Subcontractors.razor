@@ -43,7 +43,7 @@
                     <div class="flex items-center gap-4 shrink-0">
                         <ExportToExcelButton FileName="Directory"
                                              Disabled="@(DirectoryCompanies().Count == 0)"
-                                             ShowIncludeAllRows="@(!string.IsNullOrWhiteSpace(search) || !string.IsNullOrWhiteSpace(categoryFilter))"
+                                             ShowIncludeAllRows="@FiltersActive"
                                              IncludeAllLabel="Ignore search & filter"
                                              BuildWorkbook="BuildExportWorkbook" />
                         @if (CanManage)
@@ -96,6 +96,13 @@
                     }
                 </select>
                 </FormField>
+            </div>
+            @* Xero link: the accountant's month-end filter (2026-09-08). Every unlinked supplier is
+               a two-step clean-up when its bills arrive, so the count is on the chip; the chips
+               render disabled without counts until the directory has loaded. *@
+            <div class="pb-0.5">
+                <FilterChips Items="XeroFilterChips" Selected="@xeroFilter" OnSelect="key => xeroFilter = key"
+                             Disabled="@(!SubcontractorStore.IsLoaded)" AriaLabel="Xero link" />
             </div>
             @* The live result count sits with the filters that produce it. Rendered only once the
                store has loaded — a line of text simply doesn't appear until the figure is known. *@
