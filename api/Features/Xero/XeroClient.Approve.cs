@@ -1,3 +1,4 @@
+using System.Text.Json;
 using System.Text.Json.Nodes;
 
 namespace Jewel.JPMS.Api.Features.Xero;
@@ -17,10 +18,13 @@ public sealed partial class XeroClient
                 return XeroApprovalResult.Failed("Xero returned no invoice for this id — it may have been deleted.");
 
             var status = StringOf(invoice, "Status") ?? "UNKNOWN";
-            if (status.Equals("AUTHORISED", StringComparison.OrdinalIgnoreCase)
-                || status.Equals("PAID", StringComparison.OrdinalIgnoreCase))
+            var isApproved = status.Equals("AUTHORISED", StringComparison.OrdinalIgnoreCase);
+            if (isApproved && !request.RecodeApproved || status.Equals("PAID", StringComparison.OrdinalIgnoreCase))
                 return XeroApprovalResult.SkippedAlreadyApproved(status);
-            if (!status.Equals("DRAFT", StringComparison.OrdinalIgnoreCase)
+            if (isApproved && HasMoneyAgainstIt(invoice))
+                return XeroApprovalResult.Failed("The bill is approved in Xero with a payment or credit against it — its lines are locked.");
+            if (!isApproved
+                && !status.Equals("DRAFT", StringComparison.OrdinalIgnoreCase)
                 && !status.Equals("SUBMITTED", StringComparison.OrdinalIgnoreCase))
                 return XeroApprovalResult.Failed($"The invoice is {status} in Xero and can't be approved.");
 
@@ -42,6 +46,9 @@ public sealed partial class XeroClient
             return XeroApprovalResult.Failed(failure.Message);
         }
     }
+
+    private static bool HasMoneyAgainstIt(JsonElement invoice) =>
+        DecimalOf(invoice, "AmountPaid") != 0m || DecimalOf(invoice, "AmountCredited") != 0m;
 
     /// <summary>
     /// The approved line list, validated against drift BEFORE touching Xero — creating tracking

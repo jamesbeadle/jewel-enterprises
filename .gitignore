@@ -83,6 +83,10 @@ Claude outputs/
 
 *.bundle
 _nuget_transfer/
+# Tarballs a sandbox session moves source and NuGet packages through (2026-09-08) — same rule as the bundles.
+_transfer_*.tar.gz
+_nuget_transfer*.tar.gz
+_nuget_*.tar.gz
 
 # NuGet cache chunks packed on the Mac for an offline cloud restore
 nuget-cache.tgz*

@@ -31,6 +31,14 @@
         }
         <span class="truncate" title="@LineMetaText(Line)">@LineMetaText(Line)</span>
     </span>
+    @if (Line.WorkOrderExceptionReason is not null)
+    {
+        @* Why a bill with a candidate work order stayed in the queue (2026-09-08) — the
+           exception the FD deals with by hand, said on the row rather than hidden in a log. *@
+        <span class="block text-xs text-warning mt-1 whitespace-normal" title="Work order match">
+            Not a Work Order bill: @Line.WorkOrderExceptionReason
+        </span>
+    }
     @if (ShowDisputeState)
     {
         @* The dispute's state travels with the line rather than in its

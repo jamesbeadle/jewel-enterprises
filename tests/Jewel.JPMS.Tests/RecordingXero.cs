@@ -63,6 +63,11 @@ internal sealed class RecordingXero : IXeroClient
     public Task<XeroTrackingCategoriesSnapshot> GetTrackingCategoriesSnapshotAsync(bool force, CancellationToken ct) => throw new NotSupportedException();
     public Task<XeroApprovalResult> ApproveInvoiceAsync(XeroApprovalRequest request, CancellationToken ct) => throw new NotSupportedException();
     public Task<XeroApprovalResult> SetSiteTrackingAsync(XeroSiteTrackingRequest request, CancellationToken ct) => throw new NotSupportedException();
+    public Task<XeroApprovalResult> ClearTrackingAsync(string invoiceId, bool isCreditNote, CancellationToken ct)
+    {
+        Calls.Add($"ClearTracking:{invoiceId}");
+        return Task.FromResult(XeroApprovalResult.Ok("AUTHORISED"));
+    }
     public Task<IReadOnlyList<XeroInvoiceAttachment>> ListAttachmentsAsync(string invoiceId, bool isCreditNote, CancellationToken ct) => throw new NotSupportedException();
     public Task<XeroAttachmentContent?> GetAttachmentAsync(string invoiceId, bool isCreditNote, string fileName, CancellationToken ct) => throw new NotSupportedException();
     public Task<IReadOnlyList<XeroSitePnlMonthFigures>> GetSiteMonthlyPnlAsync(string siteOption, DateTime fromMonth, DateTime toMonth, CancellationToken ct) => throw new NotSupportedException();

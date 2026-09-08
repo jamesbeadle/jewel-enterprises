@@ -25,6 +25,20 @@ description: "How Xero and the portal reconcile — allocation doctrine and why 
 - Disputed lines are a conversation, not an error state — the thread survives resolution.
 - **Labour-registry suppliers' bills are timesheet SETTLEMENT, not costs** — they bypass the
   allocation queue entirely; labour cost enters projects through approved timesheets.
+- **A bill from a supplier with an open work order is a Work Order bill** (2026-09-08): its
+  project and cost code(s) were decided when the order was approved, so it is never coded by
+  hand. It sits on the allocation page's Work Order bills tab as ONE card per bill, pre-filled
+  from the order (project, cost code split pro rata to the order's lines, order value, invoiced
+  to date, remaining), and one Approve allocates every line, links each to the order for its
+  net, writes Sites + Cost Code tracking to Xero and approves the bill there. Matching runs on
+  every unallocated read (Sync and Re-check re-run it): a WO number on the bill wins (supplier
+  + number — numbers are per project, the bill's own Xero site breaks a tie); else a supplier
+  with exactly one open order; "open" is Released with value still left to invoice. Not
+  matched, with the reason on the row: the bill would take the order over its value, several
+  orders fit and the bill carries no reference, or the supplier is on the labour registry (the
+  cover route wins). The approval is audited (who, which rule) and undone as a bill: allocation,
+  links and Xero tracking reverse together — but Xero never un-approves, so an approved bill
+  stays awaiting payment there.
 
 ## Work-order invoice links
 

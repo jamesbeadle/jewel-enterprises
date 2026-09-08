@@ -15,7 +15,12 @@ namespace Jewel.JPMS.Api.Features.Xero;
 public sealed record XeroApprovalRequest(
     string InvoiceId,
     bool IsCreditNote,
-    IReadOnlyList<XeroApprovalLineInstruction> Lines);
+    IReadOnlyList<XeroApprovalLineInstruction> Lines,
+    // A Work Order bill re-approved after an undo (2026-09-08) is already AUTHORISED in Xero —
+    // Xero never un-approves — so its tracking must be rewritten on an approved bill. Set, an
+    // approved bill with nothing paid or credited takes the same line rewrite (status kept);
+    // unset, approved bills are skipped as before.
+    bool RecodeApproved = false);
 
 /// <summary>
 /// The allocation to stamp on one Xero line item. A single share covers the

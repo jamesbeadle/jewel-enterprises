@@ -7549,6 +7549,62 @@ namespace Jewel.JPMS.Api.Migrations
                     b.ToTable("WorkOrderAttachments");
                 });
 
+            modelBuilder.Entity("Jewel.JPMS.Api.Data.Entities.WorkOrderBillApprovalEntity", b =>
+                {
+                    b.Property<string>("WorkOrderBillApprovalId")
+                        .HasMaxLength(64)
+                        .HasColumnType("nvarchar(64)");
+
+                    b.Property<DateTimeOffset>("ApprovedAtUtc")
+                        .HasColumnType("datetimeoffset");
+
+                    b.Property<string>("ApprovedByEmail")
+                        .IsRequired()
+                        .HasMaxLength(256)
+                        .HasColumnType("nvarchar(256)");
+
+                    b.Property<decimal>("BillNet")
+                        .HasPrecision(18, 4)
+                        .HasColumnType("decimal(18,4)");
+
+                    b.Property<string>("MatchDetail")
+                        .IsRequired()
+                        .HasMaxLength(512)
+                        .HasColumnType("nvarchar(512)");
+
+                    b.Property<int>("MatchRule")
+                        .HasColumnType("int");
+
+                    b.Property<string>("ProjectId")
+                        .IsRequired()
+                        .HasMaxLength(64)
+                        .HasColumnType("nvarchar(64)");
+
+                    b.Property<DateTimeOffset?>("UndoneAtUtc")
+                        .HasColumnType("datetimeoffset");
+
+                    b.Property<string>("UndoneByEmail")
+                        .HasMaxLength(256)
+                        .HasColumnType("nvarchar(256)");
+
+                    b.Property<string>("WorkOrderId")
+                        .IsRequired()
+                        .HasMaxLength(64)
+                        .HasColumnType("nvarchar(64)");
+
+                    b.Property<string>("XeroInvoiceId")
+                        .IsRequired()
+                        .HasMaxLength(64)
+                        .HasColumnType("nvarchar(64)");
+
+                    b.HasKey("WorkOrderBillApprovalId");
+
+                    b.HasIndex("XeroInvoiceId")
+                        .HasDatabaseName("IX_WorkOrderBillApprovals_XeroInvoiceId");
+
+                    b.ToTable("WorkOrderBillApprovals");
+                });
+
             modelBuilder.Entity("Jewel.JPMS.Api.Data.Entities.WorkOrderEntity", b =>
                 {
                     b.Property<string>("WorkOrderId")

@@ -95,6 +95,15 @@ public interface IXeroClient
     Task<XeroApprovalResult> SetSiteTrackingAsync(XeroSiteTrackingRequest request, CancellationToken ct);
 
     /// <summary>
+    /// Strips Sites and Cost Code tracking off EVERY line of a bill / credit note, status
+    /// untouched — the undo of a Work Order bill approval (2026-09-08). Works on draft, submitted
+    /// and approved bills with nothing paid or credited; a paid bill is locked and comes back as
+    /// AlreadyApproved (a silent skip), like the site write. Addressed by bill, not by line id,
+    /// because an approval that split a line replaced it with fresh Xero lines.
+    /// </summary>
+    Task<XeroApprovalResult> ClearTrackingAsync(string invoiceId, bool isCreditNote, CancellationToken ct);
+
+    /// <summary>
     /// One bill as Xero holds it right now — status, what is paid or credited against it, VAT
     /// treatment, totals (2026-09-03). Null when Xero has no bill by that id (deleted). Throws
     /// <see cref="XeroCallFailedException"/> when Xero can't be asked, so "deleted" and "Xero is

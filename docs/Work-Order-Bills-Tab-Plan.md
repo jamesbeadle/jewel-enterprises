@@ -1,6 +1,6 @@
 # Work Order bills tab on Xero Cost Allocation — implementation plan
 
-**Status:** Prepared 8 Sep 2026 — build starts after the accountant's written spec lands and the dialog-bug session (`cse_01HViL5EeR6Eoanyz6Raog5u`) is finished
+**Status:** Built 8 Sep 2026 on `feature/work-order-bills` (decisions taken in §13; the open questions in §11 were answered by James or by a default named there)
 **Author:** Cowork (for James)
 **Source:** the accountant's message of 8 Sep 2026, verified against the codebase and the live portal
 
@@ -404,3 +404,27 @@ Suggested build order once the spec lands: (1) recognition + fields + tests (rea
 ship alone — the tab appears, Approve not yet wired); (2) approve command + card; (3) undo +
 clear-tracking write; (4) financial-summary and link-invariant changes; (5) docs and CLAUDE.md
 note; (6) acceptance run on 1724/1725 with Nigel.
+
+## 13. Decisions taken at build (8 Sep 2026)
+
+1. **Undo** reverses the portal side and clears the Xero tracking; it never voids. The toast
+   and the audit row say the bill stays awaiting payment in Xero when it was approved there.
+   James: "if he has the edit function he doesn't need delete."
+2. **Open** = Released with remaining value (order value − linked invoiced to date) > 0.
+3. **Reference matching** reads `WO`/`PO` + number from the bill's Reference, then the line
+   descriptions, then the invoice number — first field that names any order decides; two
+   different numbers in it is an exception. Supplier + number; the bill's own Sites hint breaks
+   a tie across projects, and also narrows the supplier-only rule.
+4. **Supplier matching** uses the directory's own rule (`DirectoryXeroMatcher`, the house
+   "does this name mean that company" rule) over the record's company name and its linked
+   Xero contact name — so Anything Electrical matches without a Xero link. No new contact-id
+   column was needed.
+5. **Multi-code orders** relax the link invariant to same-project centre splits; the shares
+   may only move between the order's own codes.
+6. **Roles**: Approve and Undo are Admin / Director / Finance Director.
+7. **A bill paying several orders at once** is an exception ("more than one work order") —
+   linked by hand on the WO Allocation tab as today.
+8. **Later hand re-allocation** of a WO-approved line is allowed and behaves as today; Undo
+   then refuses (it would throw that decision away) and says to reset on the Allocated tab.
+9. The **sweep** (Allocate all matched, nightly worker) skips matched bills, like labour.
+

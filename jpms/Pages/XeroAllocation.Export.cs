@@ -206,6 +206,14 @@ public partial class XeroAllocation
     private async Task ResetAsync(XeroLedgerLine line) =>
         await ApplyAsync(new SetXeroAllocation(new[] { line.XeroLedgerLineId }, XeroAllocationAction.Reset));
 
+    // A line approved as a Work Order bill undoes as a bill (the confirm); any other line resets alone.
+    private Task UndoAllocatedAsync(XeroLedgerLine line)
+    {
+        if (line.WorkOrderApproval is null) return ResetAsync(line);
+        OpenUndoWorkOrderBill(line);
+        return Task.CompletedTask;
+    }
+
     private async Task BulkAllocateAsync() =>
         await ApplyAsync(new SetXeroAllocation(selectedIds.ToList(), XeroAllocationAction.Allocate, bulkProjectId, bulkCostCenterCode));
 

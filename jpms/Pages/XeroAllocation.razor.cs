@@ -113,7 +113,7 @@ public partial class XeroAllocation
     private IReadOnlyList<XeroLedgerLine>? visibleCache;
     private (IReadOnlyList<XeroLedgerLine>? Lines, object Projects, string Search, XeroAllocationStatus Tab,
              string? ProjectTab, string? Bucket, string AllocatedProject,
-             bool LabourTab, bool ShowCovered, int NotLabour) visibleCacheKey;
+             bool LabourTab, bool ShowCovered, int NotLabour, bool WorkOrderBillsTab, int NotWorkOrderBill) visibleCacheKey;
 
     private IReadOnlyList<XeroLedgerLine> Visible
     {
@@ -121,7 +121,7 @@ public partial class XeroAllocation
         {
             // Projects is in the key because GroupProjectFor validates against it.
             var key = (Lines, (object)Projects, search, activeTab, activeProjectId, bucketFilter, allocatedProjectFilter,
-                       labourTab, showCoveredLabour, notLabourIds.Count);
+                       labourTab, showCoveredLabour, notLabourIds.Count, workOrderBillsTab, notWorkOrderBillInvoiceIds.Count);
             if (visibleCache is null || key != visibleCacheKey)
             {
                 visibleCache = Lines is null
@@ -130,13 +130,17 @@ public partial class XeroAllocation
                     // but the check stays as a cheap guard against rendering the previous tab's
                     // rows in the moment between a switch and its fetch landing.
                     : Lines.Where(line => line.AllocationStatus == activeTab)
-                           // The queue and the Labour section partition the unallocated set: a
-                           // recognised line renders only in Labour, everything else only in the
-                           // plain/project queue — nothing appears twice, nothing disappears.
+                           // The queue, the Labour section and the Work Order bills tab partition
+                           // the unallocated set: a labour-recognised line renders only in Labour,
+                           // a work-order-matched one only on its card, everything else only in
+                           // the plain/project queue — nothing appears twice, nothing disappears.
                            .Where(line => activeTab != XeroAllocationStatus.Unallocated
                                           || (labourTab
                                               ? IsLabourLine(line) && (showCoveredLabour || !line.CoveredByTimesheets)
-                                              : !IsLabourLine(line) && GroupProjectFor(line) == (activeProjectId ?? "")))
+                                              : workOrderBillsTab
+                                                  ? IsWorkOrderBillLine(line)
+                                                  : !IsLabourLine(line) && !IsWorkOrderBillLine(line)
+                                                    && GroupProjectFor(line) == (activeProjectId ?? "")))
                            .Where(line => activeTab != XeroAllocationStatus.Bucketed
                                           || bucketFilter is null || line.Bucket == bucketFilter)
                            .Where(line => activeTab != XeroAllocationStatus.Allocated

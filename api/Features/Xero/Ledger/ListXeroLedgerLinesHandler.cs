@@ -29,12 +29,20 @@ public sealed class ListXeroLedgerLinesHandler : IQueryHandler<ListXeroLedgerLin
         // computed while unallocated lines are in the response) so the queue, the Labour section
         // and the "re-check" refresh all see one rule.
         var labour = await LabourSupplierRecognition.ForAsync(context, entities, cancellationToken);
+        // Work Order bill recognition rides the same read too (2026-09-08): a bill whose supplier
+        // has an open order is decided per bill, labour recognition's answer and the bill's Sites
+        // hint in hand, and the verdict lands on each of its lines.
+        var workOrderBills = XeroLedgerReads.WorkOrderBillsFor(
+            await WorkOrderBillRecognition.ForAsync(context, entities, cancellationToken), entities, labour, suggester);
+        var approvalsByInvoice = await XeroLedgerReads.WorkOrderApprovalsForAsync(context, entities, cancellationToken);
 
         return entities.Select(entity => XeroLedgerReads.ToModel(
             entity,
             splitsByLine.TryGetValue(entity.XeroLedgerLineId, out var splits) ? splits : null,
             suggester,
             messagesByLine.TryGetValue(entity.XeroLedgerLineId, out var messages) ? messages : null,
-            labour?.For(entity))).ToList();
+            labour?.For(entity),
+            workOrderBills.TryGetValue(entity.XeroLedgerLineId, out var workOrderBill) ? workOrderBill : null,
+            approvalsByInvoice.TryGetValue(entity.XeroInvoiceId, out var approval) ? approval : null)).ToList();
     }
 }

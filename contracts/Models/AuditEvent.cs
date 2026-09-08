@@ -138,7 +138,14 @@ public enum AuditEventType
     // a second record. The link decides which Xero supplier a company's bills reconcile against,
     // so who made it is a matter of record, exactly like WorkerLinkedToDirectory. Not
     // client-facing: Pathway is "".
-    DirectoryRecordXeroLinkChanged = 42 // a directory record was linked to (or unlinked from) a Xero contact
+    DirectoryRecordXeroLinkChanged = 42, // a directory record was linked to (or unlinked from) a Xero contact
+    // Work Order bills (written since 2026-09-08, the accountant's ask): a supplier bill matched
+    // to an open work order was approved from the allocation page's Work Order bills tab — every
+    // line allocated from the order, linked to it, and the bill approved in Xero — or that
+    // approval was undone. The detail names the bill, the order, the rule that matched and the
+    // value. Not client-facing: Pathway is "", like CostCentreRecoded.
+    WorkOrderBillApproved = 43,      // a Work Order bill was approved: allocated, linked, confirmed to Xero
+    WorkOrderBillApprovalUndone = 44 // a Work Order bill approval was reversed (allocation, links, tracking)
 }
 
 // One append-only audit event. WebLink (when present) opens the email or draft in Outlook on the

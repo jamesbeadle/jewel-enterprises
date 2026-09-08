@@ -29,5 +29,11 @@ public interface IXeroLedgerStore
     /// <summary>Re-attempts a failed Xero write-back (tracking + approval) for one invoice, then refreshes.</summary>
     Task<XeroWriteBackOutcome> RetryWriteBackAsync(string xeroInvoiceId, CancellationToken cancellationToken = default);
 
+    /// <summary>Approves one Work Order bill — every line allocated from its order, linked, confirmed to Xero — then refreshes.</summary>
+    Task<WorkOrderBillApprovalOutcome> ApproveWorkOrderBillAsync(ApproveWorkOrderBill command, CancellationToken cancellationToken = default);
+
+    /// <summary>Reverses a Work Order bill approval (allocation, links, tracking) in one go, then refreshes.</summary>
+    Task<WorkOrderBillUndoOutcome> UndoWorkOrderBillApprovalAsync(string xeroInvoiceId, CancellationToken cancellationToken = default);
+
     event Action? OnChange;
 }

@@ -153,6 +153,9 @@ public sealed partial class JpmsContext
         modelBuilder.Entity<XeroDisputeMessageEntity>()
             .HasIndex(row => row.XeroLedgerLineId)
             .HasDatabaseName("IX_XeroDisputeMessages_XeroLedgerLineId");
+        modelBuilder.Entity<WorkOrderBillApprovalEntity>()
+            .HasIndex(row => row.XeroInvoiceId)
+            .HasDatabaseName("IX_WorkOrderBillApprovals_XeroInvoiceId");
         modelBuilder.Entity<SiteAttendanceEntity>()
             .HasIndex(row => new { row.ProjectId, row.WorkDate })
             .HasDatabaseName("IX_SiteAttendances_ProjectId_WorkDate");

@@ -37,8 +37,10 @@ public sealed class SetXeroLineWorkOrderLinksHandler : ICommandHandler<SetXeroLi
                 throw new InvalidOperationException("Each work order can only appear once in a split.");
 
             // Linking classifies the whole ledger line, so a line split across cost
-            // centres (its shares live in XeroCostSplits) can't be linked — the other
-            // centres' shares would silently follow. Mirrors the UI restriction.
+            // centres (its shares live in XeroCostSplits) can't be linked from here — the
+            // other centres' shares would silently follow. Mirrors the UI restriction. (A
+            // Work Order bill approval may link a same-project centre split, because there
+            // the split IS the order's own code mix; that path never comes through here.)
             var isCentreSplit = line.CostCenterCode is null
                                 || await context.XeroCostSplits.AnyAsync(
                                     split => split.XeroLedgerLineId == line.XeroLedgerLineId, cancellationToken);

@@ -1,0 +1,53 @@
+@namespace Jewel.JPMS.Features.Xero
+@using static Jewel.JPMS.Features.Xero.XeroLedgerDisplay
+
+@* The bill's lines exactly as Dext published them (account codes untouched — the 321/322 CIS
+   split is Xero's), each with the coding the portal proposes from the order: one code, or
+   shares across the order's codes that can be moved between them before approval. *@
+<div class="overflow-x-auto">
+    <table class="data-table">
+        <thead>
+            <tr class="text-left eyebrow">
+                <th>Line</th>
+                <th class="w-32">Account</th>
+                <th class="w-32 text-right">Net</th>
+                <th class="w-96">Coding from @Match.WorkOrderReference</th>
+            </tr>
+        </thead>
+        <tbody>
+            @foreach (var line in Lines)
+            {
+                var shares = SharesFor(line);
+                <tr @key="line.XeroLedgerLineId">
+                    <td class="max-w-0">
+                        <span class="block truncate text-content" title="@line.Description">@(line.Description ?? "—")</span>
+                        @if (line.Type == "ACCPAYCREDIT")
+                        {
+                            <span class="text-xs font-medium border border-line rounded px-1.5 py-0.5">Credit</span>
+                        }
+                    </td>
+                    <td class="text-content-muted whitespace-nowrap">@(line.AccountCode ?? "—") @(line.AccountName ?? "")</td>
+                    <td class="text-right text-content font-medium whitespace-nowrap">@Money(SignedNet(line))</td>
+                    <td>
+                        @if (shares.Count == 1)
+                        {
+                            <span class="text-content">@CostCenterText(shares[0].Code)</span>
+                        }
+                        else
+                        {
+                            <WorkOrderBillShareEditor Shares="shares" LineNet="@line.Net" CostCenterText="CostCenterText" Disabled="@Busy" />
+                        }
+                    </td>
+                </tr>
+            }
+        </tbody>
+    </table>
+</div>
+
+@code {
+    [Parameter, EditorRequired] public IReadOnlyList<XeroLedgerLine> Lines { get; set; } = default!;
+    [Parameter, EditorRequired] public WorkOrderBillMatch Match { get; set; } = default!;
+    [Parameter, EditorRequired] public Func<XeroLedgerLine, List<XeroSplitDraft>> SharesFor { get; set; } = default!;
+    [Parameter, EditorRequired] public Func<string?, string> CostCenterText { get; set; } = default!;
+    [Parameter] public bool Busy { get; set; }
+}

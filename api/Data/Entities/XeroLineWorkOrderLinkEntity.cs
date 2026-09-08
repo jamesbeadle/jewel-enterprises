@@ -8,8 +8,10 @@ namespace Jewel.JPMS.Api.Data.Entities;
 /// a single row for its full net; a bill paying several orders at once (a subcontractor
 /// invoicing a main order plus variation orders together) carries one row per order.
 /// Amount is signed like the line's net (credit notes negative). Rows only ever exist
-/// on whole-line allocations to the order's project; the unique (line, order) index
-/// stops the same order being sliced twice on one line.
+/// on lines allocated to the order's project — whole, or (since 2026-09-08, a Work Order
+/// bill against a multi-code order) split across cost centres on that one project, never
+/// across projects; the unique (line, order) index stops the same order being sliced
+/// twice on one line.
 /// </summary>
 public sealed class XeroLineWorkOrderLinkEntity
 {

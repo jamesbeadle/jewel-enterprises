@@ -24,21 +24,24 @@ public sealed partial class SetXeroAllocationHandler
     }
 
     /// <summary>
-    /// Work-order link slices only describe a whole line allocated to the order's project.
-    /// Moving the line to another project, re-cutting it as a split, bucketing, ignoring,
-    /// disputing or resetting it orphans the slices — clear them so the orders' invoiced
-    /// balances never count a line that left them. Moving between cost centres within the
-    /// same project keeps the links; a discussion message moves nothing and touches nothing.
+    /// Work-order link slices describe a line allocated to the order's project — whole, or
+    /// (since 2026-09-08, the Work Order bill against a multi-code order) split across centres
+    /// on that ONE project. Moving the line to another project, splitting it across projects,
+    /// bucketing, ignoring, disputing or resetting it orphans the slices — clear them so the
+    /// orders' invoiced balances never count a line that left them. Re-cutting the centres
+    /// within the same project keeps the links; only a whole-line move drags the orders'
+    /// coding with it (a split has no single centre to recode to). A discussion message moves
+    /// nothing and touches nothing.
     /// </summary>
     private async Task KeepOrClearLinksAsync(Batch batch, XeroLedgerLineEntity line, string? previousProjectId, CancellationToken cancellationToken)
     {
         if (batch.Action == XeroAllocationAction.AddDisputeMessage) return;
-        var keepsLinks = batch.Action == XeroAllocationAction.Allocate
-            && line.CostCenterCode is not null
+        var staysOnProject = batch.Action == XeroAllocationAction.Allocate
+            && line.ProjectId is not null
             && string.Equals(line.ProjectId, previousProjectId, StringComparison.OrdinalIgnoreCase);
-        if (keepsLinks)
+        if (staysOnProject)
         {
-            batch.LinesKeepingLinks.Add(line.XeroLedgerLineId);
+            if (line.CostCenterCode is not null) batch.LinesKeepingLinks.Add(line.XeroLedgerLineId);
             return;
         }
         var orphanedLinks = await context.XeroLineWorkOrderLinks

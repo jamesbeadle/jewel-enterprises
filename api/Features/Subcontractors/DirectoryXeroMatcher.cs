@@ -1,3 +1,5 @@
+using Jewel.JPMS.Api.Data;
+using Microsoft.EntityFrameworkCore;
 using Jewel.JPMS.Api.Data.Entities;
 using Jewel.JPMS.Api.Features.Labour;
 using Jewel.JPMS.Contracts.Xero;
