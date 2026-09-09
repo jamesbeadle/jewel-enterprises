@@ -1,6 +1,7 @@
 using Jewel.JPMS.Api.Features.Audit;
 using Jewel.JPMS.Api.Features.Xero;
 using Jewel.JPMS.Contracts.Subcontractors;
+using Jewel.JPMS.Contracts.Xero;
 
 namespace Jewel.JPMS.Api.Features.Subcontractors.XeroContacts;
 
@@ -39,6 +40,6 @@ public sealed class PushDirectoryContactsToXeroContactHandler : ICommandHandler<
         return new XeroContactPushOutcome(push.Link.XeroContactName, after);
     }
 
-    private static string Describe(Contracts.Xero.XeroContactPeople people) =>
+    private static string Describe(XeroContactPeople people) =>
         people.AdditionalPersons.Count == 0 ? "none" : string.Join(", ", people.AdditionalPersons.Select(person => person.Name));
 }

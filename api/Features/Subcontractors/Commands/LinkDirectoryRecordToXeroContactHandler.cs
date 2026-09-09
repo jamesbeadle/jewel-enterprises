@@ -2,6 +2,7 @@ using Jewel.JPMS.Api.Data.Entities;
 using Jewel.JPMS.Api.Features.Audit;
 using Jewel.JPMS.Api.Features.Subcontractors.XeroContacts;
 using Jewel.JPMS.Contracts.Subcontractors;
+using Jewel.JPMS.Contracts.Xero;
 
 namespace Jewel.JPMS.Api.Features.Subcontractors.Commands;
 
@@ -66,7 +67,7 @@ public sealed class LinkDirectoryRecordToXeroContactHandler : ICommandHandler<Li
             xeroLinks: new[] { link.ToModel() });
     }
 
-    private async Task PullDetailsAsync(SubcontractorEntity record, Contracts.Xero.XeroSupplier supplier, CancellationToken cancellationToken)
+    private async Task PullDetailsAsync(SubcontractorEntity record, XeroSupplier supplier, CancellationToken cancellationToken)
     {
         var contacts = await context.CompanyContacts
             .Where(contact => contact.SubcontractorId == record.SubcontractorId)

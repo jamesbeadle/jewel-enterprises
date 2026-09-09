@@ -1,3 +1,5 @@
+using Jewel.JPMS.Contracts.Subcontractors;
+
 namespace Jewel.JPMS.Features.Directory;
 
 public partial class XeroContactPushModal
