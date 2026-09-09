@@ -321,6 +321,16 @@ public sealed partial class JpmsContext
             .HasIndex(row => row.ProgrammeDraftId)
             .HasDatabaseName("IX_ProgrammeDraftLines_ProgrammeDraftId");
 
+        // ---- Variations on the programme (2026-09-09) -----------------------------------------
+        // Effects read per project with the programme detail; one per variation per task.
+        modelBuilder.Entity<ProgrammeVariationEffectEntity>()
+            .HasIndex(row => row.ProjectId)
+            .HasDatabaseName("IX_ProgrammeVariationEffects_ProjectId");
+        modelBuilder.Entity<ProgrammeVariationEffectEntity>()
+            .HasIndex(row => new { row.VariationOrderId, row.ProgrammeTaskId })
+            .IsUnique()
+            .HasDatabaseName("IX_ProgrammeVariationEffects_VariationOrderId_ProgrammeTaskId");
+
         // ---- KPI emails --------------------------------------------------------------------------
         // People resolve by portal email (a user's KpiPerson is found, never duplicated); emails
         // read per person (the admin register's filter); Number resolves KPI-#### references; the

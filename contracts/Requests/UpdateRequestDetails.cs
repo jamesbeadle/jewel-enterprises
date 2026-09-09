@@ -35,4 +35,8 @@ public sealed record UpdateRequestDetails(
     // "No" on the two-week critical-path nudge. Same convention again: a value (over)writes the
     // flag, null means "not supplied" — only the nudge banner itself ever sends one, so ordinary
     // edits never resurrect (or re-dismiss) the prompt.
-    bool? CriticalPathNudgeDismissed = null) : ICommand<Request>;
+    bool? CriticalPathNudgeDismissed = null,
+    // EOT only: the days sought / awarded. Same convention — a value (over)writes, null means "not
+    // supplied" and keeps what is recorded, so the ordinary edit surfaces never shed them.
+    int? EotDaysClaimed = null,
+    int? EotDaysGranted = null) : ICommand<Request>;

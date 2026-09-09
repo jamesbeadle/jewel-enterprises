@@ -22,6 +22,10 @@ internal static class SiteEntityMapping
     public static ProgrammeTaskCostCentre ToModel(this ProgrammeTaskCostCentreEntity entity) =>
         new(entity.ProgrammeTaskCostCentreId, entity.ProjectId, entity.ProgrammeTaskId, entity.CostCode);
 
+    public static ProgrammeVariationEffect ToModel(this ProgrammeVariationEffectEntity entity) =>
+        new(entity.ProgrammeVariationEffectId, entity.ProjectId, entity.VariationOrderId, entity.ProgrammeTaskId,
+            entity.DelayDays, entity.Note, entity.RecordedByEmail, entity.RecordedAt);
+
     public static ProgrammeDraft ToModel(this ProgrammeDraftEntity entity) =>
         new(entity.ProgrammeDraftId, entity.ProjectId, entity.ValuationClaimId, entity.ClaimName,
             (ProgrammeDraftStatus)entity.Status, entity.CreatedAt, entity.CreatedByEmail,

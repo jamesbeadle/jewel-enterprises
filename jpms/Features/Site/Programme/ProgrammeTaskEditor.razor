@@ -1,0 +1,82 @@
+@namespace Jewel.JPMS.Features.Site
+
+@* The Gantt's inline task editor: its draft is its own; the workbench writes the change through
+   and answers whether it took, which is when the editor closes. *@
+<div class="bg-surface-raised border border-line rounded p-4 my-2 space-y-3">
+    <div class="grid grid-cols-1 md:grid-cols-4 gap-3">
+        <div>
+            <FormField Label="Title">
+            <input class="field" @bind="editTitle" />
+            </FormField>
+        </div>
+        <div>
+            <FormField Label="Planned start">
+            <input type="date" class="field" @bind="editStart" />
+            </FormField>
+        </div>
+        <div>
+            <FormField Label="Planned end">
+            <input type="date" class="field" @bind="editEnd" />
+            </FormField>
+        </div>
+        <div>
+            <FormField Label="Progress (%)">
+            <input type="number" min="0" max="100" class="field" @bind="editProgress" />
+            </FormField>
+        </div>
+    </div>
+    <div class="flex flex-wrap items-center gap-2">
+        <button type="button" class="btn-primary" disabled="@(Busy || !CanSave)" @onclick="SaveAsync">Save</button>
+        <button type="button" class="btn-neutral" @onclick="OnClose">Cancel</button>
+        @if (confirmingRemove)
+        {
+            <span class="ml-auto text-xs text-content-subtle">Removes the task and its dependencies — baseline snapshots are kept.</span>
+            <button type="button" class="btn-neutral text-negative" disabled="@Busy" @onclick="RemoveAsync">Confirm remove</button>
+            <button type="button" class="btn-neutral" @onclick="() => confirmingRemove = false">Keep</button>
+        }
+        else
+        {
+            <button type="button" class="btn-neutral text-negative ml-auto" disabled="@Busy" @onclick="() => confirmingRemove = true">Remove task…</button>
+        }
+    </div>
+</div>
+
+@code {
+    [Parameter, EditorRequired] public ProgrammeTask Edited { get; set; } = default!;
+    [Parameter] public bool Busy { get; set; }
+    /// <summary>Writes the edit through; true means it took and the editor closes.</summary>
+    [Parameter, EditorRequired] public Func<TaskEdit, Task<bool>> Save { get; set; } = default!;
+    /// <summary>Removes the task (and its dependencies); true means it took and the editor closes.</summary>
+    [Parameter, EditorRequired] public Func<string, Task<bool>> Remove { get; set; } = default!;
+    [Parameter] public EventCallback OnClose { get; set; }
+
+    public sealed record TaskEdit(string ProgrammeTaskId, string Title, DateTime Start, DateTime End, decimal Progress, string? BoqLineItemId);
+
+    private string editTitle = "";
+    private DateTime? editStart;
+    private DateTime? editEnd;
+    private decimal editProgress;
+    private bool confirmingRemove;
+
+    private bool CanSave => !string.IsNullOrWhiteSpace(editTitle) && editStart is not null && editEnd is not null;
+
+    protected override void OnInitialized()
+    {
+        editTitle = Edited.Title;
+        editStart = Edited.PlannedStart.UtcDateTime.Date;
+        editEnd = Edited.PlannedEnd.UtcDateTime.Date;
+        editProgress = Edited.ProgressPercent;
+    }
+
+    private async Task SaveAsync()
+    {
+        if (!CanSave) return;
+        var edit = new TaskEdit(Edited.ProgrammeTaskId, editTitle.Trim(), editStart!.Value.Date, editEnd!.Value.Date, Math.Clamp(editProgress, 0, 100), Edited.BoqLineItemId);
+        if (await Save(edit)) await OnClose.InvokeAsync();
+    }
+
+    private async Task RemoveAsync()
+    {
+        if (await Remove(Edited.ProgrammeTaskId)) await OnClose.InvokeAsync();
+    }
+}

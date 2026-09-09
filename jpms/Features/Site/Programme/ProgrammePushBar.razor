@@ -1,0 +1,17 @@
+@namespace Jewel.JPMS.Features.Site
+
+@* One variation's push on one task, drawn on the ruler: from the task's planned end for the
+   recorded days. Solid once the variation is approved; dashed while it is only a possibility.
+   The same bar appears on the task's row and on the variation's, so the eye can pair them. *@
+<div class="absolute top-1.5 h-3.5 rounded-r @(Push.IsFirm ? "bg-warning/70" : "border border-dashed border-warning bg-warning/15")"
+     style="@Timeline.BarStyle(Push.Start, Push.End)"
+     title="@Title"></div>
+
+@code {
+    [Parameter, EditorRequired] public ProgrammeTimeline Timeline { get; set; } = default!;
+    [Parameter, EditorRequired] public ProgrammePushSegment Push { get; set; } = default!;
+    [Parameter, EditorRequired] public VariationOrder Variation { get; set; } = default!;
+
+    private string Title =>
+        $"{Variation.DisplayNumber} pushes {Push.Task.Title} +{Push.Effect.DelayDays} d ({(Push.IsFirm ? "approved" : Variation.Status.DisplayName().ToLowerInvariant())}): {DateText(Push.Start)} → {DateText(Push.End)}";
+}

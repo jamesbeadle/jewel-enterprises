@@ -1,0 +1,83 @@
+@namespace Jewel.JPMS.Features.Site
+
+@* The extensions of time, beneath the variations on the same ruler: each EOT request drawn from
+   the completion it extends (baselined, else current) out by the days claimed, with the days
+   granted solid inside it. An EOT with no day count lists but draws nothing until "Days…"
+   records them. *@
+<div class="grid grid-cols-[240px_1fr] border-b border-line-strong pb-1 mb-1 mt-5">
+    <div class="eyebrow">Extensions of time <span class="text-content-subtle font-normal">— @Rows.Count raised</span></div>
+    <div></div>
+</div>
+
+@if (Rows.Count == 0)
+{
+    <EmptyState Message="No Extensions of Time raised — raise one from the Claims view and it appears here." Class="py-4" />
+}
+
+@foreach (var row in Rows)
+{
+    <div class="grid grid-cols-[240px_1fr] items-center border-b border-line/60">
+        <div class="py-1.5 pr-3">
+            <div class="flex items-center gap-1.5">
+                <span class="font-mono text-xs text-content-muted shrink-0">@row.Eot.Reference</span>
+                <a href="@RequestHref(row)" class="text-sm text-content truncate hover:text-accent" title="Open the Extension of Time">@row.Eot.Title</a>
+                <Pill Tone="@row.Eot.Status.ToTone()">@row.Eot.Status.DisplayName()</Pill>
+            </div>
+            <div class="flex flex-wrap items-center gap-x-2 text-xs text-content-subtle mt-0.5">
+                <span>@DaysText(row)</span>
+                @if (CanEdit)
+                {
+                    <button type="button" class="text-accent hover:underline" @onclick="() => ToggleEditor(row)">Days…</button>
+                }
+            </div>
+        </div>
+        <div class="relative h-9">
+            @if (Timeline.TodayStyle is { } todayStyle)
+            {
+                <div class="absolute inset-y-0 w-px bg-info/60" style="@todayStyle"></div>
+            }
+            @if (row.HasBar)
+            {
+                <div class="absolute top-1.5 h-3.5 rounded border border-dashed border-warning bg-warning/15"
+                     style="@Timeline.BarStyle(row.From!.Value, row.ClaimedTo!.Value)"
+                     title="Claimed @row.DaysClaimed d: completion @DateText(row.From) → @DateText(row.ClaimedTo)"></div>
+            }
+            @if (row.GrantedTo is { } grantedTo && row.From is { } from)
+            {
+                <div class="absolute top-1.5 h-3.5 rounded bg-warning/70"
+                     style="@Timeline.BarStyle(from, grantedTo)"
+                     title="Granted @row.DaysGranted d: completion @DateText(from) → @DateText(grantedTo)"></div>
+            }
+        </div>
+    </div>
+
+    @if (editingRequestId == row.Eot.RequestId)
+    {
+        <ProgrammeExtensionDaysEditor Row="row" Busy="Busy" Save="SaveDays" OnClose="() => editingRequestId = null" />
+    }
+}
+
+@code {
+    [Parameter, EditorRequired] public string ProjectId { get; set; } = "";
+    [Parameter, EditorRequired] public ProgrammeTimeline Timeline { get; set; } = default!;
+    [Parameter] public IReadOnlyList<ProgrammeExtensionRow> Rows { get; set; } = Array.Empty<ProgrammeExtensionRow>();
+    [Parameter] public bool CanEdit { get; set; }
+    [Parameter] public bool Busy { get; set; }
+    [Parameter, EditorRequired] public Func<ProgrammeExtensionDaysEditor.DaysEdit, Task<bool>> SaveDays { get; set; } = default!;
+
+    private string? editingRequestId;
+
+    private string RequestHref(ProgrammeExtensionRow row) =>
+        $"/projects/{ProjectId}/requests/view/{row.Eot.RequestId}";
+
+    private void ToggleEditor(ProgrammeExtensionRow row) =>
+        editingRequestId = editingRequestId == row.Eot.RequestId ? null : row.Eot.RequestId;
+
+    private static string DaysText(ProgrammeExtensionRow row)
+    {
+        if (row.Eot.EotDaysClaimed is null) return "No days recorded yet";
+        var granted = row.Eot.EotDaysGranted is { } days ? $"{days} d granted" : "not yet answered";
+        var completion = row.From is null ? " · no programme to extend yet" : "";
+        return $"{row.DaysClaimed} d claimed · {granted}{completion}";
+    }
+}

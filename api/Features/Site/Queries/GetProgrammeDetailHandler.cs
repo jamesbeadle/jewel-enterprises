@@ -5,7 +5,8 @@ namespace Jewel.JPMS.Api.Features.Site.Queries;
 // Everything the Programme tab's programme view needs in one round trip: live tasks, dependency
 // links, the latest baseline with its task snapshots (movement is computed from the pair via
 // ProgrammeMovementCalculator, client- or agent-side), and each task's confirmed cost-centre
-// mappings from applied draft programme updates.
+// mappings from applied draft programme updates, and every push a variation has been recorded
+// as making on a task (the variations themselves come from their own store).
 public sealed class GetProgrammeDetailHandler : IQueryHandler<GetProgrammeDetail, ProgrammeDetail>
 {
     private readonly JpmsContext context;
@@ -39,12 +40,17 @@ public sealed class GetProgrammeDetailHandler : IQueryHandler<GetProgrammeDetail
             .Where(mapping => mapping.ProjectId == query.ProjectId)
             .ToListAsync(cancellationToken);
 
+        var variationEffects = await context.ProgrammeVariationEffects.AsNoTracking()
+            .Where(effect => effect.ProjectId == query.ProjectId)
+            .ToListAsync(cancellationToken);
+
         return new ProgrammeDetail(
             tasks.Select(t => t.ToModel()).ToList().AsReadOnly(),
             links.Select(l => l.ToModel()).ToList().AsReadOnly(),
             baseline?.ToModel(),
             baselineTasks.Select(t => t.ToModel()).ToList().AsReadOnly(),
             baselines.Select(b => b.ToModel()).ToList().AsReadOnly(),
-            costCentres.Select(mapping => mapping.ToModel()).ToList().AsReadOnly());
+            costCentres.Select(mapping => mapping.ToModel()).ToList().AsReadOnly(),
+            variationEffects.Select(effect => effect.ToModel()).ToList().AsReadOnly());
     }
 }

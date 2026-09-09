@@ -47,6 +47,7 @@ public sealed class UpdateRequestDetailsHandler : ICommandHandler<UpdateRequestD
         // carry it), NOT "clear the link" — so an existing link is preserved unless a value arrives.
         if ((RequestType)entity.Kind == RequestType.ExtensionOfTime && command.RelatedNodRequestId is not null)
             entity.RelatedNodRequestId = string.IsNullOrWhiteSpace(command.RelatedNodRequestId) ? null : command.RelatedNodRequestId;
+        ApplyExtensionDays(entity, command);
         if (command.RaisedAt is { } raised) entity.RaisedAt = raised;
         // The issue date is user-managed: a supplied value (over)writes it; null means "not
         // supplied" (most edit surfaces don't carry it), so an existing date is preserved.
@@ -103,5 +104,15 @@ public sealed class UpdateRequestDetailsHandler : ICommandHandler<UpdateRequestD
             .Where(item => item.RequestId == entity.RequestId)
             .ToListAsync(cancellationToken);
         return entity.ToModel(items);
+    }
+
+    // The days sought / awarded only mean anything on an EOT, and follow the "null means not
+    // supplied" convention: only the surfaces that carry them (the Claims form, the Programme
+    // tab's EOT row) ever write them.
+    private static void ApplyExtensionDays(RequestEntity entity, UpdateRequestDetails command)
+    {
+        if ((RequestType)entity.Kind != RequestType.ExtensionOfTime) return;
+        if (command.EotDaysClaimed is { } claimed) entity.EotDaysClaimed = claimed;
+        if (command.EotDaysGranted is { } granted) entity.EotDaysGranted = granted;
     }
 }

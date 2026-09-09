@@ -71,6 +71,21 @@ public sealed class ProgrammeTaskCostCentreEntity
     [MaxLength(32)]      public string CostCode { get; set; } = "";
 }
 
+// The programme's own record of the days a variation pushes one of its tasks
+// (Jewel.JPMS.Models.ProgrammeVariationEffect, 2026-09-09). Held here, never on the variation:
+// the variation document is read, not written, by the programme. One row per variation per task.
+public sealed class ProgrammeVariationEffectEntity
+{
+    [Key, MaxLength(64)] public string ProgrammeVariationEffectId { get; set; } = "";
+    [MaxLength(64)]      public string ProjectId { get; set; } = "";
+    [MaxLength(64)]      public string VariationOrderId { get; set; } = "";
+    [MaxLength(64)]      public string ProgrammeTaskId { get; set; } = "";
+    public int DelayDays { get; set; }
+    [MaxLength(512)]     public string Note { get; set; } = "";
+    [MaxLength(256)]     public string RecordedByEmail { get; set; } = "";
+    public DateTimeOffset RecordedAt { get; set; }
+}
+
 // A draft programme update: the certified valuation's percentages proposed onto the programme's
 // tasks, awaiting a person's review (Jewel.JPMS.Models.ProgrammeDraft). Opened automatically
 // when a valuation invoice's approval is recorded, or by hand from the Programme tab. Status

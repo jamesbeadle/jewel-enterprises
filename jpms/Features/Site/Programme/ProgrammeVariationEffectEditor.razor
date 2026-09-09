@@ -1,0 +1,77 @@
+@namespace Jewel.JPMS.Features.Site
+
+@* Records what a variation does to the programme: the task it pushes and by how many days. The
+   task is pre-chosen from the variation's cost centres; the days are the reviewer's. Lists the
+   pushes already recorded so one can be re-stated or removed. Nothing here touches the
+   variation document. *@
+<div class="bg-surface-raised border border-line rounded p-4 my-2 space-y-3">
+    <p class="text-sm font-semibold text-content">Programme effect of @Row.Variation.DisplayNumber <span class="font-normal text-content-subtle">— the push it makes on a task; the task's planned dates stay as they are</span></p>
+    <div class="grid grid-cols-1 md:grid-cols-4 gap-3">
+        <div class="md:col-span-2">
+            <FormField Label="Task pushed">
+            <select class="field" @bind="taskId">
+                <option value="">Select task…</option>
+                @foreach (var task in Tasks)
+                {
+                    <option value="@task.ProgrammeTaskId">@task.Title</option>
+                }
+            </select>
+            </FormField>
+        </div>
+        <div>
+            <FormField Label="Days">
+            <input type="number" min="1" class="field" @bind="delayDays" />
+            </FormField>
+        </div>
+        <div>
+            <FormField Label="Note (optional)">
+            <input class="field" @bind="note" placeholder="e.g. lead time on the steel" />
+            </FormField>
+        </div>
+    </div>
+    <div class="flex flex-wrap items-center gap-2">
+        <button type="button" class="btn-primary" disabled="@(Busy || !CanSave)" @onclick="SaveAsync">Record effect</button>
+        <button type="button" class="btn-neutral" @onclick="OnClose">Close</button>
+    </div>
+    @if (Row.Pushes.Count > 0)
+    {
+        <ul class="pt-3 border-t border-line space-y-1">
+            @foreach (var push in Row.Pushes)
+            {
+                <li class="flex flex-wrap items-center gap-2 text-xs text-content-muted">
+                    <span>@push.Task.Title +@push.Effect.DelayDays d@(string.IsNullOrWhiteSpace(push.Effect.Note) ? "" : $" — {push.Effect.Note}") · recorded @DateTimeText(push.Effect.RecordedAt) by @push.Effect.RecordedByEmail</span>
+                    <button type="button" class="text-negative hover:underline" disabled="@Busy" @onclick="() => Remove(push.Effect.ProgrammeVariationEffectId)">Remove</button>
+                </li>
+            }
+        </ul>
+    }
+</div>
+
+@code {
+    [Parameter, EditorRequired] public ProgrammeVariationRow Row { get; set; } = default!;
+    [Parameter] public IReadOnlyList<ProgrammeTask> Tasks { get; set; } = Array.Empty<ProgrammeTask>();
+    [Parameter] public bool Busy { get; set; }
+    /// <summary>Records the push; true means it took and the editor closes.</summary>
+    [Parameter, EditorRequired] public Func<EffectEdit, Task<bool>> Save { get; set; } = default!;
+    [Parameter, EditorRequired] public Func<string, Task<bool>> Remove { get; set; } = default!;
+    [Parameter] public EventCallback OnClose { get; set; }
+
+    public sealed record EffectEdit(string VariationOrderId, string ProgrammeTaskId, int DelayDays, string Note);
+
+    private string taskId = "";
+    private int delayDays = 1;
+    private string note = "";
+
+    private bool CanSave => !string.IsNullOrWhiteSpace(taskId) && delayDays > 0;
+
+    // The first task the variation lands on is the likeliest one it pushes.
+    protected override void OnInitialized() =>
+        taskId = Row.LandsOn.FirstOrDefault()?.ProgrammeTaskId ?? "";
+
+    private async Task SaveAsync()
+    {
+        if (!CanSave) return;
+        var edit = new EffectEdit(Row.Variation.VariationOrderId, taskId, delayDays, note.Trim());
+        if (await Save(edit)) await OnClose.InvokeAsync();
+    }
+}

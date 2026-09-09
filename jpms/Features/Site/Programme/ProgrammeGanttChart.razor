@@ -2,16 +2,16 @@
 @using Jewel.JPMS.Contracts.Site
 
 @* The Gantt: green bars are the live programme (red where slipped past baseline); the thin grey
-   bar underneath is the baselined position; the darker fill is progress. Click a task to edit
-   it inline — the editor's draft is the chart's own; the workbench writes the change through
-   and answers whether it took. *@
+   bar underneath is the baselined position; the darker fill is progress; an amber segment on a
+   task's end is a variation's push (dashed until approved). Beneath the tasks, on the same
+   ruler, sit the variations on the programme and the extensions of time. Click a task to edit
+   it inline — the editor's draft is its own; the workbench writes the change through. *@
 <div class="panel p-4 overflow-x-auto">
     <div class="min-w-[720px]">
-        @* Month header *@
         <div class="grid grid-cols-[240px_1fr] border-b border-line-strong pb-1 mb-1">
             <div class="eyebrow">Task</div>
             <div class="relative h-5">
-                @foreach (var month in MonthMarks)
+                @foreach (var month in Timeline.MonthMarks)
                 {
                     <span class="absolute top-0 text-xs text-content-subtle border-l border-line pl-1" style="@month.Style">@month.Label</span>
                 }
@@ -24,10 +24,14 @@
             <div class="grid grid-cols-[240px_1fr] items-center border-b border-line/60">
                 <div class="py-1.5 pr-3">
                     <div class="flex items-center gap-1.5">
-                        <button type="button" class="text-sm text-content text-left truncate hover:text-accent" title="Edit task" @onclick="() => BeginEdit(task)">@task.Title</button>
+                        <button type="button" class="text-sm text-content text-left truncate hover:text-accent" title="Edit task" @onclick="() => ToggleEdit(task)">@task.Title</button>
                         @if (slip > 0)
                         {
-                            <span class="inline-flex items-center rounded bg-negative/15 px-1.5 py-0.5 text-xs text-negative shrink-0">+@slip d</span>
+                            <Pill Tone="Tone.Negative">+@slip d</Pill>
+                        }
+                        @foreach (var push in PushesOn(task.ProgrammeTaskId))
+                        {
+                            <Pill Tone="Tone.Warning" Title="@($"{VariationNumber(push)} pushes this task {push.Effect.DelayDays} day(s)")">@VariationNumber(push) +@push.Effect.DelayDays d</Pill>
                         }
                     </div>
                     @if (PredecessorsOf(task.ProgrammeTaskId).Any())
@@ -44,19 +48,23 @@
                     }
                 </div>
                 <div class="relative h-9">
-                    @if (TodayStyle is { } todayStyle)
+                    @if (Timeline.TodayStyle is { } todayStyle)
                     {
                         <div class="absolute inset-y-0 w-px bg-info/60" style="@todayStyle"></div>
                     }
-                    <div class="absolute top-1.5 h-3.5 rounded @(slip > 0 ?"bg-negative/80" : "bg-accent/80")"
-                         style="@BarStyle(task.PlannedStart, task.PlannedEnd)"
+                    <div class="absolute top-1.5 h-3.5 rounded @(slip > 0 ? "bg-negative/80" : "bg-accent/80")"
+                         style="@Timeline.BarStyle(task.PlannedStart, task.PlannedEnd)"
                          title="@task.Title: @DateText(task.PlannedStart) – @DateText(task.PlannedEnd) (@((int)task.ProgressPercent)% complete)">
-                        <div class="h-full rounded-l bg-black/35" style="width:@(Pct((double)task.ProgressPercent))"></div>
+                        <div class="h-full rounded-l bg-black/35" style="width:@(ProgrammeTimeline.Percent((double)task.ProgressPercent))"></div>
                     </div>
+                    @foreach (var push in PushesOn(task.ProgrammeTaskId))
+                    {
+                        <ProgrammePushBar Timeline="Timeline" Push="push" Variation="VariationOf(push)" />
+                    }
                     @if (BaselineTaskFor(task.ProgrammeTaskId) is { } baselined)
                     {
                         <div class="absolute top-[26px] h-1 rounded bg-content-faint/70"
-                             style="@BarStyle(baselined.PlannedStart, baselined.PlannedEnd)"
+                             style="@Timeline.BarStyle(baselined.PlannedStart, baselined.PlannedEnd)"
                              title="Baseline: @DateText(baselined.PlannedStart) – @DateText(baselined.PlannedEnd)"></div>
                     }
                 </div>
@@ -64,171 +72,16 @@
 
             @if (editingTaskId == task.ProgrammeTaskId)
             {
-                <div class="bg-surface-raised border border-line rounded p-4 my-2 space-y-3">
-                    <div class="grid grid-cols-1 md:grid-cols-4 gap-3">
-                        <div>
-                            <FormField Label="Title">
-                            <input class="field" @bind="editTitle" />
-                            </FormField>
-                        </div>
-                        <div>
-                            <FormField Label="Planned start">
-                            <input type="date" class="field" @bind="editStart" />
-                            </FormField>
-                        </div>
-                        <div>
-                            <FormField Label="Planned end">
-                            <input type="date" class="field" @bind="editEnd" />
-                            </FormField>
-                        </div>
-                        <div>
-                            <FormField Label="Progress (%)">
-                            <input type="number" min="0" max="100" class="field" @bind="editProgress" />
-                            </FormField>
-                        </div>
-                    </div>
-                    <div class="flex flex-wrap items-center gap-2">
-                        <button type="button" class="btn-primary" disabled="@(Busy || string.IsNullOrWhiteSpace(editTitle) || editStart is null || editEnd is null)" @onclick="SaveEditAsync">Save</button>
-                        <button type="button" class="btn-neutral" @onclick="CancelEdit">Cancel</button>
-                        @if (confirmingRemove)
-                        {
-                            <span class="ml-auto text-xs text-content-subtle">Removes the task and its dependencies — baseline snapshots are kept.</span>
-                            <button type="button" class="btn-neutral text-negative" disabled="@Busy" @onclick="RemoveAsync">Confirm remove</button>
-                            <button type="button" class="btn-neutral" @onclick="() => confirmingRemove = false">Keep</button>
-                        }
-                        else
-                        {
-                            <button type="button" class="btn-neutral text-negative ml-auto" disabled="@Busy" @onclick="() => confirmingRemove = true">Remove task…</button>
-                        }
-                    </div>
-                </div>
+                <ProgrammeTaskEditor Edited="task" Busy="Busy" Save="SaveTask" Remove="RemoveTask" OnClose="() => editingTaskId = null" />
             }
         }
+
+        <ProgrammeVariationRows ProjectId="@ProjectId" Timeline="Timeline" Rows="VariationRows" Tasks="Tasks"
+                                CanEdit="CanEdit" Busy="Busy" SaveEffect="SaveEffect" RemoveEffect="RemoveEffect" />
+        <ProgrammeExtensionRows ProjectId="@ProjectId" Timeline="Timeline" Rows="ExtensionRows"
+                                CanEdit="CanEdit" Busy="Busy" SaveDays="SaveExtensionDays" />
     </div>
 </div>
 <p class="text-xs text-content-subtle mt-2">
-    Green bars are the live programme (red where slipped past baseline); the thin grey bar underneath is the baselined position; the darker fill is progress. Click a task to edit it.
+    Green bars are the live programme (red where slipped past baseline); the thin grey bar underneath is the baselined position; the darker fill is progress. An amber segment on a task's end is a variation's push — dashed until the variation is approved. Planned dates never move because of a variation; the segment is the push it would make. Click a task to edit it.
 </p>
-
-@code {
-    [Parameter] public IReadOnlyList<ProgrammeTask> Tasks { get; set; } = Array.Empty<ProgrammeTask>();
-    [Parameter] public IReadOnlyList<ProgrammeTaskLink> Links { get; set; } = Array.Empty<ProgrammeTaskLink>();
-    [Parameter] public IReadOnlyList<ProgrammeBaselineTask> BaselineTasks { get; set; } = Array.Empty<ProgrammeBaselineTask>();
-    /// <summary>The programme measured against its baseline — the slip badges read from it.</summary>
-    [Parameter, EditorRequired] public ProgrammeMovement Movement { get; set; } = default!;
-    [Parameter] public bool Busy { get; set; }
-    [Parameter] public EventCallback<string> OnRemoveLink { get; set; }
-    /// <summary>Writes an edited task through; true means it took and the editor closes.</summary>
-    [Parameter, EditorRequired] public Func<TaskEdit, Task<bool>> SaveTask { get; set; } = default!;
-    /// <summary>Removes a task (and its dependencies); true means it took and the editor closes.</summary>
-    [Parameter, EditorRequired] public Func<string, Task<bool>> RemoveTask { get; set; } = default!;
-
-    public sealed record TaskEdit(string ProgrammeTaskId, string Title, DateTime Start, DateTime End, decimal Progress, string? BoqLineItemId);
-
-    // ----- Inline edit -----
-
-    private string? editingTaskId;
-    private string editTitle = "";
-    private DateTime? editStart;
-    private DateTime? editEnd;
-    private decimal editProgress;
-    private string? editBoqLineItemId;
-    private bool confirmingRemove;
-
-    private void BeginEdit(ProgrammeTask task)
-    {
-        editingTaskId = editingTaskId == task.ProgrammeTaskId ? null : task.ProgrammeTaskId;
-        editTitle = task.Title;
-        editStart = task.PlannedStart.UtcDateTime.Date;
-        editEnd = task.PlannedEnd.UtcDateTime.Date;
-        editProgress = task.ProgressPercent;
-        editBoqLineItemId = task.BoqLineItemId;
-        confirmingRemove = false;
-    }
-
-    private void CancelEdit()
-    {
-        editingTaskId = null;
-        confirmingRemove = false;
-    }
-
-    private async Task SaveEditAsync()
-    {
-        if (editingTaskId is null || string.IsNullOrWhiteSpace(editTitle) || editStart is null || editEnd is null) return;
-        var edit = new TaskEdit(editingTaskId, editTitle.Trim(), editStart.Value.Date, editEnd.Value.Date, Math.Clamp(editProgress, 0, 100), editBoqLineItemId);
-        if (await SaveTask(edit)) editingTaskId = null;
-    }
-
-    private async Task RemoveAsync()
-    {
-        if (editingTaskId is null) return;
-        if (await RemoveTask(editingTaskId)) { editingTaskId = null; confirmingRemove = false; }
-    }
-
-    // ----- Gantt geometry -----
-
-    private (DateTimeOffset Start, DateTimeOffset End) GanttRange
-    {
-        get
-        {
-            var starts = Tasks.Select(t => t.PlannedStart)
-                .Concat(BaselineTasks.Select(b => b.PlannedStart)).ToList();
-            var ends = Tasks.Select(t => t.PlannedEnd)
-                .Concat(BaselineTasks.Select(b => b.PlannedEnd)).ToList();
-            var start = starts.Min().AddDays(-3);
-            var end = ends.Max().AddDays(3);
-            if (end <= start) end = start.AddDays(1);
-            return (start, end);
-        }
-    }
-
-    private static string Pct(double value) =>
-        value.ToString("0.###", System.Globalization.CultureInfo.InvariantCulture) + "%";
-
-    private string BarStyle(DateTimeOffset start, DateTimeOffset end)
-    {
-        var (rangeStart, rangeEnd) = GanttRange;
-        var total = (rangeEnd - rangeStart).TotalDays;
-        var left = Math.Max((start - rangeStart).TotalDays / total * 100, 0);
-        var width = Math.Max((end - start).TotalDays / total * 100, 0.5);
-        return $"left:{Pct(left)};width:{Pct(Math.Min(width, 100 - left))}";
-    }
-
-    private string? TodayStyle
-    {
-        get
-        {
-            var (rangeStart, rangeEnd) = GanttRange;
-            var today = DateTimeOffset.UtcNow;
-            if (today < rangeStart || today > rangeEnd) return null;
-            return $"left:{Pct((today - rangeStart).TotalDays / (rangeEnd - rangeStart).TotalDays * 100)}";
-        }
-    }
-
-    private IEnumerable<(string Label, string Style)> MonthMarks
-    {
-        get
-        {
-            var (rangeStart, rangeEnd) = GanttRange;
-            var total = (rangeEnd - rangeStart).TotalDays;
-            var month = new DateTimeOffset(rangeStart.Year, rangeStart.Month, 1, 0, 0, 0, TimeSpan.Zero).AddMonths(1);
-            while (month < rangeEnd)
-            {
-                yield return (month.ToString("MMM yy"), $"left:{Pct((month - rangeStart).TotalDays / total * 100)}");
-                month = month.AddMonths(1);
-            }
-        }
-    }
-
-    private ProgrammeBaselineTask? BaselineTaskFor(string programmeTaskId) =>
-        BaselineTasks.FirstOrDefault(b => b.ProgrammeTaskId == programmeTaskId);
-
-    private int SlipDaysFor(string programmeTaskId) =>
-        Movement.DelayEvents.FirstOrDefault(e => e.ProgrammeTaskId == programmeTaskId)?.SlipDays ?? 0;
-
-    private IEnumerable<ProgrammeTaskLink> PredecessorsOf(string programmeTaskId) =>
-        Links.Where(l => l.SuccessorTaskId == programmeTaskId);
-
-    private string TaskTitle(string programmeTaskId) =>
-        Tasks.FirstOrDefault(t => t.ProgrammeTaskId == programmeTaskId)?.Title ?? "(removed task)";
-}

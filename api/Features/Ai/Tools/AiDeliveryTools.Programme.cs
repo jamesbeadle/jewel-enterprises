@@ -18,7 +18,13 @@ internal static partial class AiDeliveryTools
             + "emails link to it as evidence. Also each task's confirmed cost-centre mapping and, "
             + "when one is awaiting review, the draft programme update opened from the certified "
             + "valuation (which task the valuation says has reached what, and what a person still "
-            + "has to map) — reviewed and applied on the Programme tab.",
+            + "has to map) — reviewed and applied on the Programme tab. Then the two sections "
+            + "beneath the tasks: every variation on the programme (all but rejected — approved "
+            + "or not; which tasks its cost centres land on, and each push recorded on it: task, "
+            + "days, dashed until approved, with the effect id remove_programme_variation_effect "
+            + "takes) and every Extension of Time (days claimed / granted, drawn from the "
+            + "completion it extends). A variation's push is recorded with "
+            + "record_programme_variation_effect; an EOT's days with update_request_details.",
             AiToolSchema.Object(
                 ("projectId", "string", "Defaults to the project in view; pass it otherwise.", false)),
             AiToolKind.Read,
@@ -45,6 +51,8 @@ internal static partial class AiDeliveryTools
             latestBaselineTasks = detail.BaselineTasks,
             baselines = detail.Baselines,
             taskCostCentres = detail.CostCentres,
+            variationsOnProgramme = await ProgrammeVariationRowsAsync(context, projectId, detail, ct),
+            extensionsOfTime = await ProgrammeExtensionRowsAsync(context, projectId, detail, ct),
             draftProgrammeUpdate = draft is null ? null : DraftRow(draft),
             ladClaims = claims.Select(ClaimRow)
         });

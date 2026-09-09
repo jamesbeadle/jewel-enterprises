@@ -24,4 +24,7 @@ public sealed record RaiseRequest(
     string? RespondedByEmail = null,
     RequestStatus? Status = null,
     // EOT only: the Notice of Delay this EOT arises from. Optional — an EOT can stand alone.
-    string? RelatedNodRequestId = null) : ICommand<Request>;
+    string? RelatedNodRequestId = null,
+    // EOT only: the days sought and (once answered) awarded. Ignored for every other kind.
+    int? EotDaysClaimed = null,
+    int? EotDaysGranted = null) : ICommand<Request>;

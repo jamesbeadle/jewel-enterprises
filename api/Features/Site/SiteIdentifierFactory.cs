@@ -12,4 +12,5 @@ internal static class SiteIdentifierFactory
     public static string NextProgrammeTaskCostCentreId() => Guid.NewGuid().ToString(CompactGuidFormat);
     public static string NextProgrammeDraftId() => Guid.NewGuid().ToString(CompactGuidFormat);
     public static string NextProgrammeDraftLineId() => Guid.NewGuid().ToString(CompactGuidFormat);
+    public static string NextProgrammeVariationEffectId() => Guid.NewGuid().ToString(CompactGuidFormat);
 }

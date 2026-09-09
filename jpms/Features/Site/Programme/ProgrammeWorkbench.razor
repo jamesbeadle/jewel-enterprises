@@ -4,8 +4,9 @@
 @* The programme itself: movement against the latest baseline, the four doors (add task, add
    dependency, baselines, draft from valuation) and the Gantt — or, while a draft programme
    update is being reviewed, the review pane in the Gantt's place. The workbench owns the
-   programme and its open draft — it reads them, writes every change through and re-reads — and
-   hands the page one thing: a delay event the human wants to raise a Notice of Delay from. *@
+   programme, its open draft and its reading of the variations (the two sections beneath the
+   tasks) — it reads them, writes every change through and re-reads — and hands the page one
+   thing: a delay event the human wants to raise a Notice of Delay from. *@
 @if (error is not null)
 {
     <Notice Tone="Tone.Negative" Class="mb-4">@error</Notice>
@@ -245,9 +246,11 @@
     }
     else
     {
-        <ProgrammeGanttChart Tasks="Tasks" Links="Links" BaselineTasks="BaselineTasks" Movement="Movement"
+        <ProgrammeGanttChart ProjectId="@ProjectId" Tasks="Tasks" Links="Links" BaselineTasks="BaselineTasks" Movement="Movement"
+                             VariationRows="VariationRows" ExtensionRows="ExtensionRows" CanEdit="CanEditProgramme"
                              Busy="busy" OnRemoveLink="RemoveLinkAsync"
-                             SaveTask="SaveTaskAsync" RemoveTask="RemoveTaskAsync" />
+                             SaveTask="SaveTaskAsync" RemoveTask="RemoveTaskAsync"
+                             SaveEffect="SaveEffectAsync" RemoveEffect="RemoveEffectAsync" SaveExtensionDays="SaveExtensionDaysAsync" />
     }
 }
 </LoadGate>

@@ -27,7 +27,9 @@ internal sealed partial class RequestsActions
                 + "portal email unless the user says the request was raised by someone else. Kind: "
                 + "Rfi, Rfa, Rfc, NoticeOfDelay, Rfq, Rfp, ExtensionOfTime or General. Leave the "
                 + "backfill fields (raisedAt, respondedAt, responseText, respondedByEmail, status) "
-                + "null unless logging a historical record."),
+                + "null unless logging a historical record. For an ExtensionOfTime, eotDaysClaimed "
+                + "(and eotDaysGranted once the architect has answered) are what the Programme tab "
+                + "draws the extension from; relatedNodRequestId ties it to its Notice of Delay."),
 
         new AiAction(
             Name: "update_request_details",
@@ -45,7 +47,9 @@ internal sealed partial class RequestsActions
             NameStamps: Array.Empty<string>(),
             Notes: "requestId is the record id — find_by_reference resolves REQ-0123 / RFI-049. Use "
                 + "get_request_context first and echo the current values for anything unchanged. "
-                + "Editing the reference onto a number already in use on the project is rejected."),
+                + "Editing the reference onto a number already in use on the project is rejected. "
+                + "On an ExtensionOfTime, eotDaysClaimed / eotDaysGranted record the days sought "
+                + "and awarded — the one way to write them; null leaves the recorded values as they are."),
 
         new AiAction(
             Name: "update_request_form",

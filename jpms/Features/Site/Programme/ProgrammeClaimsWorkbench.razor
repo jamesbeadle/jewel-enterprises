@@ -53,6 +53,18 @@ else if (openForm == Form.Eot)
             <textarea class="field" rows="3" @bind="eotDescription" placeholder="The extension sought and the grounds for it."></textarea>
             </FormField>
         </div>
+        <div class="grid grid-cols-1 md:grid-cols-4 gap-3">
+            <div>
+                <FormField Label="Days claimed" Hint="Calendar days — the Programme tab draws the extension from completion by these.">
+                <input type="number" min="0" class="field" @bind="eotDaysClaimed" />
+                </FormField>
+            </div>
+            <div>
+                <FormField Label="Days granted" Hint="Leave blank until the architect has answered.">
+                <input type="number" min="0" class="field" @bind="eotDaysGranted" />
+                </FormField>
+            </div>
+        </div>
         <div>
             <FormField Label="Arises from Notice of Delay (optional)">
             <select class="field" @bind="eotRelatedNodId">
@@ -174,6 +186,10 @@ else if (openForm == Form.Lad)
                                 <span class="text-sm font-medium text-content">@eot.Title</span>
                             </div>
                             <div class="flex items-center gap-2">
+                                @if (eot.EotDaysClaimed is { } daysClaimed)
+                                {
+                                    <span class="text-xs text-content-subtle">@daysClaimed d claimed@(eot.EotDaysGranted is { } daysGranted ? $" · {daysGranted} d granted" : "")</span>
+                                }
                                 @if (RelatedNodReference(eot) is { } nodRef)
                                 {
                                     <Pill Tone="Tone.Info" Title="Arises from this Notice of Delay">from @nodRef</Pill>
@@ -254,6 +270,8 @@ else if (openForm == Form.Lad)
     private string eotTitle = "";
     private string eotDescription = "";
     private string eotRelatedNodId = "";
+    private int? eotDaysClaimed;
+    private int? eotDaysGranted;
     private string ladTitle = "";
     private string ladDescription = "";
     private DateTime? ladPeriodFrom;
@@ -307,10 +325,13 @@ else if (openForm == Form.Lad)
             await RequestRegister.RaiseAsync(new RaiseRequest(
                 ProjectId, RequestType.ExtensionOfTime, Reference: "", eotTitle.Trim(), eotDescription.Trim(),
                 Value: null, RaisedByEmail: Auth.CurrentUser!.Email,
-                RelatedNodRequestId: string.IsNullOrWhiteSpace(eotRelatedNodId) ? null : eotRelatedNodId));
+                RelatedNodRequestId: string.IsNullOrWhiteSpace(eotRelatedNodId) ? null : eotRelatedNodId,
+                EotDaysClaimed: eotDaysClaimed, EotDaysGranted: eotDaysGranted));
             eotTitle = "";
             eotDescription = "";
             eotRelatedNodId = "";
+            eotDaysClaimed = null;
+            eotDaysGranted = null;
             openForm = Form.None;
         }
         catch { error = "Couldn't raise the Extension of Time. Please try again."; }

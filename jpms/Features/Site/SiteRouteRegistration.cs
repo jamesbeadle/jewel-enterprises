@@ -49,6 +49,14 @@ public static class SiteRouteRegistration
             new CommandRoute("DELETE", "/api/programme-links/{programmeTaskLinkId}",
                 command => $"/api/programme-links/{((RemoveProgrammeTaskLink)command).ProgrammeTaskLinkId}"));
 
+        commands.Register<RecordProgrammeVariationEffect, ProgrammeVariationEffect>(
+            new CommandRoute("POST", "/api/projects/{projectId}/programme/variation-effects",
+                command => $"/api/projects/{((RecordProgrammeVariationEffect)command).ProjectId}/programme/variation-effects"));
+
+        commands.Register<RemoveProgrammeVariationEffect, Acknowledgement>(
+            new CommandRoute("DELETE", "/api/programme-variation-effects/{programmeVariationEffectId}",
+                command => $"/api/programme-variation-effects/{((RemoveProgrammeVariationEffect)command).ProgrammeVariationEffectId}"));
+
         commands.Register<TakeProgrammeBaseline, ProgrammeBaseline>(
             new CommandRoute("POST", "/api/projects/{projectId}/programme/baselines",
                 command => $"/api/projects/{((TakeProgrammeBaseline)command).ProjectId}/programme/baselines"));

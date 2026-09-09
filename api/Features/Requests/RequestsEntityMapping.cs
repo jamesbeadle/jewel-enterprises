@@ -37,7 +37,9 @@ internal static class RequestsEntityMapping
         ClosedAt: entity.ClosedAt,
         IssuedAt: entity.IssuedAt,
         CriticalPath: entity.CriticalPath,
-        CriticalPathNudgeDismissed: entity.CriticalPathNudgeDismissed);
+        CriticalPathNudgeDismissed: entity.CriticalPathNudgeDismissed,
+        EotDaysClaimed: entity.EotDaysClaimed,
+        EotDaysGranted: entity.EotDaysGranted);
 
     /// <summary>The model including its itemised queries (the numbered rows of the official document).</summary>
     public static Request ToModel(this RequestEntity entity, IEnumerable<RequestItemEntity> items) =>
