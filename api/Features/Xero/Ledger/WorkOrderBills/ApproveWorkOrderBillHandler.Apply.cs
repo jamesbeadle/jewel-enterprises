@@ -18,9 +18,10 @@ public sealed partial class ApproveWorkOrderBillHandler
     /// What one line is left with: allocated whole to one project and centre when every share
     /// agrees, else its centres in XeroCostSplits (one row per project + code, shares on the
     /// same centre summed) — and one work-order link per share, order and code, for its signed
-    /// amount, so each order is invoiced by exactly its slice.
+    /// amount, so each order is invoiced by exactly its slice. The line itself — its account,
+    /// its net — is untouched: the splits are the portal's, never Xero's.
     /// </summary>
-    private void Allocate(XeroLedgerLineEntity line, IReadOnlyList<WorkOrderBillShare> shares, Dictionary<string, PaidOrder> orders, string approvedBy, DateTimeOffset now)
+    private void Allocate(XeroLedgerLineEntity line, IReadOnlyList<WorkOrderBillLineShare> shares, Dictionary<string, PaidOrder> orders, string approvedBy, DateTimeOffset now)
     {
         var centres = shares
             .GroupBy(share => (ProjectId: orders[share.WorkOrderId].ProjectId, share.CostCenterCode), CentreComparer.Instance)
@@ -57,7 +58,7 @@ public sealed partial class ApproveWorkOrderBillHandler
             });
     }
 
-    private static string NoteFor(IReadOnlyList<WorkOrderBillShare> shares, Dictionary<string, PaidOrder> orders)
+    private static string NoteFor(IReadOnlyList<WorkOrderBillLineShare> shares, Dictionary<string, PaidOrder> orders)
     {
         var references = shares.Select(share => orders[share.WorkOrderId].Reference).Distinct().OrderBy(reference => reference).ToList();
         return references.Count == 1 ? $"Work order {references[0]}" : $"Work orders {string.Join(", ", references)}";

@@ -1,0 +1,79 @@
+@namespace Jewel.JPMS.Features.Xero
+
+@* The accountant's figures (2026-09-09): one row per open order of the supplier, with this
+   bill's amount on it — proposed by the read, changed here — beside the order's value, what is
+   invoiced so far and what is left once this bill's slice is approved. The tally under the
+   table says whether the figures tie to the bill; a slice that takes its order over value goes
+   negative and says so. The Xero lines below are never touched by any of this. *@
+<div class="overflow-x-auto border-b border-line">
+    <table class="data-table">
+        <thead>
+            <tr class="text-left eyebrow">
+                <th>Order</th>
+                <th class="w-32 text-right">Order value</th>
+                <th class="w-32 text-right">Invoiced to date</th>
+                <th class="w-36 text-right">This bill</th>
+                <th class="w-36 text-right">Remaining after</th>
+            </tr>
+        </thead>
+        <tbody>
+            @foreach (var order in Orders)
+            {
+                var slice = SliceFor(order);
+                var remaining = order.Remaining - Signed(slice.Amount ?? 0m);
+                <tr @key="order.WorkOrderId">
+                    <td>
+                        <a class="text-content underline underline-offset-4 hover:text-content-muted" href="@($"/projects/{order.ProjectId}/work-orders")">@order.Reference</a>
+                        <span class="text-content-muted"> @order.Title · @order.ProjectName</span>
+                    </td>
+                    <td class="text-right whitespace-nowrap" title="@($"{order.Reference} as approved")">@Money(order.OrderValue)</td>
+                    <td class="text-right whitespace-nowrap" title="Bills already linked to the order, before this one">@Money(order.InvoicedToDate)</td>
+                    <td class="text-right">
+                        <input class="field w-32 text-right" type="number" step="0.01" disabled="@Disabled" placeholder="—"
+                               value="@slice.Amount" @onchange="e => SetAmount(slice, e.Value)" />
+                    </td>
+                    <td class="text-right whitespace-nowrap font-medium @(remaining < 0m ? "text-negative" : "text-content")"
+                        title="Order value less invoiced to date less this bill's slice">
+                        @Money(remaining)@(remaining < 0m ? " — over the order's value" : "")
+                    </td>
+                </tr>
+            }
+        </tbody>
+    </table>
+</div>
+<p class="px-5 py-2 text-xs @(IsBalanced ? "text-content-subtle" : "text-negative")">
+    @Money(Placed) of @Money(BillNet) placed@(IsBalanced ? "" : $" — {Money(BillNet - Placed)} to place")
+</p>
+
+@code {
+    /// <summary>Every open order of the bill's supplier, as the read found them.</summary>
+    [Parameter, EditorRequired] public IReadOnlyList<WorkOrderBillOrderOption> Orders { get; set; } = default!;
+    /// <summary>Page-owned, one per order: edited in place so the card's Approve reads the same list.</summary>
+    [Parameter, EditorRequired] public List<WorkOrderBillSliceDraft> Slices { get; set; } = default!;
+    /// <summary>The bill's net, signed (a credit note is negative and gives value back).</summary>
+    [Parameter] public decimal BillNet { get; set; }
+    [Parameter] public bool Disabled { get; set; }
+    [Parameter] public EventCallback OnChanged { get; set; }
+
+    private decimal Placed => Slices.Sum(slice => Signed(slice.Amount ?? 0m));
+    private bool IsBalanced => Placed == BillNet;
+
+    /// <summary>Figures are typed as magnitudes; a credit note's slices carry its sign.</summary>
+    private decimal Signed(decimal amount) => BillNet < 0m ? -amount : amount;
+
+    private WorkOrderBillSliceDraft SliceFor(WorkOrderBillOrderOption order)
+    {
+        var slice = Slices.FirstOrDefault(candidate => candidate.WorkOrderId == order.WorkOrderId);
+        if (slice is not null) return slice;
+        slice = new WorkOrderBillSliceDraft { WorkOrderId = order.WorkOrderId };
+        Slices.Add(slice);
+        return slice;
+    }
+
+    private async Task SetAmount(WorkOrderBillSliceDraft slice, object? value)
+    {
+        slice.Amount = decimal.TryParse(value?.ToString(), System.Globalization.NumberStyles.Number,
+            System.Globalization.CultureInfo.InvariantCulture, out var amount) && amount != 0m ? Math.Abs(amount) : null;
+        await OnChanged.InvokeAsync();
+    }
+}

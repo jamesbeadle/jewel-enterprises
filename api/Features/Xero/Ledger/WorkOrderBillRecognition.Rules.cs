@@ -20,13 +20,20 @@ public sealed partial class WorkOrderBillRecognition
         var assignment = ChooseByLine(orders, billLines, hintedProjectId) ?? ChooseForBill(orders, billLines, hintedProjectId);
         if (assignment.OrderByLineId is null) return Stays(assignment.Reason!, orders);
 
-        var overValue = assignment.Pool is null
-            ? FirstOrderOverValue(assignment.OrderByLineId, billLines)
-            : PoolOverValue(assignment.Pool, billLines);
+        var slices = SlicesOf(assignment.OrderByLineId, billLines);
+        var overValue = assignment.Pool is null ? FirstOrderOverValue(slices) : PoolOverValue(assignment.Pool, billLines);
         if (overValue is not null) return Stays(overValue, orders);
 
-        return new BillVerdict(assignment.OrderByLineId, assignment.Rule, assignment.Detail, null, orders);
+        return new BillVerdict(slices, assignment.Rule, assignment.Detail, null, orders);
     }
+
+    /// <summary>The bill's net as a figure per order: each line's signed net on the order it was assigned to.</summary>
+    private static IReadOnlyList<(OpenOrder Order, decimal Net)> SlicesOf(
+        IReadOnlyDictionary<string, OpenOrder> orderByLineId, IReadOnlyList<XeroLedgerLineEntity> billLines) =>
+        billLines
+            .GroupBy(line => orderByLineId[line.XeroLedgerLineId])
+            .Select(slice => (slice.Key, slice.Sum(SignedNet)))
+            .ToList();
 
     private static BillVerdict Stays(string reason, IReadOnlyList<OpenOrder> orders) => new(null, default, null, reason, orders);
 
@@ -34,12 +41,10 @@ public sealed partial class WorkOrderBillRecognition
         line.Type == "ACCPAYCREDIT" ? -line.Net : line.Net;
 
     /// <summary>Each order's slice of the bill must fit inside what is left to invoice on it.</summary>
-    private static string? FirstOrderOverValue(IReadOnlyDictionary<string, OpenOrder> orderByLineId, IReadOnlyList<XeroLedgerLineEntity> billLines)
+    private static string? FirstOrderOverValue(IReadOnlyList<(OpenOrder Order, decimal Net)> slices)
     {
-        foreach (var slice in billLines.GroupBy(line => orderByLineId[line.XeroLedgerLineId]))
+        foreach (var (order, sliceNet) in slices)
         {
-            var order = slice.Key;
-            var sliceNet = slice.Sum(SignedNet);
             if (sliceNet <= order.Remaining) continue;
             return $"The bill would take {order.Reference} over its value by "
                  + $"{(sliceNet - order.Remaining).ToString("C2", Gbp)} — "

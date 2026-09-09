@@ -90,12 +90,11 @@ internal sealed class WorkOrderBillFixture
     public Task<WorkOrderBillUndoOutcome> UndoAsync(string invoiceId) =>
         new UndoWorkOrderBillApprovalHandler(Context, WriteBack, Audit()).HandleAsync(new UndoWorkOrderBillApproval(invoiceId, "nigel@jewelbb.co.uk"), CancellationToken.None);
 
-    /// <summary>The card's default: every line coded exactly as recognition proposed it.</summary>
+    /// <summary>The card's default: the figure per order exactly as recognition proposed it.</summary>
     public async Task<ApproveWorkOrderBill> ProposedApprovalAsync(string invoiceId)
     {
         var lines = (await ReadUnallocatedAsync()).Where(line => line.XeroInvoiceId == invoiceId).ToList();
-        return new ApproveWorkOrderBill(invoiceId,
-            lines.Select(line => new WorkOrderBillLineCoding(line.XeroLedgerLineId, line.WorkOrderMatch!.ProposedShares)).ToList());
+        return new ApproveWorkOrderBill(invoiceId, lines[0].WorkOrderMatch!.ProposedSlices);
     }
 
     private AuditTrail Audit() => new(Context, new AuditActor { Email = "nigel@jewelbb.co.uk" }, NullLogger<AuditTrail>.Instance);

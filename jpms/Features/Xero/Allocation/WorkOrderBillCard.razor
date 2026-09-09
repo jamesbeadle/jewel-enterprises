@@ -1,9 +1,9 @@
 @namespace Jewel.JPMS.Features.Xero
 @using static Jewel.JPMS.Features.Xero.XeroLedgerDisplay
 
-@* One Work Order bill (2026-09-08): the bill, the order(s) it pays and why, each order's
-   figures, and every line's coding as the portal proposes it — one Approve for the whole bill.
-   Since 2026-09-09 the lines' shares may sit on several of the supplier's open orders. *@
+@* One Work Order bill (2026-09-08): the bill, the order(s) it pays and why, a figure per open
+   order of the supplier (2026-09-09 — off the bill total, never the Xero lines), and the lines
+   as raised — one Approve for the whole bill. *@
 <article class="panel mb-4">
     <header class="px-5 py-4 border-b border-line flex items-start justify-between gap-4 flex-wrap">
         <div class="min-w-0">
@@ -19,13 +19,13 @@
             <p class="text-sm text-content-muted mt-1">
                 @foreach (var order in OrdersPaid)
                 {
-                    <a class="text-content underline underline-offset-4 hover:text-content-muted mr-2" href="@OrderRoute(order)" title="@order.Title">@order.Reference</a>
+                    <span class="text-content mr-2" title="@order.Title">@order.Reference</span>
                 }
                 <Pill Tone="Match.Rule.ToTone()" Class="align-middle" Title="@Match.Detail">@Match.Rule.Label()</Pill>
             </p>
         </div>
         <div class="flex items-center gap-3 whitespace-nowrap">
-            <span class="text-content font-medium">@Money(Lines.Sum(SignedNet)) net</span>
+            <span class="text-content font-medium">@Money(BillNet) net</span>
             @if (Bill.HasAttachments)
             {
                 <button class="btn-secondary" title="View the invoice document" disabled="@Busy"
@@ -37,15 +37,9 @@
         </div>
     </header>
 
-    <div class="divide-y divide-line border-b border-line">
-        @foreach (var order in OrdersPaid)
-        {
-            <WorkOrderBillOrderFigures @key="order.WorkOrderId" Order="order" SliceNet="@SliceOn(order)" />
-        }
-    </div>
+    <WorkOrderBillOrderSlices Orders="Match.SupplierOrders" Slices="Slices" BillNet="@BillNet" Disabled="@Busy" OnChanged="StateHasChanged" />
 
-    <WorkOrderBillLinesTable Lines="Lines" Orders="Match.SupplierOrders" SharesFor="SharesFor" CostCenterText="CostCenterText"
-                             Busy="@Busy" OnChanged="StateHasChanged" />
+    <WorkOrderBillLinesTable Lines="Lines" />
 
     <footer class="px-5 py-4 border-t border-line flex items-center justify-between gap-4 flex-wrap">
         <div class="min-w-0 grow">
@@ -53,49 +47,47 @@
             {
                 <Notice Tone="Tone.Negative">@Error</Notice>
             }
-            else if (!SharesBalance)
+            else if (!SlicesBalance)
             {
-                <p class="text-sm text-content-subtle">Each line's shares must add up to its net before the bill can be approved.</p>
+                <p class="text-sm text-content-subtle">The order figures must add up to the bill's net before it can be approved.</p>
             }
             else
             {
-                <p class="text-sm text-content-subtle">Approve allocates every line, links each share to its order, writes the tracking to Xero and approves the bill there.</p>
+                <p class="text-sm text-content-subtle">Approve allocates every line, links each order for its figure, writes the tracking to Xero line by line as raised, and approves the bill there.</p>
             }
         </div>
-        <button class="btn-primary" disabled="@(Busy || !SharesBalance || TakesAnOrderOverValue)"
-                title="@(TakesAnOrderOverValue ? "The bill would take an order over its value" : "Allocate, link and approve this bill in one go")"
+        <button class="btn-primary" disabled="@(Busy || !SlicesBalance || TakesAnOrderOverValue)"
+                title="@(TakesAnOrderOverValue ? "A figure would take its order over value" : "Allocate, link and approve this bill in one go")"
                 @onclick="() => OnApprove.InvokeAsync()">@(Approving ? "Approving…" : "Approve")</button>
     </footer>
 </article>
 
 @code {
-    /// <summary>Every unallocated line of the bill; the match rides on each and the bill's rule is read off the first.</summary>
+    /// <summary>Every unallocated line of the bill; the match rides on each and is read off the first.</summary>
     [Parameter, EditorRequired] public IReadOnlyList<XeroLedgerLine> Lines { get; set; } = default!;
+    /// <summary>Page-owned: the bill's figure per open order, seeded from the read's proposal.</summary>
+    [Parameter, EditorRequired] public List<WorkOrderBillSliceDraft> Slices { get; set; } = default!;
     [Parameter] public bool Busy { get; set; }
     [Parameter] public bool Approving { get; set; }
     [Parameter] public string? Error { get; set; }
-    [Parameter, EditorRequired] public Func<string?, string> CostCenterText { get; set; } = default!;
-    /// <summary>The page-owned editable shares of one line (seeded from the server's proposal).</summary>
-    [Parameter, EditorRequired] public Func<XeroLedgerLine, List<WorkOrderBillShareDraft>> SharesFor { get; set; } = default!;
     [Parameter] public EventCallback<XeroLedgerLine> OnOpenInvoice { get; set; }
     [Parameter] public EventCallback OnApprove { get; set; }
     [Parameter] public EventCallback OnNotWorkOrderBill { get; set; }
 
     private XeroLedgerLine Bill => Lines[0];
     private WorkOrderBillMatch Match => Bill.WorkOrderMatch!;
-    private static string OrderRoute(WorkOrderBillOrderOption order) => $"/projects/{order.ProjectId}/work-orders";
+    private decimal BillNet => Lines.Sum(SignedNet);
 
-    /// <summary>The orders the shares currently sit on, in the order the supplier's list has them.</summary>
     private IEnumerable<WorkOrderBillOrderOption> OrdersPaid =>
-        Match.SupplierOrders.Where(order => Lines.Any(line => SharesFor(line).Any(share => share.WorkOrderId == order.WorkOrderId)));
+        Match.SupplierOrders.Where(order => AmountOn(order) != 0m);
 
-    /// <summary>This bill's money on one order: its shares, signed like the lines they come from.</summary>
-    private decimal SliceOn(WorkOrderBillOrderOption order) =>
-        Lines.Sum(line => SharesFor(line).Where(share => share.WorkOrderId == order.WorkOrderId).Sum(share => share.Amount ?? 0m)
-                          * (line.Type == "ACCPAYCREDIT" ? -1m : 1m));
+    private decimal AmountOn(WorkOrderBillOrderOption order) =>
+        Slices.FirstOrDefault(slice => slice.WorkOrderId == order.WorkOrderId)?.Amount ?? 0m;
 
-    private bool SharesBalance =>
-        Lines.All(line => SharesFor(line).Count > 0 && SharesFor(line).Sum(share => share.Amount ?? 0m) == line.Net);
+    /// <summary>A figure as it counts against the bill: a credit note's figures carry its sign.</summary>
+    private decimal Signed(decimal amount) => BillNet < 0m ? -amount : amount;
 
-    private bool TakesAnOrderOverValue => OrdersPaid.Any(order => SliceOn(order) > order.Remaining);
+    private bool SlicesBalance => Slices.Sum(slice => Signed(slice.Amount ?? 0m)) == BillNet && OrdersPaid.Any();
+
+    private bool TakesAnOrderOverValue => OrdersPaid.Any(order => Signed(AmountOn(order)) > order.Remaining);
 }

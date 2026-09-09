@@ -11,12 +11,12 @@ public partial class XeroAllocation
     // server's (WorkOrderMatch rides the line, recomputed on every unallocated read); the page
     // only partitions on it and groups the lines into one card per bill. notWorkOrderBillInvoiceIds
     // is this visit's escape hatch for a wrong match — the bill rejoins the plain queue for a
-    // hand allocation. sharesByLineId holds each line's editable shares — order + cost code +
-    // amount, across the supplier's open orders since 2026-09-09 — seeded from the server's
+    // hand allocation. slicesByInvoiceId holds each bill's editable figure per open order of the
+    // supplier (2026-09-09 — off the bill total, never the Xero lines), seeded from the server's
     // proposal the first time the card is drawn.
     private bool workOrderBillsTab;
     private readonly HashSet<string> notWorkOrderBillInvoiceIds = new();
-    private readonly Dictionary<string, List<WorkOrderBillShareDraft>> sharesByLineId = new();
+    private readonly Dictionary<string, List<WorkOrderBillSliceDraft>> slicesByInvoiceId = new();
     private string? approvingInvoiceId;
     private string? workOrderBillError;
     private string? workOrderBillErrorInvoiceId;
@@ -40,27 +40,29 @@ public partial class XeroAllocation
                .OrderByDescending(bill => bill.Max(line => line.Date))
                .Select(bill => (IReadOnlyList<XeroLedgerLine>)bill.ToList());
 
-    private List<WorkOrderBillShareDraft> SharesFor(XeroLedgerLine line)
+    /// <summary>The bill's figure per open order, as magnitudes; the read's proposal seeds it.</summary>
+    private List<WorkOrderBillSliceDraft> SlicesFor(IReadOnlyList<XeroLedgerLine> bill)
     {
-        if (sharesByLineId.TryGetValue(line.XeroLedgerLineId, out var shares)) return shares;
-        shares = (line.WorkOrderMatch?.ProposedShares ?? Array.Empty<WorkOrderBillShare>())
-            .Select(share => new WorkOrderBillShareDraft { WorkOrderId = share.WorkOrderId, Code = share.CostCenterCode, Amount = share.Net })
+        if (slicesByInvoiceId.TryGetValue(bill[0].XeroInvoiceId, out var slices)) return slices;
+        slices = (bill[0].WorkOrderMatch?.ProposedSlices ?? Array.Empty<WorkOrderBillOrderSlice>())
+            .Select(slice => new WorkOrderBillSliceDraft { WorkOrderId = slice.WorkOrderId, Amount = Math.Abs(slice.Net) })
             .ToList();
-        sharesByLineId[line.XeroLedgerLineId] = shares;
-        return shares;
+        slicesByInvoiceId[bill[0].XeroInvoiceId] = slices;
+        return slices;
     }
 
     private async Task ApproveWorkOrderBillAsync(IReadOnlyList<XeroLedgerLine> bill)
     {
         if (isBusy || bill.Count == 0 || bill[0].WorkOrderMatch is null) return;
+        var sign = bill.Sum(SignedNet) < 0m ? -1m : 1m;
         var command = new ApproveWorkOrderBill(bill[0].XeroInvoiceId,
-            bill.Select(line => new WorkOrderBillLineCoding(line.XeroLedgerLineId,
-                SharesFor(line).Select(share => new WorkOrderBillShare(share.WorkOrderId, share.Code, share.Amount ?? 0m)).ToList())).ToList());
+            SlicesFor(bill).Where(slice => slice.Amount is > 0m)
+                .Select(slice => new WorkOrderBillOrderSlice(slice.WorkOrderId, sign * slice.Amount!.Value)).ToList());
         isApplying = true; approvingInvoiceId = bill[0].XeroInvoiceId; workOrderBillError = null; workOrderBillErrorInvoiceId = null; errorMessage = null;
         try
         {
             var outcome = await Ledger.ApproveWorkOrderBillAsync(command);
-            foreach (var line in bill) sharesByLineId.Remove(line.XeroLedgerLineId);
+            slicesByInvoiceId.Remove(bill[0].XeroInvoiceId);
             var orders = string.Join(" + ", outcome.WorkOrderReferences);
             syncMessage = outcome.ApprovedInXero
                 ? $"{bill[0].ContactName} {bill[0].InvoiceNumber} · {Money(bill.Sum(SignedNet))} approved against {orders} — {outcome.LinesAllocated} line(s) allocated and linked, approved in Xero."
@@ -74,7 +76,7 @@ public partial class XeroAllocation
     {
         if (bill.Count == 0) return;
         notWorkOrderBillInvoiceIds.Add(bill[0].XeroInvoiceId);
-        foreach (var line in bill) sharesByLineId.Remove(line.XeroLedgerLineId);
+        slicesByInvoiceId.Remove(bill[0].XeroInvoiceId);
     }
 
     // -- Undo, from the Allocated tab -------------------------------------------------------

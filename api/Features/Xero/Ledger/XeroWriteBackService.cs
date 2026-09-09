@@ -194,7 +194,7 @@ public sealed partial class XeroWriteBackService : IXeroWriteBackService
     }
 
     private async Task<XeroWriteBackOutcome> WriteBackInvoiceAsync(
-        string invoiceId, bool explicitRetry, CancellationToken ct, bool recodeApproved = false)
+        string invoiceId, bool explicitRetry, CancellationToken ct, bool recodeApproved = false, bool keepLinesWhole = false)
     {
         var lines = await context.XeroLedgerLines
             .Where(line => line.XeroInvoiceId == invoiceId)
@@ -262,6 +262,11 @@ public sealed partial class XeroWriteBackService : IXeroWriteBackService
                 shares = rows
                     .Select(row => new XeroApprovalShare(projects[row.ProjectId].XeroSiteName!, row.CostCenterCode, row.Net))
                     .ToList();
+                // A Work Order bill never splits a Xero line (2026-09-09, the accountant's ask —
+                // the lines are the supplier's CIS split, left as raised): the line is stamped
+                // whole with the centre carrying most of it; the exact split stays portal-side.
+                if (keepLinesWhole && shares.Count > 1)
+                    shares = new List<XeroApprovalShare> { shares.OrderByDescending(share => share.Net).First() with { Net = line.Net } };
             }
             else if (line.ProjectId is not null && line.CostCenterCode is not null)
             {

@@ -11,7 +11,7 @@ public sealed partial class XeroWriteBackService
     {
         try
         {
-            return await WriteBackInvoiceAsync(xeroInvoiceId, explicitRetry: true, ct, recodeApproved: true);
+            return await WriteBackInvoiceAsync(xeroInvoiceId, explicitRetry: true, ct, recodeApproved: true, keepLinesWhole: true);
         }
         catch (Exception unexpected)
         {
