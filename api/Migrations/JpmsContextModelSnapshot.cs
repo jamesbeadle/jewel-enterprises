@@ -2667,6 +2667,35 @@ namespace Jewel.JPMS.Api.Migrations
                     b.ToTable("InventoryItems");
                 });
 
+            modelBuilder.Entity("Jewel.JPMS.Api.Data.Entities.DocumentOcrResultEntity", b =>
+                {
+                    b.Property<string>("ContentSha256")
+                        .HasMaxLength(64)
+                        .HasColumnType("nvarchar(64)");
+
+                    b.Property<double>("Confidence")
+                        .HasColumnType("float");
+
+                    b.Property<DateTimeOffset>("CreatedAtUtc")
+                        .HasColumnType("datetimeoffset");
+
+                    b.Property<int>("PageCount")
+                        .HasColumnType("int");
+
+                    b.Property<string>("PagesJson")
+                        .IsRequired()
+                        .HasColumnType("nvarchar(max)");
+
+                    b.Property<string>("Provider")
+                        .IsRequired()
+                        .HasMaxLength(64)
+                        .HasColumnType("nvarchar(64)");
+
+                    b.HasKey("ContentSha256");
+
+                    b.ToTable("DocumentOcrResults");
+                });
+
             modelBuilder.Entity("Jewel.JPMS.Api.Data.Entities.KpiEmailEntity", b =>
                 {
                     b.Property<string>("KpiEmailId")

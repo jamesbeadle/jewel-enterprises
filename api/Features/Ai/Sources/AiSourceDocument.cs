@@ -44,6 +44,10 @@ internal sealed class AiSourceDocument
     public const string Text = "text";
     public const string Image = "image";
 
+    /// <summary>Where the text came from: the file's own text layer, or OCR over a scan.</summary>
+    public const string ExtractedText = "extracted";
+    public const string OcrText = "ocr";
+
     public AiSourceDocument(string kind, IReadOnlyList<AiSourcePart> parts, string? imageMediaType = null, byte[]? imageBytes = null)
     {
         Kind = kind;
@@ -53,11 +57,28 @@ internal sealed class AiSourceDocument
     }
 
     public string Kind { get; }
-    public IReadOnlyList<AiSourcePart> Parts { get; }
+    public IReadOnlyList<AiSourcePart> Parts { get; private set; }
     public string? ImageMediaType { get; }
     public byte[]? ImageBytes { get; }
 
+    /// <summary>The PDF itself, kept only for a scan — no text layer — so its pages can be
+    /// rendered as images and OCR'd (2026-09-09, the accountant's ask). Null for a PDF with text.</summary>
+    public byte[]? ScanBytes { get; init; }
+    public string TextSource { get; private set; } = ExtractedText;
+    /// <summary>Mean word confidence across the OCR'd pages, 0–1; null until OCR has run.</summary>
+    public double? OcrConfidence { get; private set; }
+
     public bool IsImage => Kind == Image;
+    public bool IsScan => Kind == Pdf && ScanBytes is not null;
+    public bool IsOcr => TextSource == OcrText;
+
+    /// <summary>OCR's answer for a scan: the pages' lines become the parts' units, flagged as OCR.</summary>
+    public void TakeOcr(IReadOnlyList<AiSourcePart> pages, double confidence)
+    {
+        Parts = pages;
+        TextSource = OcrText;
+        OcrConfidence = confidence;
+    }
 
     public AiSourcePart? Part(string? key) =>
         string.IsNullOrWhiteSpace(key)
@@ -68,7 +89,8 @@ internal sealed class AiSourceDocument
     public AiSourceManifest Manifest() =>
         new(Kind,
             Parts.Select(part => new AiSourceManifestPart(part.Key, part.Label, part.UnitName, part.Units.Count, part.Chars)).ToList(),
-            Parts.Sum(part => part.Chars));
+            Parts.Sum(part => part.Chars),
+            IsScan, TextSource, OcrConfidence);
 }
 
 /// <summary>The shape of a source without its contents — what is listed, stored on the attachment
@@ -76,7 +98,10 @@ internal sealed class AiSourceDocument
 internal sealed record AiSourceManifest(
     [property: JsonPropertyName("kind")] string Kind,
     [property: JsonPropertyName("parts")] IReadOnlyList<AiSourceManifestPart> Parts,
-    [property: JsonPropertyName("totalChars")] int TotalChars)
+    [property: JsonPropertyName("totalChars")] int TotalChars,
+    [property: JsonPropertyName("isScan")] bool IsScan = false,
+    [property: JsonPropertyName("textSource")] string TextSource = AiSourceDocument.ExtractedText,
+    [property: JsonPropertyName("ocrConfidence")] double? OcrConfidence = null)
 {
     /// <summary>The one-line human summary — "3 sheets · 257 rows", "12 pages", "image".</summary>
     public string Summary()
@@ -89,7 +114,11 @@ internal sealed record AiSourceManifest(
                 return $"{Parts.Count} sheet{(Parts.Count == 1 ? "" : "s")} · {rows:N0} row{(rows == 1 ? "" : "s")}";
             }
             case AiSourceDocument.Pdf:
-                return $"{Parts.Count} page{(Parts.Count == 1 ? "" : "s")}";
+                var pages = $"{Parts.Count} page{(Parts.Count == 1 ? "" : "s")}";
+                if (!IsScan) return pages;
+                return TextSource == AiSourceDocument.OcrText
+                    ? $"{pages} · scan read by OCR ({OcrConfidence:P0} confidence)"
+                    : $"{pages} · scan, no text — pages read as images";
             case AiSourceDocument.WordDocument:
             {
                 var paragraphs = Parts.Sum(part => part.Units);

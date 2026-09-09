@@ -66,9 +66,22 @@ internal static partial class AiSourceReader
         if (IsTextLike(fileName, contentType))
             return LoadText(content, LooksLikeHtml(fileName, contentType));
 
-        throw new NotSupportedException(
-            $"\"{fileName}\" is not a format the assistant can read yet — attach {AiAttachmentReader.SupportedList}.");
+        throw new NotSupportedException(RefusalFor(fileName, extension));
     }
+
+    /// <summary>Name the format, say why, name the route that works (2026-09-09, the accountant's
+    /// item C) — never a bare "unsupported".</summary>
+    private static string RefusalFor(string fileName, string extension) => extension switch
+    {
+        ".xls" => $"\"{fileName}\" is a legacy binary Excel file (.xls), which the reader cannot open — it reads "
+                  + ".xlsx/.xlsm. Ask the user to open it in Excel, Save As .xlsx and re-attach it, or to upload it into the chat.",
+        ".doc" => $"\"{fileName}\" is a legacy binary Word file (.doc), which the reader cannot open — it reads .docx. "
+                  + "Ask the user to open it in Word, Save As .docx and re-attach it, or to upload it into the chat.",
+        ".msg" => $"\"{fileName}\" is an Outlook message file (.msg) — open the email it wraps in the mailbox instead.",
+        ".zip" => $"\"{fileName}\" is a zip archive — ask the user which file inside it holds the answer and to attach that file.",
+        _ => $"\"{fileName}\" ({(extension.Length == 0 ? "no extension" : extension)}) is not a format the reader opens — it reads {AiAttachmentReader.SupportedList}. "
+             + "Ask the user to re-save it as one of those, or to upload it into the chat."
+    };
 
     public static bool IsSpreadsheet(string name, string? contentType)
     {

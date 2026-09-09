@@ -52,6 +52,12 @@ internal static partial class AiSourceTools
                                 note = "An image has no text to search — read_source shows it to you." });
                             continue;
                         }
+                        if (document.IsScan && !document.IsOcr)
+                        {
+                            results.Add(new { source_id = target, file = opened.FileName, ok = true, kind = document.Kind,
+                                note = $"A scan with no OCR service configured has no text to search — read_source with part \"p1\" (to \"p{document.Parts.Count}\") shows you each page as a picture." });
+                            continue;
+                        }
                         var found = AiSourceReader.Search(document, query!, maxHits);
                         results.Add(new
                         {

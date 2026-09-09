@@ -1,3 +1,4 @@
+using Jewel.JPMS.Api.Features.Ai.Scans;
 using Jewel.JPMS.Api.Features.Ai.Sources;
 using Jewel.JPMS.Api.Features.MailboxIntake.Graph;
 using Microsoft.Extensions.DependencyInjection;
@@ -25,7 +26,7 @@ internal static partial class AiSourceTools
             // as its download endpoint is.
             var filed = await AiFiledDocuments.OpenAsync(context, sourceId, ct);
             if (filed.Failure is not null) return new Opened(null, filed.FileName, filed.Failure);
-            return Load(filed.FileName!, filed.ContentType, filed.Bytes!);
+            return await LoadAsync(context, filed.FileName!, filed.ContentType, filed.Bytes!, ct);
         }
         return new Opened(null, null, $"\"{sourceId}\" is not a source id. list_sources returns them: mail:… for an "
             + "email attachment, contract:/amendment:/ai:/drawing:/cert:/doc:/compliance:… "
@@ -53,21 +54,25 @@ internal static partial class AiSourceTools
                 + "here. Tell the user which file holds the answer and ask them to open it themselves.");
         }
 
-        return Load(file.Name, file.ContentType, file.Content);
+        return await LoadAsync(context, file.Name, file.ContentType, file.Content, ct);
     }
 
-    private static Opened Load(string fileName, string? contentType, byte[] bytes)
+    /// <summary>Opens the bytes; a scan is then OCR'd where a service is configured (cached by
+    /// hash), and stays readable page by page as images either way.</summary>
+    private static async Task<Opened> LoadAsync(AiToolContext context, string fileName, string? contentType, byte[] bytes, CancellationToken ct)
     {
+        AiSourceDocument document;
         try
         {
-            return new Opened(AiSourceReader.Load(fileName, contentType, bytes), fileName, null);
+            document = AiSourceReader.Load(fileName, contentType, bytes);
         }
         catch (Exception ex) when (ex is InvalidDataException or NotSupportedException)
         {
-            // The reader's sentences are written to be relayed (scan with no text layer,
-            // password-protected, legacy format) — pass them through.
-            return new Opened(null, fileName, $"\"{fileName}\" could not be read: {ex.Message} Tell the user the "
-                + "answer appears to be in this file and ask them what it says.");
+            // The reader's sentences name the format, the reason and the route that works
+            // (password-protected, legacy .xls/.doc) — pass them through.
+            return new Opened(null, fileName, $"\"{fileName}\" could not be read: {ex.Message}");
         }
+        await ScannedPdfReading.FillAsync(document, context.Services, ct);
+        return new Opened(document, fileName, null);
     }
 }
