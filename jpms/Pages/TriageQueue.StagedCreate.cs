@@ -320,7 +320,7 @@ public partial class TriageQueue
             var outcome = await Commands.SendAsync(new SendWorkOrderPoEmail(
                 order.WorkOrderId,
                 WorkOrderPoEmail.Subject(order, string.IsNullOrWhiteSpace(projectName) ? triageProjectId : projectName),
-                WorkOrderPoEmail.Body(order, supplier.CompanyName, emailLines, projectName, Nav.BaseUri)),
+                WorkOrderPoEmail.Body(order, supplier.CompanyName, emailLines, projectName)),
                 CancellationToken.None);
             return outcome.Sent
                 ? ($"{order.Reference} was raised and the purchase order was emailed to {outcome.RecipientEmail}.", true)

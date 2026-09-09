@@ -33,6 +33,10 @@ public interface ISubcontractorStore
     Task UpdateDetailsAsync(string subcontractorId, string companyName,
         string contactName, string contactEmail, string contactPhone, int paymentTermsDays,
         string addressLine, string town, string county, string postcode);
+
+    /// <summary>Records the HMRC CIS verification result (status, verification number, date) on a
+    /// directory record — the three written together, replacing what the record held.</summary>
+    Task RecordCisVerificationAsync(RecordCisVerification command);
     IReadOnlyList<ComplianceDocument> ComplianceFor(string subcontractorId);
     void SaveCompliance(ComplianceDocument document);
 

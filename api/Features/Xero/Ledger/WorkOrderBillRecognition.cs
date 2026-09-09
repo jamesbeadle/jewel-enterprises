@@ -59,8 +59,9 @@ public sealed partial class WorkOrderBillRecognition
     /// Recognition for one unallocated line, decided once per bill and memoised.
     /// <paramref name="billLines"/> are every unallocated line of the same bill;
     /// <paramref name="isLabour"/> is labour recognition's answer for the bill;
-    /// <paramref name="hintedProjectId"/> is the project the bill's own Xero Sites tracking points
-    /// at — the tie-break between orders that share a number on different projects.
+    /// <paramref name="hintedProjectId"/> is the bill's site — the project set on it in the portal,
+    /// else the one its Xero Sites tracking points at — the tie-break between orders that share a
+    /// number on different projects.
     /// </summary>
     public LineVerdict? ForLine(
         XeroLedgerLineEntity line, IReadOnlyList<XeroLedgerLineEntity> billLines, bool isLabour, string? hintedProjectId)

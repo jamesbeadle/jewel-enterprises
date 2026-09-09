@@ -51,7 +51,29 @@ internal sealed partial class SubcontractorsAndLeadsActions
             NameStamps: Array.Empty<string>(),
             Notes: "subcontractorId comes from search_directory, which also returns the record's current "
                 + "trades — send the full trade list back, removing the last trade is refused. Never "
-                + "guess or derive the id (a Xero contact id is NOT a directory id)."),
+                + "guess or derive the id (a Xero contact id is NOT a directory id). cisStatus is the "
+                + "short reading only (64 characters) — an HMRC verification result with its number "
+                + "and date goes through record_cis_verification, never squeezed into cisStatus."),
+
+        new AiAction(
+            Name: "record_cis_verification",
+            Area: "Subcontractors",
+            Description: "Records the HMRC CIS verification result on a directory record: cisStatus as "
+                + "read from HMRC (\"Verified 20% standard\", \"Gross payment\", \"Unverified 30%\"), "
+                + "the verification number HMRC issued (cisVerificationNumber, e.g. V1415495651) and "
+                + "the day it was verified (cisVerifiedOn, yyyy-MM-dd). The three are written together "
+                + "and replace what the record held; an empty number and null date are allowed when "
+                + "HMRC issued none.",
+            CommandType: typeof(RecordCisVerification),
+            ResultType: typeof(Subcontractor),
+            AuthorisationType: typeof(RecordCisVerificationAuthorisation),
+            ValidationType: typeof(RecordCisVerificationValidation),
+            VisibleTo: DirectoryRecordEditors,
+            EmailStamps: Array.Empty<string>(),
+            NameStamps: Array.Empty<string>(),
+            Notes: "subcontractorId comes from search_directory, which shows the record's current "
+                + "cisStatus, cisVerificationNumber and cisVerifiedOn. Read the values back to the "
+                + "user before calling; this is the whole result, not a partial edit."),
 
         new AiAction(
             Name: "promote_subcontractor_to_directory",
@@ -152,8 +174,7 @@ internal sealed partial class SubcontractorsAndLeadsActions
         new AiAction(
             Name: "upsert_company_contact",
             Area: "Subcontractors",
-            Description: "Adds or updates a person on a directory record's contact list, with the "
-                + "free-text purpose the contact serves (\"Accounts\", \"Projects\", \"Estimating\"…). A "
+            Description: "Adds or updates a person on a directory record's contact list. A "
                 + "null/blank companyContactId inserts; a populated one updates in place.",
             CommandType: typeof(UpsertCompanyContact),
             ResultType: typeof(CompanyContact),

@@ -541,7 +541,7 @@ Modals: none — reply/forward is inline, not a dialog.
   - Breadcrumb nav 🔒 — "Subcontractors / {CompanyName}"
   - Header 🔒 — CompanyName + Xero-linked Badge ⚠️ (inline SVG icon), ContactLine subtitle, SecondaryButton "Edit details…" ⚠️
   - Panel 🔒 "Trades" — chip list of trades (each a removable pill ⚠️), inline `<select>` add-existing + text input + SecondaryButton "Add new trade" 🔒, AlertBanner (negative) ⚠️ for tradesError
-  - Panel 🔒 "Contacts" — LoadGate ✅ (per-record contacts) / EmptyState 🔒 / RecordsTable ⚠️ (5 cols: Name, Purpose, Email, Phone, actions — Edit/Remove text links, no StatusPill, no header sort), inline add/edit FormField ⚠️ row (Name/Purpose/Email/Phone + Save/Cancel)
+  - Panel 🔒 "Other contacts" — LoadGate ✅ (per-record contacts) / EmptyState 🔒 / RecordsTable ⚠️ (4 cols: Name, Email, Phone, actions — Edit/Remove text links, no StatusPill, no header sort), inline add/edit FormField ⚠️ row (Name/Email/Phone + Save/Cancel)
   - Panel 🔒 "Portal access" — AlertBanner (negative) ⚠️ invite error, AlertBanner (positive) ⚠️ invite-success with copyable link, SecondaryButton "Invite to portal" / "Re-send invite" ⚠️
   - Panel 🔒 "Statement of account" — explainer text, SecondaryButton "Download PDF" (anchor) ⚠️, SecondaryButton "Email statement…" ⚠️
   - SubcontractorComplianceList ✅

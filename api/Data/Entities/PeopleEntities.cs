@@ -9,7 +9,11 @@ public sealed class SubcontractorEntity
     [MaxLength(256)]     public string ContactName { get; set; } = "";
     [MaxLength(256)]     public string ContactEmail { get; set; } = "";
     [MaxLength(64)]      public string ContactPhone { get; set; } = "";
-    [MaxLength(32)]      public string CisStatus { get; set; } = "";
+    [MaxLength(64)]      public string CisStatus { get; set; } = "";
+    // The HMRC verification result behind CisStatus (2026-09-09): the number HMRC issued
+    // ("V1415495651") and the day it was verified. Written together by RecordCisVerification.
+    [MaxLength(32)]      public string CisVerificationNumber { get; set; } = "";
+    public DateOnly? CisVerifiedOn { get; set; }
     public DateTimeOffset OnboardedAt { get; set; }
 
     // Company-directory fields. Category drives filtering (0 = Subcontractor by default). The rest
@@ -56,14 +60,12 @@ public sealed class SubcontractorXeroLinkEntity
 
 // A person on a directory record beyond its single primary contact line. Consolidation keeps every
 // merged record's contact details as one of these (so no email or phone number is lost), and Xero
-// imports add the Xero contact persons. Purpose is free text ("Accounts", "Projects"…) — the system
-// purpose the contact serves on the master record.
+// imports add the Xero contact persons.
 public sealed class CompanyContactEntity
 {
     [Key, MaxLength(64)] public string CompanyContactId { get; set; } = "";
     [MaxLength(64)]      public string SubcontractorId { get; set; } = "";
     [MaxLength(256)]     public string Name { get; set; } = "";
-    [MaxLength(128)]     public string Purpose { get; set; } = "";
     [MaxLength(256)]     public string Email { get; set; } = "";
     [MaxLength(64)]      public string Phone { get; set; } = "";
     public DateTimeOffset CreatedAt { get; set; }

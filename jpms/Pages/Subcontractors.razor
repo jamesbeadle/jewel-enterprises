@@ -79,6 +79,8 @@
         }
         else
         {
+        <TabRow Items="DirectoryViewTabs.Items" ActiveKey="@DirectoryViewTabs.Companies" AriaLabel="Directory views" />
+
         @* Filters: category + free-text search across all types *@
         <div class="flex flex-wrap items-end gap-3 mb-5">
             <div class="grow min-w-[14rem]">
@@ -103,6 +105,12 @@
             <div class="pb-0.5">
                 <FilterChips Items="XeroFilterChips" Selected="@xeroFilter" OnSelect="key => xeroFilter = key"
                              Disabled="@(!SubcontractorStore.IsLoaded)" AriaLabel="Xero link" />
+            </div>
+            @* Compliance standing: the accountant's renewal filter (2026-09-09) — everyone whose
+               insurance has expired, is expiring or was never filed, in one click. *@
+            <div class="pb-0.5">
+                <FilterChips Items="ComplianceFilterChips" Selected="@complianceFilter" OnSelect="key => complianceFilter = key"
+                             Disabled="@(!ComplianceLoaded)" AriaLabel="Compliance" />
             </div>
             @* The live result count sits with the filters that produce it. Rendered only once the
                store has loaded — a line of text simply doesn't appear until the figure is known. *@

@@ -1267,11 +1267,6 @@ namespace Jewel.JPMS.Api.Migrations
                         .HasMaxLength(64)
                         .HasColumnType("nvarchar(64)");
 
-                    b.Property<string>("Purpose")
-                        .IsRequired()
-                        .HasMaxLength(128)
-                        .HasColumnType("nvarchar(128)");
-
                     b.Property<string>("SubcontractorId")
                         .IsRequired()
                         .HasMaxLength(64)
@@ -5761,8 +5756,16 @@ namespace Jewel.JPMS.Api.Migrations
 
                     b.Property<string>("CisStatus")
                         .IsRequired()
+                        .HasMaxLength(64)
+                        .HasColumnType("nvarchar(64)");
+
+                    b.Property<string>("CisVerificationNumber")
+                        .IsRequired()
                         .HasMaxLength(32)
                         .HasColumnType("nvarchar(32)");
+
+                    b.Property<DateOnly?>("CisVerifiedOn")
+                        .HasColumnType("date");
 
                     b.Property<string>("CompanyName")
                         .IsRequired()

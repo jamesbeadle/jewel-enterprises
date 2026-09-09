@@ -89,6 +89,8 @@ internal static partial class AiRecordTools
                         mobileNumber = row.MobileNumber,
                         address = new { row.AddressLine, row.Town, row.County, row.Postcode },
                         cisStatus = row.CisStatus,
+                        cisVerificationNumber = row.CisVerificationNumber,
+                        cisVerifiedOn = row.CisVerifiedOn,
                         paymentTermsDays = row.PaymentTermsDays,
                         xeroLinked = xeroLinks.ContainsKey(row.SubcontractorId),
                         xeroLinks = xeroLinks.TryGetValue(row.SubcontractorId, out var links)

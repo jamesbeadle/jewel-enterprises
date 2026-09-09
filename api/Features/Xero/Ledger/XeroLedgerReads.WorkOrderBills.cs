@@ -10,8 +10,11 @@ internal static partial class XeroLedgerReads
     /// <summary>
     /// Work Order bill recognition for every unallocated line in the read, keyed by line id. The
     /// decision is per bill, so the lines are grouped by invoice first; labour recognition's
-    /// answer and the bill's own Sites hint (the suggester's project for its tracking) go in
-    /// with them. Null entries are lines no order came into.
+    /// answer and the bill's site go in with them. The site is the project already decided on
+    /// the bill in the portal (the queue's "Set project" half-step) when there is one, else the
+    /// suggester's project for its Xero Sites tracking — the same precedence the sweep uses
+    /// (2026-09-09: a WO number open on two projects was dropped even after the accountant had
+    /// set the project). Null entries are lines no order came into.
     /// </summary>
     public static Dictionary<string, WorkOrderBillRecognition.LineVerdict> WorkOrderBillsFor(
         WorkOrderBillRecognition? recognition,
@@ -31,7 +34,7 @@ internal static partial class XeroLedgerReads
             var isLabour = billLines.Any(line => labour?.For(line) is { } recognised
                                                  && (recognised.MatchedWorkerId is not null || recognised.CoveredByTimesheets));
             var hintedProjectId = billLines
-                .Select(line => suggester?.SuggestProject(line.XeroSite))
+                .Select(line => line.ProjectId ?? suggester?.SuggestProject(line.XeroSite))
                 .FirstOrDefault(projectId => projectId is not null);
             foreach (var line in billLines)
                 if (recognition.ForLine(line, billLines, isLabour, hintedProjectId) is { } verdict)

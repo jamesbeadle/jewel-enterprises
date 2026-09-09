@@ -14,6 +14,10 @@ public sealed class UpdateSubcontractorValidation
         // Contact email and phone are optional — a directory record only needs a company name.
         if (command.PaymentTermsDays is < 0 or > 365)
             errors.Add("Payment terms must be between 0 and 365 days.");
+        // A refused save reads why (2026-09-09): the verification number and date have their own
+        // fields (RecordCisVerification) — CisStatus is the short reading only.
+        if ((command.CisStatus ?? "").Length > CisVerificationLimits.StatusMaxLength)
+            errors.Add($"CIS status must be {CisVerificationLimits.StatusMaxLength} characters or fewer — record the verification number and date with RecordCisVerification.");
         if (errors.Count == 0) return ValidationOutcome.Passed;
         return new ValidationOutcome(errors);
     }

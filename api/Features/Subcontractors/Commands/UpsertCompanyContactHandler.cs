@@ -44,7 +44,6 @@ public sealed class UpsertCompanyContactHandler : ICommandHandler<UpsertCompanyC
         }
 
         entity.Name = command.Name.Trim();
-        entity.Purpose = command.Purpose.Trim();
         entity.Email = command.Email.Trim();
         entity.Phone = command.Phone.Trim();
 

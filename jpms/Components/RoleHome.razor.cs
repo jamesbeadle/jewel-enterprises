@@ -116,7 +116,7 @@ public partial class RoleHome
             {
                 var lapsing = Compliance.Current.Count(document =>
                     document.Status() is ComplianceStatus.ExpiringSoon or ComplianceStatus.Expired);
-                tiles.Add(new("Documents expiring", lapsing.ToString(), "/directory",
+                tiles.Add(new("Documents expiring", lapsing.ToString(), "/directory/compliance",
                     Note: lapsing > 0 ? "expired or due in 30 days" : "all current", IsBad: lapsing > 0));
             }
 

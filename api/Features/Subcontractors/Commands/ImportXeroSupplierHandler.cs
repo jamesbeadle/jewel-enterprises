@@ -78,7 +78,6 @@ public sealed class ImportXeroSupplierHandler : ICommandHandler<ImportXeroSuppli
                 CompanyContactId = SubcontractorIdentifierFactory.NextCompanyContactId(),
                 SubcontractorId = entity.SubcontractorId,
                 Name = person.Name,
-                Purpose = "",
                 Email = person.EmailAddress,
                 Phone = "",
                 CreatedAt = DateTimeOffset.UtcNow

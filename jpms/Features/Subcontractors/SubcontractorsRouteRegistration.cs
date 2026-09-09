@@ -82,6 +82,10 @@ public static class SubcontractorsRouteRegistration
                     return $"/api/subcontractors/{c.SubcontractorId}/contacts/{c.CompanyContactId}";
                 }));
 
+        commands.Register<RecordCisVerification, Subcontractor>(
+            new CommandRoute("PUT", "/api/subcontractors/{subcontractorId}/cis-verification",
+                command => $"/api/subcontractors/{((RecordCisVerification)command).SubcontractorId}/cis-verification"));
+
         commands.Register<UpdateSubcontractor, Subcontractor>(
             new CommandRoute("PUT", "/api/subcontractors/{subcontractorId}",
                 command => $"/api/subcontractors/{((UpdateSubcontractor)command).SubcontractorId}"));

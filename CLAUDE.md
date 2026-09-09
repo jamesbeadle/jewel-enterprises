@@ -163,8 +163,9 @@ finds drift.
   `WorkOrderExceptionReason` per BILL (decided once per invoice, memoised): the labour registry
   wins → the supplier resolves to its directory record through `DirectoryXeroMatcher` → a WO
   number on the bill (`WorkOrderBillReference`: Reference, then descriptions, then invoice
-  number; supplier + number, since numbers are per project; the bill's own Sites hint breaks a
-  tie) → else exactly one open order → the value gate. "Open" = Released with remaining value
+  number; supplier + number, since numbers are per project; the bill's site breaks a tie — the
+  project set on the bill in the portal first, else its Xero Sites hint, the sweep's own
+  precedence, 2026-09-09) → else exactly one open order → the value gate. "Open" = Released with remaining value
   > 0 (decision 2026-09-08). Nothing is persisted for the match, so Sync and Re-check re-run it
   for free; the sweep (`AllocateSuggestedXeroLinesHandler`, page button and nightly worker
   alike) skips matched bills exactly as it skips labour lines.
@@ -220,6 +221,27 @@ finds drift.
   (`MatchingSubcontractorId`), which is what the import modal's "Link to …" and the record page's
   "Suggested" read; several matches stamp nothing. The connector's `list_unlinked_directory_records`
   shows every candidate, and a match is a suggestion a human confirms — nothing links by itself.
+
+## Directory: CIS verification & the compliance register (api + jpms)
+
+- **The HMRC CIS verification result is three fields written together** (2026-09-09, the
+  accountant's ask): `CisStatus` is the SHORT reading only ("Verified 20% standard", 64 chars);
+  the verification number ("V1415495651") and the verified-on date are `CisVerificationNumber` /
+  `CisVerifiedOn`, and `RecordCisVerification` (the record page's "Record verification…", the
+  connector's `record_cis_verification`) is the ONE writer of all three. `UpdateSubcontractor`
+  keeps its `CisStatus` parameter and refuses one over 64 characters with a 400 that points at
+  `RecordCisVerification` — never squeeze the number and date into the status again. On
+  consolidation the number and date follow whichever record's status was chosen.
+- **Compliance standing is per company and reads in one order.** A company's standing is the
+  worst status among its current documents, Missing when it holds none
+  (`ComplianceOverviewReadModel.WorstStatusFor`); `DirectoryComplianceFilter.WorstFirst`
+  (Expired → Expiring soon → Missing → Current) is the order every compliance list and chip row
+  reads in. The Directory's Compliance `FilterChips` and the register at `/directory/compliance`
+  (`ComplianceRegister` page, `ComplianceRegisterRow.Build`: one row per current document plus
+  one Missing row per empty company) both read it; the two views are siblings joined by
+  `DirectoryViewTabs` (a `TabRow`), and the dashboard's "Documents expiring" tile lands on the
+  register. `CisVerificationPanel` sits directly above `SubcontractorComplianceList` on the
+  record page — the two together are the record's standing to be paid.
 
 ## Loading states (jpms)
 

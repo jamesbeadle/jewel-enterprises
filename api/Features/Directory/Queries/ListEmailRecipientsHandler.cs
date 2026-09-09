@@ -95,11 +95,11 @@ public sealed class ListEmailRecipientsHandler : IQueryHandler<ListEmailRecipien
 
         var companyContacts = await context.CompanyContacts.AsNoTracking()
             .OrderBy(contact => contact.Name)
-            .Select(contact => new { contact.SubcontractorId, contact.Name, contact.Purpose, contact.Email })
+            .Select(contact => new { contact.SubcontractorId, contact.Name, contact.Email })
             .ToListAsync(cancellationToken);
         foreach (var contact in companyContacts)
             Add(contact.Name, contact.Email, companyNames.GetValueOrDefault(contact.SubcontractorId),
-                EmailRecipientKind.Company, contact.Purpose);
+                EmailRecipientKind.Company);
 
         // 5. Workers.
         var workers = await context.Workers.AsNoTracking()

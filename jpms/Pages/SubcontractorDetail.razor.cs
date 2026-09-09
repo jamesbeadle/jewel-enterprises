@@ -133,6 +133,14 @@ public partial class SubcontractorDetail
     private static string ContactLine(Subcontractor sub) =>
         string.Join(" · ", new[] { sub.TradesLabel, sub.ContactName, sub.ContactEmail }.Where(x => !string.IsNullOrWhiteSpace(x)));
 
+    private static string PrimaryContactStrapline(Subcontractor sub)
+    {
+        var primary = string.Join(", ", new[] { sub.ContactName, sub.ContactEmail }.Where(x => !string.IsNullOrWhiteSpace(x)));
+        if (primary.Length == 0)
+            return "This record has no primary contact yet — add one under Edit details. Anyone else at the company goes here.";
+        return $"The primary contact is {primary} (edit under Edit details). Anyone else at the company goes here.";
+    }
+
     // ---- Portal access ----
 
     private bool inviteBusy;
@@ -218,7 +226,7 @@ public partial class SubcontractorDetail
     private string? contactsError;
     private string? contactsNote;
     private string? editingContactId;
-    private string cName = "", cPurpose = "", cEmail = "", cPhone = "";
+    private string cName = "", cEmail = "", cPhone = "";
 
     private IReadOnlyList<CompanyContact> Contacts =>
         subcontractor is null
@@ -228,13 +236,13 @@ public partial class SubcontractorDetail
     private void EditContact(CompanyContact contact)
     {
         editingContactId = contact.CompanyContactId;
-        cName = contact.Name; cPurpose = contact.Purpose; cEmail = contact.Email; cPhone = contact.Phone;
+        cName = contact.Name; cEmail = contact.Email; cPhone = contact.Phone;
     }
 
     private void CancelEditContact()
     {
         editingContactId = null;
-        cName = cPurpose = cEmail = cPhone = "";
+        cName = cEmail = cPhone = "";
     }
 
     private async Task SaveContact()
@@ -247,7 +255,7 @@ public partial class SubcontractorDetail
         {
             contactBusy = true;
             await SubcontractorStore.UpsertContactAsync(new UpsertCompanyContact(
-                subcontractor.SubcontractorId, cName.Trim(), cPurpose.Trim(), cEmail.Trim(), cPhone.Trim(),
+                subcontractor.SubcontractorId, cName.Trim(), cEmail.Trim(), cPhone.Trim(),
                 editingContactId));
             CancelEditContact();
             contactsNote = "Saved.";

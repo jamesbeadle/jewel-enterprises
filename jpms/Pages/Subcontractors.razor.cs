@@ -1,4 +1,5 @@
 using Jewel.JPMS.Contracts.Subcontractors;
+using Jewel.JPMS.Features.Directory;
 using static Jewel.JPMS.Features.Directory.DirectoryDisplay;
 
 namespace Jewel.JPMS.Pages;
@@ -8,6 +9,12 @@ public partial class Subcontractors
     private string search = "";
     private string categoryFilter = ""; // "" = all
     private string xeroFilter = XeroFilterAll;
+    private string complianceFilter = DirectoryComplianceFilter.All;
+
+    private bool ComplianceLoaded => SubcontractorStore.IsLoaded && Compliance.Current is not null;
+
+    private IReadOnlyList<TabItem> ComplianceFilterChips =>
+        DirectoryComplianceFilter.CompanyChips(DirectoryCompanies(), Compliance, ComplianceLoaded);
 
     private const string XeroFilterAll = "all";
     private const string XeroFilterLinked = "linked";
@@ -83,7 +90,8 @@ public partial class Subcontractors
     };
 
     private bool FiltersActive =>
-        !string.IsNullOrWhiteSpace(search) || !string.IsNullOrWhiteSpace(categoryFilter) || xeroFilter != XeroFilterAll;
+        !string.IsNullOrWhiteSpace(search) || !string.IsNullOrWhiteSpace(categoryFilter)
+        || xeroFilter != XeroFilterAll || complianceFilter != DirectoryComplianceFilter.All;
 
     // "12 of 118 companies" while the search or Type filter is narrowing the table; the plain
     // total otherwise. Only rendered once SubcontractorStore.IsLoaded, so the figure is real.
@@ -242,6 +250,7 @@ public partial class Subcontractors
         return DirectoryCompanies()
             .Where(s => cat is null || s.Category == cat)
             .Where(s => PassesXeroFilter(s, xeroFilter))
+            .Where(s => DirectoryComplianceFilter.Passes(s, complianceFilter, Compliance))
             .Where(s => q.Length == 0
                 || (s.CompanyName ?? "").Contains(q, StringComparison.OrdinalIgnoreCase)
                 || s.Trades.Any(t => t.Name.Contains(q, StringComparison.OrdinalIgnoreCase))
