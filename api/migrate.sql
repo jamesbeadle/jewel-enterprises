@@ -3,38 +3,66 @@ GO
 
 IF NOT EXISTS (
     SELECT * FROM [__EFMigrationsHistory]
-    WHERE [MigrationId] = N'20260909150000_AddXeroLineWorkOrderLinkCostCenterCode'
+    WHERE [MigrationId] = N'20260909160000_AddProgrammeVariationEffects'
 )
 BEGIN
-    ALTER TABLE [XeroLineWorkOrderLinks] ADD [CostCenterCode] nvarchar(32) NULL;
+    CREATE TABLE [ProgrammeVariationEffects] (
+        [ProgrammeVariationEffectId] nvarchar(64) NOT NULL,
+        [ProjectId] nvarchar(64) NOT NULL,
+        [VariationOrderId] nvarchar(64) NOT NULL,
+        [ProgrammeTaskId] nvarchar(64) NOT NULL,
+        [DelayDays] int NOT NULL,
+        [Note] nvarchar(512) NOT NULL,
+        [RecordedByEmail] nvarchar(256) NOT NULL,
+        [RecordedAt] datetimeoffset NOT NULL,
+        CONSTRAINT [PK_ProgrammeVariationEffects] PRIMARY KEY ([ProgrammeVariationEffectId])
+    );
 END;
 GO
 
 IF NOT EXISTS (
     SELECT * FROM [__EFMigrationsHistory]
-    WHERE [MigrationId] = N'20260909150000_AddXeroLineWorkOrderLinkCostCenterCode'
+    WHERE [MigrationId] = N'20260909160000_AddProgrammeVariationEffects'
 )
 BEGIN
-    DROP INDEX [UX_XeroLineWorkOrderLinks_Line_Order] ON [XeroLineWorkOrderLinks];
+    CREATE INDEX [IX_ProgrammeVariationEffects_ProjectId] ON [ProgrammeVariationEffects] ([ProjectId]);
 END;
 GO
 
 IF NOT EXISTS (
     SELECT * FROM [__EFMigrationsHistory]
-    WHERE [MigrationId] = N'20260909150000_AddXeroLineWorkOrderLinkCostCenterCode'
+    WHERE [MigrationId] = N'20260909160000_AddProgrammeVariationEffects'
 )
 BEGIN
-    EXEC(N'CREATE UNIQUE INDEX [UX_XeroLineWorkOrderLinks_Line_Order_Code] ON [XeroLineWorkOrderLinks] ([XeroLedgerLineId], [WorkOrderId], [CostCenterCode]) WHERE [XeroLedgerLineId] IS NOT NULL AND [WorkOrderId] IS NOT NULL AND [CostCenterCode] IS NOT NULL');
+    EXEC(N'CREATE UNIQUE INDEX [IX_ProgrammeVariationEffects_VariationOrderId_ProgrammeTaskId] ON [ProgrammeVariationEffects] ([VariationOrderId], [ProgrammeTaskId]) WHERE [VariationOrderId] IS NOT NULL AND [ProgrammeTaskId] IS NOT NULL');
 END;
 GO
 
 IF NOT EXISTS (
     SELECT * FROM [__EFMigrationsHistory]
-    WHERE [MigrationId] = N'20260909150000_AddXeroLineWorkOrderLinkCostCenterCode'
+    WHERE [MigrationId] = N'20260909160000_AddProgrammeVariationEffects'
+)
+BEGIN
+    ALTER TABLE [Requests] ADD [EotDaysClaimed] int NULL;
+END;
+GO
+
+IF NOT EXISTS (
+    SELECT * FROM [__EFMigrationsHistory]
+    WHERE [MigrationId] = N'20260909160000_AddProgrammeVariationEffects'
+)
+BEGIN
+    ALTER TABLE [Requests] ADD [EotDaysGranted] int NULL;
+END;
+GO
+
+IF NOT EXISTS (
+    SELECT * FROM [__EFMigrationsHistory]
+    WHERE [MigrationId] = N'20260909160000_AddProgrammeVariationEffects'
 )
 BEGIN
     INSERT INTO [__EFMigrationsHistory] ([MigrationId], [ProductVersion])
-    VALUES (N'20260909150000_AddXeroLineWorkOrderLinkCostCenterCode', N'8.0.10');
+    VALUES (N'20260909160000_AddProgrammeVariationEffects', N'8.0.10');
 END;
 GO
 
