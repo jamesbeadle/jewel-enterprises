@@ -11,7 +11,9 @@ public sealed record WorkOrderLinkSlice(string WorkOrderId, decimal Amount, stri
 /// order's code mix. A whole-line link is one slice on the line's centre. Since 2026-09-08 a
 /// link may also sit on a line split across the order's cost codes (a Work Order bill against a
 /// multi-code order): that link becomes one slice per split share, the link's amount shared in
-/// the split's own proportions, so every penny still lands on a centre.
+/// the split's own proportions, so every penny still lands on a centre. A link that names its
+/// own cost centre (a Work Order bill share, 2026-09-09) is one slice on that centre outright —
+/// which is what keeps a bill split across two orders on one project honest per order.
 /// </summary>
 public static class WorkOrderLinkSlices
 {
@@ -23,7 +25,7 @@ public static class WorkOrderLinkSlices
             .Join(context.XeroLedgerLines,
                 link => link.XeroLedgerLineId,
                 line => line.XeroLedgerLineId,
-                (link, line) => new { link.WorkOrderId, link.Amount, line.XeroLedgerLineId, line.CostCenterCode, line.Net })
+                (link, line) => new { link.WorkOrderId, link.Amount, line.XeroLedgerLineId, CostCenterCode = link.CostCenterCode ?? line.CostCenterCode, line.Net })
             .ToListAsync(cancellationToken);
 
         var slices = links

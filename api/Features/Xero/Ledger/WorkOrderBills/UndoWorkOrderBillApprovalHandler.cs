@@ -6,8 +6,8 @@ namespace Jewel.JPMS.Api.Features.Xero.Ledger.WorkOrderBills;
 
 /// <summary>
 /// Reverses a Work Order bill approval (2026-09-08) in one save: every line of the bill back to
-/// Unallocated, its split rows, work-order links and package cost slices removed, the approval
-/// row marked undone — then the Sites and Cost Code tracking cleared off the bill in Xero and
+/// Unallocated, its split rows, work-order links and package cost slices removed, every order's
+/// approval row marked undone — then the Sites and Cost Code tracking cleared off the bill in Xero and
 /// the audit row written. Xero never un-approves, so a bill approved there stays approved; the
 /// outcome carries the bill's Xero status so the page can say exactly that.
 ///
@@ -30,11 +30,12 @@ public sealed class UndoWorkOrderBillApprovalHandler : ICommandHandler<UndoWorkO
 
     public async Task<WorkOrderBillUndoOutcome> HandleAsync(UndoWorkOrderBillApproval command, CancellationToken cancellationToken)
     {
-        var approval = await context.WorkOrderBillApprovals
+        var approvals = await context.WorkOrderBillApprovals
             .Where(row => row.XeroInvoiceId == command.XeroInvoiceId && row.UndoneAtUtc == null)
             .OrderByDescending(row => row.ApprovedAtUtc)
-            .FirstOrDefaultAsync(cancellationToken)
-            ?? throw new InvalidOperationException("No Work Order bill approval stands on this bill.");
+            .ToListAsync(cancellationToken);
+        if (approvals.Count == 0) throw new InvalidOperationException("No Work Order bill approval stands on this bill.");
+        var approval = approvals[0];
         var lines = await context.XeroLedgerLines
             .Where(line => line.XeroInvoiceId == command.XeroInvoiceId)
             .ToListAsync(cancellationToken);
@@ -45,21 +46,28 @@ public sealed class UndoWorkOrderBillApprovalHandler : ICommandHandler<UndoWorkO
         context.XeroLineWorkOrderLinks.RemoveRange(await context.XeroLineWorkOrderLinks.Where(link => ids.Contains(link.XeroLedgerLineId)).ToListAsync(cancellationToken));
         context.ReconciliationPackageCostLines.RemoveRange(await context.ReconciliationPackageCostLines.Where(slice => ids.Contains(slice.XeroLedgerLineId)).ToListAsync(cancellationToken));
         foreach (var line in lines) ReturnToQueue(line);
-        approval.UndoneByEmail = command.UndoneBy ?? "";
-        approval.UndoneAtUtc = DateTimeOffset.UtcNow;
+        foreach (var row in approvals)
+        {
+            row.UndoneByEmail = command.UndoneBy ?? "";
+            row.UndoneAtUtc = DateTimeOffset.UtcNow;
+        }
         await context.SaveChangesAsync(cancellationToken);
 
         var xero = await writeBack.TryClearTrackingAsync(command.XeroInvoiceId, cancellationToken);
-        var order = await context.WorkOrders.AsNoTracking().FirstOrDefaultAsync(candidate => candidate.WorkOrderId == approval.WorkOrderId, cancellationToken);
+        var orderIds = approvals.Select(row => row.WorkOrderId).Distinct().ToList();
+        var references = await context.WorkOrders.AsNoTracking()
+            .Where(candidate => orderIds.Contains(candidate.WorkOrderId))
+            .Select(candidate => candidate.Reference)
+            .ToListAsync(cancellationToken);
         await audit.WriteAsync(
             AuditEventType.WorkOrderBillApprovalUndone,
             $"{lines[0].ContactName} {lines[0].InvoiceNumber} Work Order bill approval undone — {lines.Count} line(s) back to Unallocated, "
-            + $"links to {order?.Reference ?? approval.WorkOrderId} removed. "
+            + $"links to {string.Join(" + ", references.DefaultIfEmpty(approval.WorkOrderId))} removed. "
             + (xero.Succeeded ? $"Xero tracking cleared; the bill is {xero.XeroStatus} in Xero." : $"Xero: {xero.Error}"),
             projectId: approval.ProjectId,
             recordType: RecordType.WorkOrder,
             recordId: approval.WorkOrderId,
-            recordReference: order?.Reference ?? "",
+            recordReference: string.Join(" + ", references),
             cancellationToken: cancellationToken);
         return new WorkOrderBillUndoOutcome(lines.Count, xero.Succeeded, xero.Error, xero.XeroStatus);
     }

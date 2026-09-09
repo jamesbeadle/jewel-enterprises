@@ -11,11 +11,12 @@ public partial class XeroAllocation
     // server's (WorkOrderMatch rides the line, recomputed on every unallocated read); the page
     // only partitions on it and groups the lines into one card per bill. notWorkOrderBillInvoiceIds
     // is this visit's escape hatch for a wrong match — the bill rejoins the plain queue for a
-    // hand allocation. sharesByLineId holds the editable coding of a multi-code order's bill,
-    // seeded from the server's pro rata proposal the first time the card is drawn.
+    // hand allocation. sharesByLineId holds each line's editable shares — order + cost code +
+    // amount, across the supplier's open orders since 2026-09-09 — seeded from the server's
+    // proposal the first time the card is drawn.
     private bool workOrderBillsTab;
     private readonly HashSet<string> notWorkOrderBillInvoiceIds = new();
-    private readonly Dictionary<string, List<XeroSplitDraft>> sharesByLineId = new();
+    private readonly Dictionary<string, List<WorkOrderBillShareDraft>> sharesByLineId = new();
     private string? approvingInvoiceId;
     private string? workOrderBillError;
     private string? workOrderBillErrorInvoiceId;
@@ -39,11 +40,11 @@ public partial class XeroAllocation
                .OrderByDescending(bill => bill.Max(line => line.Date))
                .Select(bill => (IReadOnlyList<XeroLedgerLine>)bill.ToList());
 
-    private List<XeroSplitDraft> SharesFor(XeroLedgerLine line)
+    private List<WorkOrderBillShareDraft> SharesFor(XeroLedgerLine line)
     {
         if (sharesByLineId.TryGetValue(line.XeroLedgerLineId, out var shares)) return shares;
-        shares = (line.WorkOrderMatch?.ProposedSplits ?? Array.Empty<XeroCostSplit>())
-            .Select(split => new XeroSplitDraft { ProjectId = split.ProjectId ?? "", Code = split.CostCenterCode, Amount = split.Net })
+        shares = (line.WorkOrderMatch?.ProposedShares ?? Array.Empty<WorkOrderBillShare>())
+            .Select(share => new WorkOrderBillShareDraft { WorkOrderId = share.WorkOrderId, Code = share.CostCenterCode, Amount = share.Net })
             .ToList();
         sharesByLineId[line.XeroLedgerLineId] = shares;
         return shares;
@@ -51,18 +52,19 @@ public partial class XeroAllocation
 
     private async Task ApproveWorkOrderBillAsync(IReadOnlyList<XeroLedgerLine> bill)
     {
-        if (isBusy || bill.Count == 0 || bill[0].WorkOrderMatch is not { } match) return;
-        var command = new ApproveWorkOrderBill(bill[0].XeroInvoiceId, match.WorkOrderId,
+        if (isBusy || bill.Count == 0 || bill[0].WorkOrderMatch is null) return;
+        var command = new ApproveWorkOrderBill(bill[0].XeroInvoiceId,
             bill.Select(line => new WorkOrderBillLineCoding(line.XeroLedgerLineId,
-                SharesFor(line).Select(share => new XeroCostSplit(share.Code, share.Amount ?? 0m, match.ProjectId)).ToList())).ToList());
+                SharesFor(line).Select(share => new WorkOrderBillShare(share.WorkOrderId, share.Code, share.Amount ?? 0m)).ToList())).ToList());
         isApplying = true; approvingInvoiceId = bill[0].XeroInvoiceId; workOrderBillError = null; workOrderBillErrorInvoiceId = null; errorMessage = null;
         try
         {
             var outcome = await Ledger.ApproveWorkOrderBillAsync(command);
             foreach (var line in bill) sharesByLineId.Remove(line.XeroLedgerLineId);
+            var orders = string.Join(" + ", outcome.WorkOrderReferences);
             syncMessage = outcome.ApprovedInXero
-                ? $"{bill[0].ContactName} {bill[0].InvoiceNumber} · {Money(bill.Sum(SignedNet))} approved against {match.WorkOrderReference} — {outcome.LinesAllocated} line(s) allocated and linked, approved in Xero."
-                : $"{bill[0].ContactName} {bill[0].InvoiceNumber} allocated and linked to {match.WorkOrderReference}, but Xero said: {outcome.XeroError} — retry from the Allocated tab.";
+                ? $"{bill[0].ContactName} {bill[0].InvoiceNumber} · {Money(bill.Sum(SignedNet))} approved against {orders} — {outcome.LinesAllocated} line(s) allocated and linked, approved in Xero."
+                : $"{bill[0].ContactName} {bill[0].InvoiceNumber} allocated and linked to {orders}, but Xero said: {outcome.XeroError} — retry from the Allocated tab.";
         }
         catch (CommandFailedException failure) { workOrderBillError = failure.Message; workOrderBillErrorInvoiceId = bill[0].XeroInvoiceId; }
         finally { isApplying = false; approvingInvoiceId = null; }

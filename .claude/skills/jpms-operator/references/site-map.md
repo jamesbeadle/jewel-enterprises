@@ -41,6 +41,12 @@ Buckets, Disputed, Ignored; per-row Allocate / Set / Split… / Allocate to
 bucket / Ignore / Dispute…, bulk bars, "Allocate all matched" banner, Sync from
 Xero, Re-check matches, search, Excel export. Allocating every line of a draft
 bill confirms its Sites/Cost Code tracking to Xero **and approves the bill**.
+Work Order bills tab: bills from suppliers with an open work order, one card
+per bill pre-filled from the order; a bill naming two orders is proposed line
+by line, and any line can be split across the supplier's open orders on the
+card; one Approve allocates, links each share to its order, writes tracking to
+Xero and approves the bill there. Undo (Allocated tab, "Undo bill") reverses
+the whole bill; Xero never un-approves.
 
 ### Valuation Report — `/projects/{project}/valuation`
 The picked project's LIVE valuation report — the system's flagship output,

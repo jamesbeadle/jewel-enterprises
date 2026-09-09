@@ -94,9 +94,8 @@ internal sealed class WorkOrderBillFixture
     public async Task<ApproveWorkOrderBill> ProposedApprovalAsync(string invoiceId)
     {
         var lines = (await ReadUnallocatedAsync()).Where(line => line.XeroInvoiceId == invoiceId).ToList();
-        var match = lines[0].WorkOrderMatch!;
-        return new ApproveWorkOrderBill(invoiceId, match.WorkOrderId,
-            lines.Select(line => new WorkOrderBillLineCoding(line.XeroLedgerLineId, line.WorkOrderMatch!.ProposedSplits)).ToList());
+        return new ApproveWorkOrderBill(invoiceId,
+            lines.Select(line => new WorkOrderBillLineCoding(line.XeroLedgerLineId, line.WorkOrderMatch!.ProposedShares)).ToList());
     }
 
     private AuditTrail Audit() => new(Context, new AuditActor { Email = "nigel@jewelbb.co.uk" }, NullLogger<AuditTrail>.Instance);

@@ -45,8 +45,8 @@ internal static partial class XeroLedgerReads
 
     /// <summary>
     /// The standing Work Order bill approval behind each ALLOCATED line's bill, keyed by invoice
-    /// id — who approved, against which order, by which rule. Only allocated lines carry one, so
-    /// an unallocated page issues no approval query at all.
+    /// id — who approved, against which order(s) and for how much each, by which rule. Only
+    /// allocated lines carry one, so an unallocated page issues no approval query at all.
     /// </summary>
     public static async Task<Dictionary<string, WorkOrderBillApprovalStamp>> WorkOrderApprovalsForAsync(
         JpmsContext context, IReadOnlyList<XeroLedgerLineEntity> entities, CancellationToken cancellationToken)
@@ -72,13 +72,15 @@ internal static partial class XeroLedgerReads
             .GroupBy(approval => approval.XeroInvoiceId, StringComparer.OrdinalIgnoreCase)
             .ToDictionary(group => group.Key, group =>
             {
-                var approval = group.OrderByDescending(row => row.ApprovedAtUtc).First();
-                return new WorkOrderBillApprovalStamp(
-                    approval.WorkOrderId,
-                    references.TryGetValue(approval.WorkOrderId, out var reference) ? reference : approval.WorkOrderId,
-                    (WorkOrderMatchRule)approval.MatchRule,
-                    approval.ApprovedByEmail,
-                    approval.ApprovedAtUtc);
+                var latest = group.OrderByDescending(row => row.ApprovedAtUtc).First();
+                var orders = group
+                    .Select(row => new WorkOrderBillApprovedOrder(
+                        row.WorkOrderId,
+                        references.TryGetValue(row.WorkOrderId, out var reference) ? reference : row.WorkOrderId,
+                        row.BillNet))
+                    .OrderBy(order => order.WorkOrderReference)
+                    .ToList();
+                return new WorkOrderBillApprovalStamp(orders, (WorkOrderMatchRule)latest.MatchRule, latest.ApprovedByEmail, latest.ApprovedAtUtc);
             }, StringComparer.OrdinalIgnoreCase);
     }
 }
