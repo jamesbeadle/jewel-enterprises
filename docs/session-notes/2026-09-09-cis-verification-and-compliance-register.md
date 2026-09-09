@@ -84,3 +84,33 @@ Read `migrate.log`. Safe to apply ahead of the code (additive; the old code neve
 - Update `.claude/skills/jpms-operator/references/site-map.md` (Directory section) for the register route and the CIS panel.
 - Add a short CLAUDE.md working note under Directory/Subcontractors: `CisStatus` is the short reading; number and date are `RecordCisVerification`'s; `/directory/compliance` is the register; `DirectoryComplianceFilter.WorstFirst` is the one order compliance lists read in.
 - Read `RecordsTable.razor` and `SearchInput.razor` to confirm the parameter semantics used on the register page.
+
+## Addendum, 11:50 — consolidated on `feature/directory-cis-compliance-and-contacts`
+
+All of the morning's work is on this one branch (seven commits plus this one): Purpose drop and
+primary/other naming; CIS three-field verification; compliance filter and register; work-order
+email sends with the PO PDF attached and no supplier-portal link; page guides, site-map and the
+CLAUDE.md note; and the work-order-number tie-break reading the bill's decided project.
+Nothing has been compiled — no dotnet in either shell and NuGet is denied for Claude by the org
+network policy.
+
+### Open dev asks from Jeremy, 9 Sep 12:14 and 12:18 — not built, tracked here
+
+- **Bill split across the supplier's open orders** (Sussex Tiling Lees Green-001: £1,748 to
+  WO-0055, £1,344 to WO-0056). The match, `ApproveWorkOrderBill`, the approval row and the undo
+  are one-bill-one-order. Needed: the card offers "Split across another order…" when the
+  supplier has more than one open order; each order's slice passes its own value gate; links per
+  order; one approval row per order; undo reverses all. Decision needed from Jeremy: when each
+  line of the bill names its own WO in the description, should the match propose the per-line
+  split itself, or is the split only ever made by hand on the card? About a day once decided.
+- **Push directory contacts to the linked Xero contact.** Jeremy 12:18 agreed: contacts scope
+  on the Cost Integration app (contacts only); person-pressed, never automatic; names split on
+  first space; Xero's five-person limit; replace-wholesale is fine PROVIDED the confirm shows
+  Xero's people now and after, and an empty portal contact list never clears Xero's people; the
+  portal primary contact also goes to Xero's primary person. Before it can be tested someone
+  must add `accounting.contacts` to the app in the Xero developer portal and reconnect the
+  integration (`XeroOptions.Scopes` is unset, so the token carries whatever the portal grants).
+  About a day. Own branch after this one ships.
+- **Xero primary person on import, and "pull details from Xero" on link** (a choice, not
+  automatic — agreed). Queued behind the push; same branch as the push since both touch
+  `XeroClient.ReadsSuppliers.cs` and `XeroSuppliers.cs`.
