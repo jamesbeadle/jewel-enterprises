@@ -283,7 +283,7 @@ public partial class ManualWorkOrderModal : IDisposable
                         var outcome = await Commands.SendAsync(new SendWorkOrderPoEmail(
                             createdOrder.WorkOrderId,
                             WorkOrderPoEmail.Subject(createdOrder, string.IsNullOrWhiteSpace(projectName) ? ProjectId : projectName),
-                            WorkOrderPoEmail.Body(createdOrder, supplier.CompanyName, emailLines, projectName, Nav.BaseUri)),
+                            WorkOrderPoEmail.Body(createdOrder, supplier.CompanyName, emailLines, projectName)),
                             CancellationToken.None);
                         poEmailNote = outcome.Sent
                             ? $"{createdOrder.Reference} was raised and the purchase order was emailed to {outcome.RecipientEmail}."

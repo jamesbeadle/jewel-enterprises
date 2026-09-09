@@ -11,7 +11,6 @@ public partial class DraftWorkOrdersPanel
     [Inject] private SubcontractorsReadModel Subcontractors { get; set; } = default!;
     [Inject] private ProjectListReadModel Projects { get; set; } = default!;
     [Inject] private AuthService Auth { get; set; } = default!;
-    [Inject] private NavigationManager Nav { get; set; } = default!;
 
     [Parameter, EditorRequired] public string ProjectId { get; set; } = "";
     [Parameter, EditorRequired] public IReadOnlyList<ProjectWorkOrderDetail> Drafts { get; set; } = default!;
@@ -130,7 +129,7 @@ public partial class DraftWorkOrdersPanel
             var outcome = await Commands.SendAsync(new SendWorkOrderPoEmail(
                 order.WorkOrderId,
                 WorkOrderPoEmail.Subject(order, string.IsNullOrWhiteSpace(projectName) ? ProjectId : projectName),
-                WorkOrderPoEmail.Body(order, detail.SubcontractorName, emailLines, projectName, Nav.BaseUri)),
+                WorkOrderPoEmail.Body(order, detail.SubcontractorName, emailLines, projectName)),
                 CancellationToken.None);
             return outcome.Sent
                 ? $"{order.Reference} was approved and the purchase order was emailed to {outcome.RecipientEmail}."

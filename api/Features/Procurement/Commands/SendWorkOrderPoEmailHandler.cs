@@ -1,5 +1,6 @@
 using Jewel.JPMS.Api.Features.Audit;
 using Jewel.JPMS.Api.Features.MailboxIntake.Graph;
+using Jewel.JPMS.Api.Features.Procurement.Documents;
 using Jewel.JPMS.Contracts.Procurement;
 
 namespace Jewel.JPMS.Api.Features.Procurement.Commands;
@@ -44,6 +45,8 @@ public sealed class SendWorkOrderPoEmailHandler : ICommandHandler<SendWorkOrderP
             throw new InvalidOperationException(
                 "The supplier has no email address in the directory — add one, then email the purchase order from the PO page.");
 
+        var purchaseOrderPdf = await RenderPurchaseOrderAsync(command.WorkOrderId, cancellationToken);
+
         // Categories on the draft = what the SENT copy should carry, so it self-files: the
         // subcontractor pathway, the order's own record tag (replies group under the order via
         // the shared record-link read-back), and — when the order came from awarding a tender —
@@ -64,7 +67,7 @@ public sealed class SendWorkOrderPoEmailHandler : ICommandHandler<SendWorkOrderP
             To: new[] { new MailboxDraftRecipient(supplier.ContactEmail!, supplier.CompanyName) },
             Subject: command.Subject,
             HtmlBody: command.HtmlBody,
-            Attachments: Array.Empty<MailboxDraftAttachment>(),
+            Attachments: new[] { purchaseOrderPdf },
             Categories: categories);
 
         var draft = await mailbox.CreateDraftAsync(message, cancellationToken);
@@ -109,5 +112,14 @@ public sealed class SendWorkOrderPoEmailHandler : ICommandHandler<SendWorkOrderP
             cancellationToken: cancellationToken);
 
         return new WorkOrderPoEmailOutcome(order.WorkOrderId, Sent: true, supplier.ContactEmail!, sentWebLink);
+    }
+
+    // The supplier receives the purchase order itself, not only its summary (2026-09-09, the
+    // accountant's ask) — the same branded PDF the PO page prints and the reply draft attaches.
+    private async Task<MailboxDraftAttachment> RenderPurchaseOrderAsync(string workOrderId, CancellationToken cancellationToken)
+    {
+        var model = await WorkOrderPoDocumentBuilder.BuildAsync(context, workOrderId, cancellationToken)
+            ?? throw new InvalidOperationException($"Work order {workOrderId} not found.");
+        return new MailboxDraftAttachment(model.FileName, "application/pdf", WorkOrderPoRenderer.Render(model));
     }
 }

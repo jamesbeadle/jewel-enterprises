@@ -73,8 +73,8 @@
                 @if (Detail.Order.Status is not (WorkOrderStatus.Draft or WorkOrderStatus.Rejected or WorkOrderStatus.Cancelled))
                 {
                     <button type="button" class="btn-secondary text-sm" @onclick="OpenEmailModal"
-                            title="Draft the covering email to the supplier in the shared mailbox — nothing sends until you review it in Outlook">
-                        Draft email to supplier…
+                            title="Email the purchase order to the supplier from the shared projects mailbox, with the PDF attached">
+                        Email to supplier…
                     </button>
                 }
                 <button type="button" class="btn-secondary text-sm" @onclick="PrintAsync"
@@ -90,7 +90,7 @@
                 @emailNote
                 @if (emailLink is not null)
                 {
-                    <a class="text-accent underline ml-1" href="@emailLink" target="_blank" rel="noopener">Open the draft in Outlook</a>
+                    <a class="text-accent underline ml-1" href="@emailLink" target="_blank" rel="noopener">Open in Outlook</a>
                 }
             </Notice>
         }
@@ -181,13 +181,12 @@
         </div>
 
         <Modal IsOpen="showEmailModal" Title="@($"Email work order {Title2} to {Detail.SubcontractorName}")" ShowFooter="true"
-               ConfirmLabel="@(emailBusy ? "Drafting…" : "Create draft in mailbox")" ConfirmDisabled="@emailBusy" CancelLabel="Cancel"
-               OnCancel="CloseEmailModal" OnConfirm="ConfirmEmailDraftAsync" Class="max-w-3xl w-full">
-            <p class="rounded bg-surface-raised border border-line px-3 py-2 text-xs text-content-muted mb-3">
-                Nothing sends from here — this creates a draft in the shared mailbox, addressed to the supplier's
-                directory email, for you to review and send from Outlook. Print the purchase order to PDF first if
-                you want to attach it before sending.
-            </p>
+               ConfirmLabel="@(emailBusy ? "Sending…" : "Send to supplier")" ConfirmDisabled="@emailBusy" CancelLabel="Cancel"
+               OnCancel="CloseEmailModal" OnConfirm="ConfirmSendEmailAsync" Class="max-w-3xl w-full">
+            <Notice Tone="Tone.Warning" Class="mb-3">
+                This sends now, from the shared projects mailbox to the supplier's directory email, with the
+                purchase order PDF attached. If the send fails the email is left in the mailbox's Drafts folder.
+            </Notice>
 
             <FormField Label="Subject">
             <input class="field mb-3" @bind="emailSubject" />
@@ -281,21 +280,24 @@
             Project?.Name ?? "",
             Nav.BaseUri);
 
-    private async Task ConfirmEmailDraftAsync()
+    // Sends the reviewed email now, purchase order attached — the same SendWorkOrderPoEmail the
+    // release fires automatically (2026-09-09: the accountant asked for a send, not a draft).
+    private async Task ConfirmSendEmailAsync()
     {
         if (emailBusy || Detail is null) return;
         emailError = null;
         try
         {
             emailBusy = true;
-            var draft = await Commands.SendAsync(
-                new PrepareWorkOrderEmailDraft(Detail.Order.WorkOrderId, emailSubject.Trim(), emailBody), CancellationToken.None);
+            var outcome = await Commands.SendAsync(
+                new SendWorkOrderPoEmail(Detail.Order.WorkOrderId, emailSubject.Trim(), emailBody), CancellationToken.None);
             showEmailModal = false;
-            emailNote = $"Draft created in the shared mailbox to {draft.RecipientEmail}. Review it (attach the printed PDF if you like) and send from the mailbox's Drafts folder.";
-            emailLink = draft.WebLink;
+            emailLink = outcome.WebLink;
+            if (outcome.Sent) { emailNote = $"Sent to {outcome.RecipientEmail} with the purchase order attached."; return; }
+            emailError = outcome.FailureNote ?? "The send didn't go through — the email is saved in the projects mailbox's Drafts folder.";
         }
-        catch (CommandFailedException ex) { emailError = $"Couldn't create the draft: {ex.Message}"; }
-        catch { emailError = "Couldn't create the draft. Check the supplier has an email address in the directory and the mailbox connection, then try again."; }
+        catch (CommandFailedException ex) { emailError = $"Couldn't send: {ex.Message}"; }
+        catch { emailError = "Couldn't send. Check the supplier has an email address in the directory and the mailbox connection, then try again."; }
         finally { emailBusy = false; }
     }
 

@@ -8,11 +8,11 @@ namespace Jewel.JPMS.Features.Procurement;
 /// send fired when an order is released — created without "save as draft" (Work Orders tab, Control
 /// Centre) or a draft approved. One builder means the supplier reads the same email whichever door
 /// the order went out through: the order summary (priced lines, or value + scope when there is no
-/// breakdown), programme dates when set, the portal link for electronic acceptance, and the standard
-/// pre-start paperwork line (RAMS/insurances to projects@ — never a named person).
-///
-/// Composed client-side (not in the API) because the portal-acceptance link needs the app's own
-/// base URI — pass NavigationManager.BaseUri.
+/// breakdown), programme dates when set, and the standard pre-start paperwork line (RAMS/insurances
+/// to projects@ — never a named person). The purchase order PDF is attached by the API on both the
+/// send and the draft (2026-09-09, the accountant's ask), so the body says so and carries no link
+/// to the supplier portal: suppliers have no portal login yet and the link only reached a sign-in
+/// page. The link returns with supplier users and their role testing.
 /// </summary>
 public static class WorkOrderPoEmail
 {
@@ -36,12 +36,11 @@ public static class WorkOrderPoEmail
         WorkOrder order,
         string supplierName,
         IReadOnlyList<Line> lines,
-        string projectName,
-        string baseUri)
+        string projectName)
     {
         var sb = new StringBuilder();
         sb.AppendLine($"<p>Hello {supplierName},</p>");
-        sb.AppendLine($"<p>Please find below the details of our work order <strong>{order.Reference}</strong> for <strong>{(string.IsNullOrWhiteSpace(projectName) ? "the project" : projectName)}</strong>.</p>");
+        sb.AppendLine($"<p>Please find below the details of our work order <strong>{order.Reference}</strong> for <strong>{(string.IsNullOrWhiteSpace(projectName) ? "the project" : projectName)}</strong>. The purchase order is attached.</p>");
         if (lines.Count > 0)
         {
             sb.AppendLine("<table border=\"1\" cellpadding=\"6\" cellspacing=\"0\" style=\"border-collapse:collapse\">");
@@ -61,7 +60,6 @@ public static class WorkOrderPoEmail
             sb.AppendLine($"<p><strong>Programme start:</strong> {start.LocalDateTime:d MMM yyyy}</p>");
         if (order.ScheduledCompletion is { } completion)
             sb.AppendLine($"<p><strong>Scheduled completion:</strong> {completion.LocalDateTime:d MMM yyyy}</p>");
-        sb.AppendLine($"<p>You can view and electronically accept this work order in our portal: <a href=\"{baseUri}portal/work-orders/{order.WorkOrderId}\">{baseUri}portal/work-orders/{order.WorkOrderId}</a></p>");
         sb.AppendLine("<p>Before starting on site, please send your RAMS documentation and current insurance certificates to projects@jewelbb.co.uk.</p>");
         sb.AppendLine("<p>Kind regards,<br/>Jewel Bespoke Build</p>");
         return sb.ToString();

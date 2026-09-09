@@ -1,4 +1,5 @@
 using Jewel.JPMS.Api.Features.MailboxIntake.Graph;
+using Jewel.JPMS.Api.Features.Procurement.Documents;
 using Jewel.JPMS.Contracts.Procurement;
 
 namespace Jewel.JPMS.Api.Features.Procurement.Commands;
@@ -7,7 +8,8 @@ namespace Jewel.JPMS.Api.Features.Procurement.Commands;
 // PrepareBidPackageInviteDraft: the human sends from Outlook). Addressed To the supplier's directory
 // email. When the order was awarded from a bid package the draft is tagged with the package's
 // reference ("JPMS/BPI-0001"), so the sent copy and the supplier's replies group under the package
-// alongside the tender correspondence.
+// alongside the tender correspondence. The purchase order PDF is attached (2026-09-09), so a
+// re-send from Outlook needs no printing first.
 public sealed class PrepareWorkOrderEmailDraftHandler : ICommandHandler<PrepareWorkOrderEmailDraft, WorkOrderEmailDraft>
 {
     private readonly JpmsContext context;
@@ -38,6 +40,10 @@ public sealed class PrepareWorkOrderEmailDraftHandler : ICommandHandler<PrepareW
             throw new InvalidOperationException(
                 "The supplier has no email address in the directory — add one before drafting the work order email.");
 
+        var model = await WorkOrderPoDocumentBuilder.BuildAsync(context, command.WorkOrderId, cancellationToken)
+            ?? throw new InvalidOperationException($"Work order {command.WorkOrderId} not found.");
+        var purchaseOrderPdf = new MailboxDraftAttachment(model.FileName, "application/pdf", WorkOrderPoRenderer.Render(model));
+
         // Tag with the source package's reference so the email (and replies) group under the package.
         // Work-order mail is subcontractor correspondence, so the thread is born on that pathway.
         var categories = new List<string> { TriageCategories.Marker, TriageCategories.Subcontractor };
@@ -51,7 +57,7 @@ public sealed class PrepareWorkOrderEmailDraftHandler : ICommandHandler<PrepareW
             To: new[] { new MailboxDraftRecipient(supplier.ContactEmail!, supplier.CompanyName) },
             Subject: command.Subject,
             HtmlBody: command.HtmlBody,
-            Attachments: Array.Empty<MailboxDraftAttachment>(),
+            Attachments: new[] { purchaseOrderPdf },
             Categories: categories);
 
         var draft = await mailbox.CreateDraftAsync(message, cancellationToken);
