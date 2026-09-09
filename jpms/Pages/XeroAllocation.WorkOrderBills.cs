@@ -65,7 +65,8 @@ public partial class XeroAllocation
             slicesByInvoiceId.Remove(bill[0].XeroInvoiceId);
             var orders = string.Join(" + ", outcome.WorkOrderReferences);
             syncMessage = outcome.ApprovedInXero
-                ? $"{bill[0].ContactName} {bill[0].InvoiceNumber} · {Money(bill.Sum(SignedNet))} approved against {orders} — {outcome.LinesAllocated} line(s) allocated and linked, approved in Xero."
+                ? $"{bill[0].ContactName} {bill[0].InvoiceNumber} · {Money(bill.Sum(SignedNet))} approved against {orders} — {outcome.LinesAllocated} line(s) allocated and linked, approved in Xero"
+                  + (outcome.TrackingNote is null ? "." : " with no tracking written (the order split crosses the supplier's lines; the portal's links hold it).")
                 : $"{bill[0].ContactName} {bill[0].InvoiceNumber} allocated and linked to {orders}, but Xero said: {outcome.XeroError} — retry from the Allocated tab.";
         }
         catch (CommandFailedException failure) { workOrderBillError = failure.Message; workOrderBillErrorInvoiceId = bill[0].XeroInvoiceId; }

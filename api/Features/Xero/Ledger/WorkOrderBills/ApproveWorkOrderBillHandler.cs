@@ -57,17 +57,25 @@ public sealed partial class ApproveWorkOrderBillHandler : ICommandHandler<Approv
 
         var references = command.Slices.Select(slice => orders[slice.WorkOrderId].Reference).OrderBy(reference => reference).ToList();
         var xero = await writeBack.WriteBackWorkOrderBillAsync(command.XeroInvoiceId, cancellationToken);
+        if (xero.Note is not null) await NoteTrackingNotWrittenAsync(lines, cancellationToken);
         await audit.WriteAsync(
             AuditEventType.WorkOrderBillApproved,
             $"{BillLabel(lines[0])} approved as a Work Order bill against {string.Join(" + ", references)} — "
             + $"{lines.Count} line(s), £{BillNet(lines):N2}; {match.Detail} "
-            + (xero.Succeeded ? "Approved in Xero." : $"Xero: {xero.Error}"),
+            + (xero.Succeeded ? (xero.Note is null ? "Approved in Xero." : "Approved in Xero, no tracking written (the order split crosses the supplier's lines).") : $"Xero: {xero.Error}"),
             projectId: orders[command.Slices[0].WorkOrderId].ProjectId,
             recordType: RecordType.WorkOrder,
             recordId: command.Slices[0].WorkOrderId,
             recordReference: string.Join(" + ", references),
             cancellationToken: cancellationToken);
-        return new WorkOrderBillApprovalOutcome(lines.Count, references, xero.Succeeded, xero.Error);
+        return new WorkOrderBillApprovalOutcome(lines.Count, references, xero.Succeeded, xero.Error, xero.Note);
+    }
+
+    /// <summary>The Allocated row reads why the bill carries no tracking in Xero — on the line, where the note lives.</summary>
+    private async Task NoteTrackingNotWrittenAsync(List<XeroLedgerLineEntity> lines, CancellationToken cancellationToken)
+    {
+        foreach (var line in lines) line.Note = $"{line.Note} · no Xero tracking (order split crosses the line)";
+        await context.SaveChangesAsync(cancellationToken);
     }
 
     private static string BillLabel(XeroLedgerLineEntity line) =>

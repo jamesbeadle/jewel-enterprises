@@ -51,6 +51,10 @@
             {
                 <p class="text-sm text-content-subtle">The order figures must add up to the bill's net before it can be approved.</p>
             }
+            else if (!WorkOrderBillTracking.CanBeWritten(OrdersPaid))
+            {
+                <Notice Tone="Tone.Info">@WorkOrderBillTracking.NotWrittenNote Approve still allocates every line, links each order for its figure and approves the bill in Xero.</Notice>
+            }
             else
             {
                 <p class="text-sm text-content-subtle">Approve allocates every line, links each order for its figure, writes the tracking to Xero line by line as raised, and approves the bill there.</p>

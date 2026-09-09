@@ -290,4 +290,7 @@ public sealed record SetXeroAllocation(
 /// </summary>
 public sealed record RetryXeroWriteBack(string XeroInvoiceId) : ICommand<XeroWriteBackOutcome>;
 
-public sealed record XeroWriteBackOutcome(bool Succeeded, string? Error);
+/// <summary>Note is set when the bill was approved in Xero but its tracking deliberately left
+/// blank (2026-09-09: a Work Order bill whose order split would need two tracking values on one
+/// line — the line is never split to fit, so the bill carries none), and says why.</summary>
+public sealed record XeroWriteBackOutcome(bool Succeeded, string? Error, string? Note = null);

@@ -85,12 +85,32 @@ public sealed record ApproveWorkOrderBill(
     IReadOnlyList<WorkOrderBillOrderSlice> Slices,
     string? ApprovedBy = null) : ICommand<WorkOrderBillApprovalOutcome>;
 
-/// <summary>The allocation is saved whatever Xero said; XeroError carries Xero's refusal when there was one.</summary>
+/// <summary>The allocation is saved whatever Xero said; XeroError carries Xero's refusal when
+/// there was one; TrackingNote says so when the bill was approved with no tracking written.</summary>
 public sealed record WorkOrderBillApprovalOutcome(
     int LinesAllocated,
     IReadOnlyList<string> WorkOrderReferences,
     bool ApprovedInXero,
-    string? XeroError);
+    string? XeroError,
+    string? TrackingNote = null);
+
+/// <summary>
+/// The one wording for a Work Order bill whose tracking Xero cannot carry (2026-09-09, the
+/// accountant's rule): the order split lives on the portal's work-order links, Xero tracking is
+/// a convenience, and a supplier's line is never split to make it fit — so the bill is approved
+/// with no tracking, and the card and the ledger say exactly that.
+/// </summary>
+public static class WorkOrderBillTracking
+{
+    public const string NotWrittenNote =
+        "Xero tracking not written for this bill — the order split would need two tracking values on one of the supplier's lines, and a line is never split to fit. The split lives on the portal's work-order links.";
+
+    /// <summary>Tracking can be written only when every line lands on one centre — one project and one cost code across every order the bill pays.</summary>
+    public static bool CanBeWritten(IEnumerable<WorkOrderBillOrderOption> ordersPaid) =>
+        ordersPaid.SelectMany(order => order.CostCodes.Select(code => (order.ProjectId, code)))
+            .Distinct()
+            .Count() == 1;
+}
 
 /// <summary>
 /// Reverses a Work Order bill approval in one save: every line back to Unallocated, its split

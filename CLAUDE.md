@@ -184,8 +184,13 @@ finds drift.
   `WorkOrderBillSliceSpread` spreads each slice over the lines pro rata (penny-safe per line,
   the drift settled on the largest line so every order is exact too) and each line's portion
   over the order's cost codes — portal-side only. `WriteBackWorkOrderBillAsync` passes
-  `keepLinesWhole`: a Xero line is stamped whole with the centre carrying most of it, never
-  replaced by one line per share. Never split a Xero line for a Work Order bill.
+  `keepLinesWhole`: when every line lands on one centre the tracking is written as before; when
+  any line would need two tracking values the bill is approved in Xero with NO tracking at all
+  (`XeroWriteBackOutcome.Note` = `WorkOrderBillTracking.NotWrittenNote`, the line's `Note` gains
+  "no Xero tracking", the card says so before Approve via `WorkOrderBillTracking.CanBeWritten`).
+  The accountant's rule (2026-09-09 15:08): lines exactly as raised beats the tracking — the
+  order split is the portal's work-order links, Xero tracking is a convenience. Never split a
+  Xero line for a Work Order bill.
 - **Approve is per bill, undo is per bill, both FD/Director/Admin only** (`WorkOrderBillRoles`).
   Approve re-runs the match server-side, refuses an order that is not the supplier's, figures
   that do not add up to the bill, and a slice over its order's remaining value, stamps every
