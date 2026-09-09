@@ -14,9 +14,9 @@
             @if (order is { CostCodes.Count: > 1 })
             {
                 <select class="field grow min-w-0" disabled="@Disabled" value="@share.Code" @onchange="e => share.Code = e.Value?.ToString() ?? share.Code">
-                    @foreach (var code in order.CostCodes)
+                    @foreach (var costCode in order.CostCodes)
                     {
-                        <option value="@code">@CostCenterText(code)</option>
+                        <option value="@costCode">@CostCenterText(costCode)</option>
                     }
                 </select>
             }
