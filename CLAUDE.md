@@ -301,6 +301,20 @@ finds drift.
   register. `CisVerificationPanel` sits directly above `SubcontractorComplianceList` on the
   record page — the two together are the record's standing to be paid.
 
+## The connector mirrors the page — every button the accountant gets, the assistant gets (api)
+
+- **A feature is not done until the MCP connector can do it too** (2026-09-09, the coverage
+  audit). Every command that gains an endpoint gains an `AiAction` in the same commit
+  (`api/Features/Ai/Tools/Actions`, one partial per area — `CommercialActions.WorkOrderBills`
+  is the Work Order bill approve/undo, `ApprovedBy`/`UndoneBy` stamped from the caller); every
+  page read the model would need to make that decision is on a read tool (`list_xero_ledger_lines`
+  carries `workOrderBill` — the card's orders, proposed slices and the supplier's open orders —
+  `workOrderExceptionReason` and `workOrderApproval`; `list_compliance_register` is
+  `/directory/compliance`; `preview_xero_contact_push` is the push modal's now/after;
+  `search_directory` carries `complianceStanding` and the CIS fields). Pin each batch in
+  `AiConnectorTests` (`…_reachTheConnector`) so a rename never drops one. A page-only feature
+  is a gap the accountant finds first.
+
 ## Reading scans — the assistant's document reader (api)
 
 - **A PDF with no text layer is a scan, kept and read — never refused** (2026-09-09, the

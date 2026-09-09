@@ -175,11 +175,11 @@ internal sealed partial class SubcontractorsAndLeadsActions
             EmailStamps: Array.Empty<string>(),
             NameStamps: Array.Empty<string>(),
             RequiresConfirmation: true,
-            Notes: "This is something a person presses, never automatic. Before calling, read the "
-                + "record's primary contact and other contacts back to the user as what Xero WILL "
-                + "hold — the portal page shows Xero's people now beside the people after; the "
-                + "connector has no preview, so say plainly that Xero's additional people are "
-                + "replaced by the record's — and take their yes. Call once per record."),
+            Notes: "This is something a person presses, never automatic. Call "
+                + "preview_xero_contact_push first and show the user Xero's people NOW beside the "
+                + "people AFTER, exactly as the portal's modal does; say plainly that Xero's "
+                + "additional people are replaced by the record's, and take their yes. Call once "
+                + "per record."),
 
         new AiAction(
             Name: "unlink_directory_record_from_xero_contact",

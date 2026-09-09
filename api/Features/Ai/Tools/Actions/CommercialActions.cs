@@ -16,7 +16,9 @@ namespace Jewel.JPMS.Api.Features.Ai.Tools.Actions;
 /// roles with RoleSet.Of(...) — the field name comments say which authorisation each copies.
 /// None of these endpoints stamp the signed-in user onto the command, so every entry's
 /// stamp lists are empty — except the Xero allocation (CommercialActions.XeroAllocation,
-/// 2026-09-03), whose endpoint stamps AllocatedBy from the signed-in user's email.</summary>
+/// 2026-09-03), whose endpoint stamps AllocatedBy from the signed-in user's email, and the Work
+/// Order bill approve/undo (CommercialActions.WorkOrderBills, 2026-09-09), stamped ApprovedBy /
+/// UndoneBy the same way.</summary>
 internal sealed partial class CommercialActions : IAiActionSource
 {
     // Replica of AddClaimPeriodAuthorisation.RolesThatMayDefineClaimPeriods.
@@ -90,7 +92,8 @@ internal sealed partial class CommercialActions : IAiActionSource
             .Concat(InputsActions())
             .Concat(CvrActions())
             .Concat(CashflowActions())
-            .Concat(XeroAllocationActions());
+            .Concat(XeroAllocationActions())
+            .Concat(WorkOrderBillActions());
 
     // No skipped endpoints: every command endpoint under Features/Commercial,
     // Features/CommercialInputs, Features/Cvr and Features/Cashflow dispatches an

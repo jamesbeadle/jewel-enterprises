@@ -136,6 +136,16 @@ public static class ComplianceDocumentExtensions
         if (daysToExpiry < 30) return ComplianceStatus.ExpiringSoon;
         return ComplianceStatus.Current;
     }
+
+    /// <summary>A company's standing: the worst status among its current documents, Missing when
+    /// it holds none. The one reading the Directory's compliance chips, the register and the
+    /// connector share (2026-09-09).</summary>
+    public static ComplianceStatus Standing(this IEnumerable<ComplianceDocument> documents)
+    {
+        var current = documents.Where(document => document.IsCurrentVersion).ToList();
+        if (current.Count == 0) return ComplianceStatus.Missing;
+        return current.Select(document => document.Status()).Max();
+    }
 }
 
 public static class ComplianceStatusExtensions

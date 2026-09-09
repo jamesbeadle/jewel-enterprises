@@ -15,7 +15,7 @@ namespace Jewel.JPMS.Api.Features.Ai.Tools;
 /// Xero allocation ledger. Every tool wraps the query handler its endpoint composes and mirrors
 /// that endpoint's role gate exactly.
 /// </summary>
-internal static class AiFinanceTools
+internal static partial class AiFinanceTools
 {
     private static readonly JsonSerializerOptions Json = new() { WriteIndented = false };
 
@@ -135,7 +135,12 @@ internal static class AiFinanceTools
                 + "Bucketed, Ignored or Disputed (with the dispute thread). Pass a status to read "
                 + "that queue, or a projectId for one project's allocated lines; with neither, the "
                 + "per-status counts come back so you can pick. This is the data behind the Xero "
-                + "Cost Allocation page and each project's cost-of-sales spend.",
+                + "Cost Allocation page and each project's cost-of-sales spend. Unallocated lines "
+                + "whose bill matched an open work order carry workOrderBill (the Work Order bills "
+                + "tab's card: the orders, the proposed per-order slices, every open order of the "
+                + "supplier) — approve_work_order_bill takes it from there; lines a candidate order "
+                + "refused carry workOrderExceptionReason; lines approved as a Work Order bill carry "
+                + "workOrderApproval.",
                 AiToolSchema.Object(
                     ("status", "string", "Unallocated, Allocated, Bucketed, Ignored or Disputed.", false),
                     ("projectId", "string", "One project's allocated lines instead of a status queue.", false),
@@ -176,32 +181,4 @@ internal static class AiFinanceTools
                 })
         };
     }
-
-    /// <summary>The line trimmed to what an allocation decision needs — the full record carries
-    /// sync bookkeeping the model never uses.</summary>
-    private static object Line(XeroLedgerLine line) => new
-    {
-        line.XeroLedgerLineId,
-        line.Type,
-        line.InvoiceNumber,
-        line.ContactName,
-        line.Date,
-        line.Description,
-        line.Net,
-        line.AccountCode,
-        line.AccountName,
-        status = line.AllocationStatus.ToString(),
-        line.ProjectId,
-        line.CostCenterCode,
-        line.Bucket,
-        line.SuggestedProjectId,
-        line.SuggestedCostCenterCode,
-        line.SuggestedBucket,
-        line.Note,
-        splits = line.Splits,
-        xeroStatus = line.InvoiceStatus,
-        writeBackStatus = line.WriteBackStatus.ToString(),
-        line.WriteBackError,
-        line.WriteBackFailedAtUtc
-    };
 }
