@@ -41,8 +41,8 @@ public sealed class WorkOrderBillRecognitionTests
             var order = match.SupplierOrders.Single(candidate => candidate.WorkOrderId == "wo-bf-26");
             Assert.Equal((97810m, 0m), (order.OrderValue, order.InvoicedToDate));
             Assert.Equal(new[] { "wo-bf-26", "wo-ra-01" }, match.SupplierOrders.Select(candidate => candidate.WorkOrderId).OrderBy(id => id));
-            var share = Assert.Single(match.ProposedShares);
-            Assert.Equal(("wo-bf-26", "ELE-STD", line.Net), (share.WorkOrderId, share.CostCenterCode, share.Net));
+            var slice = Assert.Single(match.ProposedSlices);
+            Assert.Equal(("wo-bf-26", 10000m), (slice.WorkOrderId, slice.Net));
         });
     }
 
@@ -112,12 +112,13 @@ public sealed class WorkOrderBillRecognitionTests
 
         var lines = (await fixture.ReadUnallocatedAsync()).Where(line => line.XeroInvoiceId == "inv-lg").OrderBy(line => line.XeroLedgerLineId).ToList();
 
-        Assert.Equal(new[] { "wo-lg-55", "wo-lg-56", "wo-lg-55" }, lines.Select(line => line.WorkOrderMatch?.WorkOrderId));
         Assert.All(lines, line => Assert.Equal(WorkOrderMatchRule.ByLineReference, line.WorkOrderMatch!.Rule));
         Assert.Contains("WO-0055 (2 lines), WO-0056 (1 line)", lines[0].WorkOrderMatch!.Detail);
         Assert.Contains("1 line names no order and is put on WO-0055", lines[0].WorkOrderMatch!.Detail);
-        var share = Assert.Single(lines[1].WorkOrderMatch!.ProposedShares);
-        Assert.Equal(("wo-lg-56", "INT-PLB", 1344m), (share.WorkOrderId, share.CostCenterCode, share.Net));
+        // The proposal is a figure per order off the bill, the same on every line — never a coding of the lines.
+        Assert.All(lines, line => Assert.Equal(
+            new[] { ("wo-lg-55", 1758m), ("wo-lg-56", 1344m) },
+            line.WorkOrderMatch!.ProposedSlices.Select(slice => (slice.WorkOrderId, slice.Net))));
     }
 
     [Fact]
@@ -154,17 +155,14 @@ public sealed class WorkOrderBillRecognitionTests
     }
 
     [Fact]
-    public async Task AMultiCodeOrderProposesAProRataSplitThatSumsToTheLineToThePenny()
+    public void AMultiCodeOrderCodesAnAmountProRataToItsLinesToThePenny()
     {
-        var fixture = await WorkOrderBillFixture.CreateAsync();
-        WorkOrderBillFixture.AddBill(fixture.Context, "inv-dry", "77", "Drywall Co Ltd", ("321", 1000.01m));
-        await fixture.Context.SaveChangesAsync();
+        var weights = new[] { new KeyValuePair<string, decimal>("INT-PLS", 6000m), new KeyValuePair<string, decimal>("INT-PLB", 4000m) };
 
-        var line = (await fixture.ReadUnallocatedAsync()).Single(candidate => candidate.XeroInvoiceId == "inv-dry");
+        var splits = WorkOrderBillRecognition.ProposedSplitsFor(weights, WorkOrderBillFixture.Woodhouse, 1000.01m);
 
-        var shares = line.WorkOrderMatch!.ProposedShares;
-        Assert.Equal(new[] { ("INT-PLS", 600.01m), ("INT-PLB", 400.00m) }, shares.Select(share => (share.CostCenterCode, share.Net)));
-        Assert.Equal(1000.01m, shares.Sum(share => share.Net));
+        Assert.Equal(new[] { ("INT-PLS", 600.01m), ("INT-PLB", 400.00m) }, splits.Select(split => (split.CostCenterCode, split.Net)));
+        Assert.Equal(1000.01m, splits.Sum(split => split.Net));
     }
 
     [Fact]

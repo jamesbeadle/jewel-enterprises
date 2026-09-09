@@ -194,7 +194,7 @@ public sealed partial class XeroWriteBackService : IXeroWriteBackService
     }
 
     private async Task<XeroWriteBackOutcome> WriteBackInvoiceAsync(
-        string invoiceId, bool explicitRetry, CancellationToken ct, bool recodeApproved = false)
+        string invoiceId, bool explicitRetry, CancellationToken ct, bool recodeApproved = false, bool keepLinesWhole = false)
     {
         var lines = await context.XeroLedgerLines
             .Where(line => line.XeroInvoiceId == invoiceId)
@@ -281,6 +281,12 @@ public sealed partial class XeroWriteBackService : IXeroWriteBackService
             instructions.Add(new XeroApprovalLineInstruction(line.XeroLineItemId, shares));
         }
 
+        // A Work Order bill never splits a Xero line (2026-09-09, the accountant's rule: lines
+        // exactly as raised beats the tracking). When any line would need two tracking values,
+        // the bill is approved with NO tracking at all, and the outcome says so for the card.
+        var trackingSkipped = keepLinesWhole && instructions.Any(instruction => instruction.Shares.Count > 1);
+        if (trackingSkipped) instructions = new List<XeroApprovalLineInstruction>();
+
         var result = await xero.ApproveInvoiceAsync(
             new XeroApprovalRequest(invoiceId, lines[0].Type == "ACCPAYCREDIT", instructions, recodeApproved), ct);
 
@@ -297,9 +303,9 @@ public sealed partial class XeroWriteBackService : IXeroWriteBackService
                 line.InvoiceStatus = result.FreshStatus ?? "AUTHORISED";
             }
             await context.SaveChangesAsync(ct);
-            logger.LogInformation("Xero invoice {InvoiceId} approved with tracking for {LineCount} lines{Already}.",
-                invoiceId, lines.Count, result.AlreadyApproved ? " (already approved in Xero)" : "");
-            return new XeroWriteBackOutcome(true, null);
+            logger.LogInformation("Xero invoice {InvoiceId} approved {Tracking} for {LineCount} lines{Already}.",
+                invoiceId, trackingSkipped ? "without tracking" : "with tracking", lines.Count, result.AlreadyApproved ? " (already approved in Xero)" : "");
+            return new XeroWriteBackOutcome(true, null, trackingSkipped ? WorkOrderBillTracking.NotWrittenNote : null);
         }
 
         return await StampFailureAsync(lines, result.Error ?? "Xero rejected the update.", ct);

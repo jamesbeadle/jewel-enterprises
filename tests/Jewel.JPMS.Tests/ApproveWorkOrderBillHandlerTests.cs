@@ -67,21 +67,19 @@ public sealed class ApproveWorkOrderBillHandlerTests
     }
 
     [Fact]
-    public async Task AMultiCodeOrderIsApprovedAsACentreSplitOnTheOrdersProject()
+    public async Task AMultiCodeOrderIsApprovedAsACentreSplitOnTheOrdersProject_ProRataToItsLines()
     {
         var fixture = await WorkOrderBillFixture.CreateAsync();
         WorkOrderBillFixture.AddBill(fixture.Context, "inv-dry", "77", "Drywall Co Ltd", ("321", 1000m));
         await fixture.Context.SaveChangesAsync();
-        var command = await fixture.ProposedApprovalAsync("inv-dry");
-        var edited = command with { Lines = new[] { new WorkOrderBillLineCoding("inv-dry:0", new[] { new WorkOrderBillShare("wo-wh-01", "INT-PLS", 700m), new WorkOrderBillShare("wo-wh-01", "INT-PLB", 300m) }) } };
 
-        await fixture.ApproveAsync(edited);
+        await fixture.ApproveAsync(await fixture.ProposedApprovalAsync("inv-dry"));
 
         var line = fixture.Context.XeroLedgerLines.AsNoTracking().Single(candidate => candidate.XeroLedgerLineId == "inv-dry:0");
-        Assert.Equal((WorkOrderBillFixture.Woodhouse, (string?)null), (line.ProjectId, line.CostCenterCode));
-        Assert.Equal(new[] { ("INT-PLB", 300m), ("INT-PLS", 700m) },
+        Assert.Equal((WorkOrderBillFixture.Woodhouse, (string?)null, 1000m), (line.ProjectId, line.CostCenterCode, line.Net));
+        Assert.Equal(new[] { ("INT-PLB", 400m), ("INT-PLS", 600m) },
             fixture.Context.XeroCostSplits.AsNoTracking().OrderBy(split => split.CostCenterCode).AsEnumerable().Select(split => (split.CostCenterCode, split.Net)));
-        Assert.Equal(new[] { ("INT-PLB", 300m), ("INT-PLS", 700m) },
+        Assert.Equal(new[] { ("INT-PLB", 400m), ("INT-PLS", 600m) },
             fixture.Context.XeroLineWorkOrderLinks.AsNoTracking().OrderBy(link => link.CostCenterCode).AsEnumerable().Select(link => (link.CostCenterCode!, link.Amount)));
     }
 
@@ -92,22 +90,28 @@ public sealed class ApproveWorkOrderBillHandlerTests
         var fixture = await WorkOrderBillFixture.CreateAsync();
         WorkOrderBillFixture.AddOrder(fixture.Context, "wo-lg-55", WorkOrderBillFixture.Woodhouse, 55, "sub-dry", 1748m, ("INT-PLS", 1748m));
         WorkOrderBillFixture.AddOrder(fixture.Context, "wo-lg-56", WorkOrderBillFixture.Woodhouse, 56, "sub-dry", 2000m, ("INT-PLB", 2000m));
-        WorkOrderBillFixture.AddBill(fixture.Context, "inv-lg", "Lees Green-001", "Drywall Co Ltd", ("321", 3092m));
+        // The supplier's own CIS split — £720 labour on 321, £2,372 materials on 322 — stays exactly as raised.
+        WorkOrderBillFixture.AddBill(fixture.Context, "inv-lg", "Lees Green-001", "Drywall Co Ltd", ("321", 720m), ("322", 2372m));
         await fixture.Context.SaveChangesAsync();
         await ReferenceAsync(fixture, "inv-lg", "WO-0055 / WO-0056");
         var proposed = await fixture.ProposedApprovalAsync("inv-lg");
-        var split = proposed with { Lines = new[] { new WorkOrderBillLineCoding("inv-lg:0", new[] { new WorkOrderBillShare("wo-lg-55", "INT-PLS", 1748m), new WorkOrderBillShare("wo-lg-56", "INT-PLB", 1344m) }) } };
+        var split = proposed with { Slices = new[] { new WorkOrderBillOrderSlice("wo-lg-55", 1748m), new WorkOrderBillOrderSlice("wo-lg-56", 1344m) } };
 
         var outcome = await fixture.ApproveAsync(split);
 
         Assert.Equal(new[] { "WO-0055", "WO-0056" }, outcome.WorkOrderReferences);
-        var line = fixture.Context.XeroLedgerLines.AsNoTracking().Single(candidate => candidate.XeroLedgerLineId == "inv-lg:0");
-        Assert.Equal((WorkOrderBillFixture.Woodhouse, (string?)null, "Work orders WO-0055, WO-0056"), (line.ProjectId, line.CostCenterCode, line.Note));
-        Assert.Equal(new[] { ("wo-lg-55", "INT-PLS", 1748m), ("wo-lg-56", "INT-PLB", 1344m) },
-            fixture.Context.XeroLineWorkOrderLinks.AsNoTracking().OrderBy(link => link.WorkOrderId).AsEnumerable().Select(link => (link.WorkOrderId, link.CostCenterCode!, link.Amount)));
+        var lines = fixture.Context.XeroLedgerLines.AsNoTracking().Where(candidate => candidate.XeroInvoiceId == "inv-lg").OrderBy(candidate => candidate.XeroLedgerLineId).ToList();
+        Assert.Equal(new[] { ("321", 720m), ("322", 2372m) }, lines.Select(line => (line.AccountCode!, line.Net)));
+        Assert.All(lines, line => Assert.Equal((WorkOrderBillFixture.Woodhouse, (string?)null, "Work orders WO-0055, WO-0056"), (line.ProjectId, line.CostCenterCode, line.Note)));
+        // Every line still adds up, and every order gets exactly its figure.
+        foreach (var line in lines)
+            Assert.Equal(line.Net, fixture.Context.XeroCostSplits.AsNoTracking().Where(split => split.XeroLedgerLineId == line.XeroLedgerLineId).Sum(split => split.Net));
+        Assert.Equal(1748m, fixture.Context.XeroLineWorkOrderLinks.AsNoTracking().Where(link => link.WorkOrderId == "wo-lg-55").Sum(link => link.Amount));
+        Assert.Equal(1344m, fixture.Context.XeroLineWorkOrderLinks.AsNoTracking().Where(link => link.WorkOrderId == "wo-lg-56").Sum(link => link.Amount));
+        Assert.All(fixture.Context.XeroLineWorkOrderLinks.AsNoTracking(), link => Assert.Equal(link.WorkOrderId == "wo-lg-55" ? "INT-PLS" : "INT-PLB", link.CostCenterCode));
         Assert.Equal(new[] { ("wo-lg-55", 1748m), ("wo-lg-56", 1344m) },
             fixture.Context.WorkOrderBillApprovals.AsNoTracking().OrderBy(row => row.WorkOrderId).AsEnumerable().Select(row => (row.WorkOrderId, row.BillNet)));
-        var allocated = (await fixture.ReadAllocatedAsync()).Single(candidate => candidate.XeroLedgerLineId == "inv-lg:0");
+        var allocated = (await fixture.ReadAllocatedAsync()).First(candidate => candidate.XeroInvoiceId == "inv-lg");
         Assert.Equal("WO-0055 + WO-0056", allocated.WorkOrderApproval?.OrdersLabel);
     }
 
@@ -117,7 +121,7 @@ public sealed class ApproveWorkOrderBillHandlerTests
         var fixture = await WorkOrderBillFixture.CreateAsync();
         await ReferenceAsync(fixture, "inv-1724", "WO-0026");
         var command = await fixture.ProposedApprovalAsync("inv-1724");
-        var foreign = command with { Lines = command.Lines.Select(line => line with { Shares = new[] { new WorkOrderBillShare("wo-wh-01", "INT-PLS", line.Shares[0].Net) } }).ToList() };
+        var foreign = command with { Slices = new[] { new WorkOrderBillOrderSlice("wo-wh-01", 10000m) } };
 
         var refusal = await Assert.ThrowsAsync<InvalidOperationException>(() => fixture.ApproveAsync(foreign));
 
@@ -142,41 +146,24 @@ public sealed class ApproveWorkOrderBillHandlerTests
     }
 
     [Fact]
-    public async Task ACodeTheOrderDoesNotCarryIsRefused()
+    public async Task FiguresThatDoNotAddUpToTheBillAreRefused()
     {
         var fixture = await WorkOrderBillFixture.CreateAsync();
         await ReferenceAsync(fixture, "inv-1724", "WO-0026");
         var command = await fixture.ProposedApprovalAsync("inv-1724");
-        var foreign = command with { Lines = command.Lines.Select(line => line with { Shares = new[] { new WorkOrderBillShare("wo-bf-26", "INT-PLS", line.Shares[0].Net) } }).ToList() };
-
-        var refusal = await Assert.ThrowsAsync<InvalidOperationException>(() => fixture.ApproveAsync(foreign));
-
-        Assert.Contains("carries no INT-PLS line", refusal.Message);
-        Assert.Empty(fixture.WriteBack.Calls);
-    }
-
-    [Fact]
-    public async Task SharesThatDoNotAddUpToTheLineAreRefused()
-    {
-        var fixture = await WorkOrderBillFixture.CreateAsync();
-        await ReferenceAsync(fixture, "inv-1724", "WO-0026");
-        var command = await fixture.ProposedApprovalAsync("inv-1724");
-        var short_ = command with { Lines = command.Lines.Select(line => line with { Shares = new[] { new WorkOrderBillShare("wo-bf-26", "ELE-STD", 1m) } }).ToList() };
+        var short_ = command with { Slices = new[] { new WorkOrderBillOrderSlice("wo-bf-26", 1m) } };
 
         var refusal = await Assert.ThrowsAsync<InvalidOperationException>(() => fixture.ApproveAsync(short_));
 
-        Assert.Contains("must add up to its net", refusal.Message);
+        Assert.Contains("must add up to the bill's net of £10,000.00", refusal.Message);
+        Assert.Empty(fixture.WriteBack.Calls);
     }
 
     [Fact]
     public async Task ABillWithNoMatchIsRefusedWithTheReason()
     {
         var fixture = await WorkOrderBillFixture.CreateAsync();
-        var command = new ApproveWorkOrderBill("inv-1724", new[]
-        {
-            new WorkOrderBillLineCoding("inv-1724:0", new[] { new WorkOrderBillShare("wo-bf-26", "ELE-STD", 6000m) }),
-            new WorkOrderBillLineCoding("inv-1724:1", new[] { new WorkOrderBillShare("wo-bf-26", "ELE-STD", 4000m) })
-        });
+        var command = new ApproveWorkOrderBill("inv-1724", new[] { new WorkOrderBillOrderSlice("wo-bf-26", 10000m) });
 
         var refusal = await Assert.ThrowsAsync<InvalidOperationException>(() => fixture.ApproveAsync(command));
 
@@ -184,14 +171,11 @@ public sealed class ApproveWorkOrderBillHandlerTests
     }
 
     [Fact]
-    public async Task ALineAlreadyAllocatedOrALineLeftOutIsRefused()
+    public async Task ALineAlreadyAllocatedIsRefused()
     {
         var fixture = await WorkOrderBillFixture.CreateAsync();
         await ReferenceAsync(fixture, "inv-1724", "WO-0026");
         var command = await fixture.ProposedApprovalAsync("inv-1724");
-
-        var partial = await Assert.ThrowsAsync<InvalidOperationException>(() => fixture.ApproveAsync(command with { Lines = command.Lines.Take(1).ToList() }));
-        Assert.Contains("every line of the bill at once", partial.Message);
 
         var stored = await fixture.Context.XeroLedgerLines.FirstAsync(line => line.XeroLedgerLineId == "inv-1724:1");
         stored.AllocationStatus = (int)XeroAllocationStatus.Allocated;

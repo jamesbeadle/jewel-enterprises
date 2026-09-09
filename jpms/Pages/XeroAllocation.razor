@@ -169,8 +169,7 @@
                                        Busy="isBusy"
                                        Approving="@(approvingInvoiceId == bill[0].XeroInvoiceId)"
                                        Error="@WorkOrderBillErrorFor(bill)"
-                                       CostCenterText="CostCenterText"
-                                       SharesFor="SharesFor"
+                                       Slices="SlicesFor(bill)"
                                        OnOpenInvoice="OpenInvoiceView"
                                        OnApprove="() => ApproveWorkOrderBillAsync(bill)"
                                        OnNotWorkOrderBill="() => MarkNotWorkOrderBill(bill)" />

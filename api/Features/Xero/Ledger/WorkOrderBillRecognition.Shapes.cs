@@ -4,14 +4,14 @@ namespace Jewel.JPMS.Api.Features.Xero.Ledger;
 
 public sealed partial class WorkOrderBillRecognition
 {
-    /// <summary>What recognition says about one line: its bill's match, shaped for this line
-    /// (the order and the proposed shares are per line), or the reason the bill stayed in the queue.</summary>
+    /// <summary>What recognition says about one line: its bill's match (the same on every line
+    /// of the bill), or the reason the bill stayed in the queue.</summary>
     public readonly record struct LineVerdict(WorkOrderBillMatch? Match, string? ExceptionReason);
 
-    /// <summary>The bill-level decision the line verdicts are cut from: which order each line
-    /// pays (null when the bill stays in the queue), and every open order of the supplier.</summary>
+    /// <summary>The bill-level decision: the bill's net as a slice per order (null when the bill
+    /// stays in the queue), and every open order of the supplier.</summary>
     private sealed record BillVerdict(
-        IReadOnlyDictionary<string, OpenOrder>? OrderByLineId,
+        IReadOnlyList<(OpenOrder Order, decimal Net)>? Slices,
         WorkOrderMatchRule Rule,
         string? Detail,
         string? ExceptionReason,

@@ -33,6 +33,7 @@
   ProgrammeDrafts.cs`, `api/Features/Site/Drafts`, `jpms/Features/Site/Programme/
   ProgrammeDraftReview`; spec `docs/Programme-Draft-From-Valuation-Spec.md`.
 
+
 ## Record tabs & the in-view toolbar (jpms)
 
 - **The request chain renders as document tabs, not chips.** `RecordTabBar` (Components) is on
@@ -169,19 +170,32 @@ finds drift.
   > 0 (decision 2026-09-08). Nothing is persisted for the match, so Sync and Re-check re-run it
   for free; the sweep (`AllocateSuggestedXeroLinesHandler`, page button and nightly worker
   alike) skips matched bills exactly as it skips labour lines.
-- **One bill may pay several of the supplier's open orders** (2026-09-09, the accountant's
-  ask). A line's coding is a list of `WorkOrderBillShare`s (order + cost code + net), never a
-  single order: the read proposes the split LINE BY LINE when the lines' descriptions name two
-  or more different orders (`WorkOrderMatchRule.ByLineReference`, `…Recognition.ByLine`; an
-  unnamed line goes with the bill's reference, else the supplier's only order, else the first
-  named order, and the detail says so); a bill whose reference names several orders reaches the
-  card on the first for a hand split, gated against the orders' COMBINED remaining value; and
-  the card's share editor can add a share on any of `WorkOrderBillMatch.SupplierOrders`. The
-  value gate is otherwise per order — each order's slice against its own remaining.
+- **One bill may pay several of the supplier's open orders, as a figure per order off the
+  BILL TOTAL — never off the Xero lines** (2026-09-09, the accountant's ask: the lines are the
+  supplier's own CIS labour / materials split and are left exactly as raised). The card is one
+  `WorkOrderBillOrderSlice` per open order (`WorkOrderBillMatch.ProposedSlices` seeds it, the
+  same on every line of the bill; `SupplierOrders` lists the orders) and checks the figures tie
+  to the bill's net. The read proposes them: the whole bill on the matched order; a slice per
+  order when the lines' descriptions name two or more different orders
+  (`WorkOrderMatchRule.ByLineReference`, `…Recognition.ByLine`; an unnamed line goes with the
+  bill's reference, else the supplier's only order, else the first named order, and the detail
+  says so); a bill whose reference names several orders reaches the card on the first, gated
+  against the orders' COMBINED remaining value. Otherwise the gate is per order. At approval
+  `WorkOrderBillSliceSpread` spreads each slice over the lines pro rata (penny-safe per line,
+  the drift settled on the largest line so every order is exact too) and each line's portion
+  over the order's cost codes — portal-side only. `WriteBackWorkOrderBillAsync` passes
+  `keepLinesWhole`: when every line lands on one centre the tracking is written as before; when
+  any line would need two tracking values the bill is approved in Xero with NO tracking at all
+  (`XeroWriteBackOutcome.Note` = `WorkOrderBillTracking.NotWrittenNote`, the line's `Note` gains
+  "no Xero tracking", the card says so before Approve via `WorkOrderBillTracking.CanBeWritten`).
+  The accountant's rule (2026-09-09 15:08): lines exactly as raised beats the tracking — the
+  order split is the portal's work-order links, Xero tracking is a convenience. Never split a
+  Xero line for a Work Order bill.
 - **Approve is per bill, undo is per bill, both FD/Director/Admin only** (`WorkOrderBillRoles`).
-  Approve re-runs the match server-side, refuses an order that is not the supplier's and a code
-  the share's order does not carry, stamps every line `Note = "Work order WO-0026"` (or "Work
-  orders WO-0055, WO-0056"), writes one `XeroLineWorkOrderLinks` row per share — order AND
+  Approve re-runs the match server-side, refuses an order that is not the supplier's, figures
+  that do not add up to the bill, and a slice over its order's remaining value, stamps every
+  line `Note = "Work order WO-0026"` (or "Work orders WO-0055, WO-0056"), writes one
+  `XeroLineWorkOrderLinks` row per line share — order AND
   `CostCenterCode` (nullable; hand links leave it null; the unique index is (line, order, code)
   since `AddXeroLineWorkOrderLinkCostCenterCode`) — and one `WorkOrderBillApprovals` row per
   order with that order's slice as `BillNet` (the audit's "which rule matched" and the undo's
@@ -198,8 +212,8 @@ finds drift.
   `CostCenterCode` is one slice on that centre outright. A cross-project split still clears.
   The WO Allocation tab's hand link (`SetXeroLineWorkOrderLinks`) still refuses centre splits.
 - On the page the tab is a sub-view of Unallocated like Labour (`workOrderBillsTab`, token
-  `WorkOrderBills` in the tab memory); the cards (`WorkOrderBillCard` + `…OrderFigures`,
-  `…LinesTable`, `…ShareEditor`) render instead of the table; `notWorkOrderBillInvoiceIds` is
+  `WorkOrderBills` in the tab memory); the cards (`WorkOrderBillCard` + `…OrderSlices` — the
+  figure per order — and `…LinesTable`, read-only) render instead of the table; `notWorkOrderBillInvoiceIds` is
   the this-visit escape to the plain queue; the Allocated row's Undo becomes "Undo bill"
   (`ConfirmDialog`, Danger) when `WorkOrderApproval` is set.
 

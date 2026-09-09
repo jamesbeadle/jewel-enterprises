@@ -68,3 +68,21 @@ Additive — before or with the deploy.
 - Build and run the tests (James).
 - Jeremy to confirm the Xero reconnect; until then the push returns Xero's 403 message.
 - Not done: nothing else from the morning is outstanding.
+
+## Addendum, 15:10 — Jeremy 14:53: figures off the bill total, not the Xero lines
+
+Branch `feature/work-order-bill-slices-per-order` (`07ee06f`). The order split and the CIS
+line split are different axes; the first version tied them together and its write-back would
+have replaced a split Xero line with one line per share — the recoding he refused.
+
+- `WorkOrderBillOrderSlice` (order + net) replaces the per-line shares in the contract;
+  `WorkOrderBillMatch.ProposedSlices` is bill-level, identical on every line; `ApproveWorkOrderBill`
+  takes `Slices`. `WorkOrderBillLineCoding` / `WorkOrderBillShare` are gone.
+- `WorkOrderBillSliceSpread` (api) spreads each slice over the lines pro rata, penny-safe per
+  line, drift settled on the largest line, then over the order's codes; `Allocate` unchanged.
+- `XeroWriteBackService.WriteBackInvoiceAsync(keepLinesWhole)`: a Work Order bill's Xero line is
+  stamped whole with the centre carrying most of it — never split.
+- jpms: `WorkOrderBillOrderSlices` (figure per open order, tally against the bill) replaces the
+  share editor and order figures; `WorkOrderBillLinesTable` is read-only.
+- Tests: fixture and approve/recognition tests moved to slices; `WorkOrderBillSliceSpreadTests`
+  pins Lees Green (720/2372 vs 1748/1344), the penny settlement and the code pro rata.

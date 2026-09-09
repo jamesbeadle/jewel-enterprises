@@ -1,18 +1,16 @@
 @namespace Jewel.JPMS.Features.Xero
 @using static Jewel.JPMS.Features.Xero.XeroLedgerDisplay
 
-@* The bill's lines exactly as Dext published them (account codes untouched — the 321/322 CIS
-   split is Xero's), each with the coding the portal proposes from its order: shares on the
-   order's codes, movable between them — and, since 2026-09-09, across the supplier's other
-   open orders — before approval. *@
+@* The bill's lines exactly as the supplier raised them — the 321/322 CIS labour / materials
+   split is theirs and Xero's, and nothing on this card changes it. The order figures above are
+   spread over these lines portal-side at approval; the lines themselves are only ever read. *@
 <div class="overflow-x-auto">
-    <table class="data-table">
+    <table class="data-table data-table-dense">
         <thead>
             <tr class="text-left eyebrow">
-                <th>Line</th>
-                <th class="w-32">Account</th>
+                <th>Xero line — left as raised</th>
+                <th class="w-40">Account</th>
                 <th class="w-32 text-right">Net</th>
-                <th class="w-[28rem]">Coding from the order</th>
             </tr>
         </thead>
         <tbody>
@@ -28,10 +26,6 @@
                     </td>
                     <td class="text-content-muted whitespace-nowrap">@(line.AccountCode ?? "—") @(line.AccountName ?? "")</td>
                     <td class="text-right text-content font-medium whitespace-nowrap">@Money(SignedNet(line))</td>
-                    <td>
-                        <WorkOrderBillShareEditor Shares="SharesFor(line)" LineNet="@line.Net" Orders="Orders"
-                                                  CostCenterText="CostCenterText" Disabled="@Busy" OnChanged="OnChanged" />
-                    </td>
                 </tr>
             }
         </tbody>
@@ -40,9 +34,4 @@
 
 @code {
     [Parameter, EditorRequired] public IReadOnlyList<XeroLedgerLine> Lines { get; set; } = default!;
-    [Parameter, EditorRequired] public IReadOnlyList<WorkOrderBillOrderOption> Orders { get; set; } = default!;
-    [Parameter, EditorRequired] public Func<XeroLedgerLine, List<WorkOrderBillShareDraft>> SharesFor { get; set; } = default!;
-    [Parameter, EditorRequired] public Func<string?, string> CostCenterText { get; set; } = default!;
-    [Parameter] public bool Busy { get; set; }
-    [Parameter] public EventCallback OnChanged { get; set; }
 }
