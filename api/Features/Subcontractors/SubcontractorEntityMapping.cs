@@ -12,7 +12,8 @@ internal static class SubcontractorEntityMapping
         IReadOnlyList<DirectoryXeroLink>? xeroLinks = null) =>
         new(entity.SubcontractorId, entity.CompanyName, trades, entity.ContactName, entity.ContactEmail, entity.ContactPhone, entity.CisStatus, entity.OnboardedAt,
             (DirectoryCategory)entity.Category, entity.MobileNumber, entity.Town, entity.County, entity.Website, entity.Pli, entity.PliExpiry,
-            entity.PaymentTermsDays, xeroLinked, entity.AddressLine, entity.Postcode, entity.IsProspect, xeroLinks);
+            entity.PaymentTermsDays, xeroLinked, entity.AddressLine, entity.Postcode, entity.IsProspect, xeroLinks,
+            entity.CisVerificationNumber, entity.CisVerifiedOn);
 
     public static Trade ToModel(this TradeEntity entity) => new(entity.TradeId, entity.Name);
 

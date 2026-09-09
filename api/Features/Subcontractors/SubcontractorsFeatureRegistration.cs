@@ -31,6 +31,10 @@ public static class SubcontractorsFeatureRegistration
         services.AddScoped<UpdateSubcontractorAuthorisation>();
         services.AddScoped<UpdateSubcontractorValidation>();
 
+        services.AddScoped<ICommandHandler<RecordCisVerification, Subcontractor>, RecordCisVerificationHandler>();
+        services.AddScoped<RecordCisVerificationAuthorisation>();
+        services.AddScoped<RecordCisVerificationValidation>();
+
         services.AddScoped<ICommandHandler<AddTrade, Trade>, AddTradeHandler>();
         services.AddScoped<AddTradeAuthorisation>();
         services.AddScoped<AddTradeValidation>();

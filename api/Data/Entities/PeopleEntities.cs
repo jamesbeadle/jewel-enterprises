@@ -9,7 +9,11 @@ public sealed class SubcontractorEntity
     [MaxLength(256)]     public string ContactName { get; set; } = "";
     [MaxLength(256)]     public string ContactEmail { get; set; } = "";
     [MaxLength(64)]      public string ContactPhone { get; set; } = "";
-    [MaxLength(32)]      public string CisStatus { get; set; } = "";
+    [MaxLength(64)]      public string CisStatus { get; set; } = "";
+    // The HMRC verification result behind CisStatus (2026-09-09): the number HMRC issued
+    // ("V1415495651") and the day it was verified. Written together by RecordCisVerification.
+    [MaxLength(32)]      public string CisVerificationNumber { get; set; } = "";
+    public DateOnly? CisVerifiedOn { get; set; }
     public DateTimeOffset OnboardedAt { get; set; }
 
     // Company-directory fields. Category drives filtering (0 = Subcontractor by default). The rest

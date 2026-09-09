@@ -63,9 +63,17 @@ public sealed record Subcontractor(
     // The Xero contacts this record is linked to (normally one; several only when Xero-imported
     // records were consolidated together). Null from callers that don't show the link — treat
     // through XeroLinks, which never answers null.
-    IReadOnlyList<DirectoryXeroLink>? XeroLinks = null)
+    IReadOnlyList<DirectoryXeroLink>? XeroLinks = null,
+    // The HMRC CIS verification result (2026-09-09): the verification number HMRC issued
+    // ("V1415495651") and the day it was verified. CisStatus above stays the short reading of the
+    // result ("Verified 20% standard"). All three are written together by RecordCisVerification.
+    string CisVerificationNumber = "",
+    DateOnly? CisVerifiedOn = null)
 {
     public IReadOnlyList<DirectoryXeroLink> XeroLinks { get; init; } = XeroLinks ?? Array.Empty<DirectoryXeroLink>();
+
+    public bool HasCisVerification =>
+        !string.IsNullOrWhiteSpace(CisStatus) || !string.IsNullOrWhiteSpace(CisVerificationNumber) || CisVerifiedOn is not null;
 
     // The letter-style address block for the purchase order's Sub/Vendor panel: street line(s),
     // town, county, postcode — blanks skipped.

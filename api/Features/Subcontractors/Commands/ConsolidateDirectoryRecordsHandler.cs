@@ -55,7 +55,7 @@ public sealed class ConsolidateDirectoryRecordsHandler
         master.ContactName = command.ContactName.Trim();
         master.ContactEmail = command.ContactEmail.Trim();
         master.ContactPhone = command.ContactPhone.Trim();
-        master.CisStatus = command.CisStatus.Trim();
+        CarryVerificationWithChosenStatus(master, merged, command.CisStatus.Trim());
         master.Category = (int)command.Category;
         master.MobileNumber = command.MobileNumber.Trim();
         master.Town = command.Town.Trim();
@@ -210,5 +210,18 @@ public sealed class ConsolidateDirectoryRecordsHandler
         foreach (var link in await context.SubcontractorXeroLinks
             .Where(link => mergedIds.Contains(link.SubcontractorId)).ToListAsync(ct))
             link.SubcontractorId = masterId;
+    }
+
+    // The HMRC verification number and date are one result with the status, so they follow
+    // whichever record's status was chosen in the dialog; a status none of the records held
+    // keeps the master's own number and date.
+    private static void CarryVerificationWithChosenStatus(SubcontractorEntity master, IReadOnlyList<SubcontractorEntity> merged, string chosenStatus)
+    {
+        var source = new[] { master }.Concat(merged)
+            .FirstOrDefault(record => string.Equals(record.CisStatus.Trim(), chosenStatus, StringComparison.OrdinalIgnoreCase));
+        master.CisStatus = chosenStatus;
+        if (source is null) return;
+        master.CisVerificationNumber = source.CisVerificationNumber;
+        master.CisVerifiedOn = source.CisVerifiedOn;
     }
 }

@@ -1,0 +1,73 @@
+@namespace Jewel.JPMS.Features.Directory
+@using Jewel.JPMS.Contracts.Subcontractors
+@inject ISubcontractorStore SubcontractorStore
+
+@*
+    The HMRC CIS verification result on a directory record (2026-09-09, the accountant's ask):
+    the status as read from HMRC, the verification number HMRC issued and the day it was
+    verified — held as three fields and shown beside the compliance documents, where the
+    accountant looks for a subcontractor's standing. "Record verification…" writes all three
+    together through RecordCisVerification.
+*@
+
+<Panel Title="CIS verification" Class="mb-6" BodyClass="p-5">
+    <HeaderActions>
+        @if (CanEdit)
+        {
+            <button type="button" class="btn-secondary" @onclick="OpenRecord">Record verification…</button>
+        }
+    </HeaderActions>
+    <ChildContent>
+        @if (!Subcontractor.HasCisVerification)
+        {
+            <EmptyState Message="No CIS verification recorded." />
+        }
+        else
+        {
+            <dl class="grid grid-cols-1 sm:grid-cols-3 gap-4 text-sm">
+                <div>
+                    <dt class="eyebrow">Status</dt>
+                    <dd class="text-content font-medium mt-0.5">@Dash(Subcontractor.CisStatus)</dd>
+                </div>
+                <div>
+                    <dt class="eyebrow">Verification number</dt>
+                    <dd class="text-content font-medium mt-0.5">@Dash(Subcontractor.CisVerificationNumber)</dd>
+                </div>
+                <div>
+                    <dt class="eyebrow">Verified on</dt>
+                    <dd class="text-content font-medium mt-0.5">@DateText(Subcontractor.CisVerifiedOn)</dd>
+                </div>
+            </dl>
+        }
+    </ChildContent>
+</Panel>
+
+<Modal IsOpen="recordOpen" Title="Record CIS verification" ShowFooter="true"
+       ConfirmLabel="@(recordBusy ? "Saving…" : "Save verification")" CancelLabel="Cancel"
+       ConfirmDisabled="@(recordBusy || string.IsNullOrWhiteSpace(status))"
+       OnCancel="CloseRecord" OnConfirm="SaveRecord" Class="max-w-lg w-full">
+    @if (recordError is not null)
+    {
+        <Notice Tone="Tone.Negative" Class="mb-3">@recordError</Notice>
+    }
+    <div class="space-y-3">
+        <FormField Label="Status" Required Hint="As HMRC reports it — e.g. Verified 20% standard, Gross payment, Unverified 30%.">
+            <input class="field w-full" list="cis-status-suggestions" maxlength="@CisVerificationLimits.StatusMaxLength"
+                   @bind="status" @bind:event="oninput" />
+        </FormField>
+        <datalist id="cis-status-suggestions">
+            @foreach (var suggestion in StatusSuggestions)
+            {
+                <option value="@suggestion" />
+            }
+        </datalist>
+        <div class="grid grid-cols-2 gap-3">
+            <FormField Label="Verification number" Hint="The number HMRC issued, e.g. V1415495651.">
+                <input class="field w-full" maxlength="@CisVerificationLimits.NumberMaxLength" @bind="verificationNumber" />
+            </FormField>
+            <FormField Label="Verified on">
+                <input type="date" class="field w-full" @bind="verifiedOn" />
+            </FormField>
+        </div>
+    </div>
+</Modal>

@@ -156,6 +156,12 @@ public sealed class HttpSubcontractorStore : ISubcontractorStore
         await readModel.RefreshAsync(CancellationToken.None);
     }
 
+    public async Task RecordCisVerificationAsync(RecordCisVerification command)
+    {
+        await commands.SendAsync(command, CancellationToken.None);
+        await readModel.RefreshAsync(CancellationToken.None);
+    }
+
     // ---- Xero import + consolidation ----
 
     public Task<XeroSuppliersSnapshot> FetchXeroSuppliersAsync(bool force = false) =>

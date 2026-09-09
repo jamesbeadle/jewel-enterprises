@@ -264,6 +264,10 @@
             </div>
         </div>
 
+        @* The HMRC CIS verification result sits with the compliance documents — the two together
+           are the record's standing to be paid. The page's gate is the API's edit gate. *@
+        <CisVerificationPanel Subcontractor="subcontractor" CanEdit="CanAccess" />
+
         <SubcontractorComplianceList SubcontractorId="@subcontractor.SubcontractorId" />
 
         <SubcontractorStatementModal IsOpen="@statementOpen"
