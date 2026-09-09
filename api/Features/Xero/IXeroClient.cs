@@ -171,6 +171,26 @@ public interface IXeroClient
         string invoiceId, bool isCreditNote, string fileName, CancellationToken ct);
 
     /// <summary>
+    /// Raises the AUTHORISED sales invoice a valuation invoice represents (2026-09-09). The tax
+    /// type is NEVER assumed: the contact's default sales tax type, else the tax type on their
+    /// most recent sales invoice, else omitted so Xero's account default applies — Note says
+    /// which. Refused with the fix when the project's Sites option is not in Xero.
+    /// </summary>
+    Task<XeroSalesInvoiceResult> CreateSalesInvoiceAsync(XeroSalesInvoiceRequest request, CancellationToken ct);
+
+    /// <summary>The client as Xero holds it (by ContactID, else exact name) and where its sales
+    /// tax type would come from — the preview's reading, no write.</summary>
+    Task<XeroSalesContactLookup> LookupSalesContactAsync(string? contactId, string contactName, CancellationToken ct);
+
+    /// <summary>
+    /// Attaches one file to an invoice (the certificate PDF on a raised sales invoice). Needs the
+    /// custom connection's accounting.attachments scope; returns the refusal as an error rather
+    /// than throwing — an invoice stands without its attachment.
+    /// </summary>
+    Task<XeroApprovalResult> AttachToInvoiceAsync(
+        string invoiceId, string fileName, string contentType, byte[] content, CancellationToken ct);
+
+    /// <summary>
     /// One site's monthly P&amp;L from Xero's profit &amp; loss report filtered by the named
     /// "Sites" tracking option: income, cost of sales and operating expenses per month, first
     /// of month, oldest first, months with no movement omitted. Needs the custom connection's

@@ -111,6 +111,34 @@ internal sealed class RecordingXero : IXeroClient
     }
     public Task<IReadOnlyList<XeroInvoiceAttachment>> ListAttachmentsAsync(string invoiceId, bool isCreditNote, CancellationToken ct) => throw new NotSupportedException();
     public Task<XeroAttachmentContent?> GetAttachmentAsync(string invoiceId, bool isCreditNote, string fileName, CancellationToken ct) => throw new NotSupportedException();
+    public XeroSalesInvoiceRequest? SalesInvoice { get; private set; }
+    public string RaisedSalesInvoiceId { get; set; } = "xero-sales-1";
+    public string RaisedSalesInvoiceNumber { get; set; } = "INV-0001";
+    public string? AttachmentRefusal { get; set; }
+    public List<string> Attached { get; } = new();
+
+    public Task<XeroSalesInvoiceResult> CreateSalesInvoiceAsync(XeroSalesInvoiceRequest request, CancellationToken ct)
+    {
+        Calls.Add("CreateSalesInvoice");
+        SalesInvoice = request;
+        return Task.FromResult(new XeroSalesInvoiceResult(
+            true, RaisedSalesInvoiceId, RaisedSalesInvoiceNumber, request.Net, request.Net * 0.2m, request.Net * 1.2m,
+            "Tax type OUTPUT2 from the contact's default.", null));
+    }
+
+    public Task<XeroSalesContactLookup> LookupSalesContactAsync(string? contactId, string contactName, CancellationToken ct)
+    {
+        Calls.Add($"LookupSalesContact:{contactName}");
+        return Task.FromResult(new XeroSalesContactLookup(contactId ?? "xero-contact-by-name", "Tax type OUTPUT2 from the contact's default."));
+    }
+
+    public Task<XeroApprovalResult> AttachToInvoiceAsync(string invoiceId, string fileName, string contentType, byte[] content, CancellationToken ct)
+    {
+        Calls.Add($"Attach:{invoiceId}:{fileName}");
+        if (AttachmentRefusal is not null) return Task.FromResult(XeroApprovalResult.Failed(AttachmentRefusal));
+        Attached.Add(fileName);
+        return Task.FromResult(XeroApprovalResult.Ok("AUTHORISED"));
+    }
     public Task<IReadOnlyList<XeroSitePnlMonthFigures>> GetSiteMonthlyPnlAsync(string siteOption, DateTime fromMonth, DateTime toMonth, CancellationToken ct) => throw new NotSupportedException();
     public Task<XeroSitePnlRangeFigures?> GetSiteRangePnlAsync(string siteOption, DateTime fromDate, DateTime toDate, CancellationToken ct) => throw new NotSupportedException();
 }

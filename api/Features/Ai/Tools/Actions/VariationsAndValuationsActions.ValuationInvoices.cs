@@ -4,6 +4,7 @@ using Jewel.JPMS.Api.Features.Lads.Commands;
 using Jewel.JPMS.Api.Features.Retention.Commands;
 using Jewel.JPMS.Api.Features.ValuationInvoices;
 using Jewel.JPMS.Api.Features.ValuationInvoices.Commands;
+using Jewel.JPMS.Api.Features.ValuationInvoices.XeroRaise;
 using Jewel.JPMS.Api.Features.Variations;
 using Jewel.JPMS.Api.Features.Variations.Commands;
 using Jewel.JPMS.Contracts.Boq;
@@ -109,12 +110,44 @@ internal sealed partial class VariationsAndValuationsActions
                 + "actually made. reason is required."),
 
         new AiAction(
+            Name: "raise_valuation_invoice_in_xero",
+            Area: "Valuation invoices",
+            Description: "WRITES TO XERO: raises the AUTHORISED sales invoice for a valuation invoice "
+                + "on the project's client — one line for the invoice's net on the sales account "
+                + "with the project's Sites tracking, VAT per Xero's own reading of the contact "
+                + "(never assumed), the payment certificate PDF attached when the register holds "
+                + "one — stamps Xero's invoice id and number on the valuation invoice, then ISSUES "
+                + "it (Approved → Issued, or Raised/Submitted → Issued on the skip path): certified "
+                + "to date moves. The certificate attachment is best effort — the invoice stands "
+                + "without it and the outcome says so (attachmentError). Refused when the invoice is "
+                + "already raised in Xero, is Rejected/Cancelled/Issued/Paid, or when the project has "
+                + "no Xero site mapping. An invoice in Xero cannot be un-raised from here — void it "
+                + "in Xero if it was wrong.",
+            CommandType: typeof(RaiseValuationInvoiceInXero),
+            ResultType: typeof(ValuationInvoiceXeroRaiseOutcome),
+            AuthorisationType: typeof(RaiseValuationInvoiceInXeroAuthorisation),
+            ValidationType: typeof(RaiseValuationInvoiceInXeroValidation),
+            VisibleTo: ValuationInvoiceRoles.AllowedToManageValuationInvoices,
+            EmailStamps: new[] { nameof(RaiseValuationInvoiceInXero.RaisedBy) },
+            NameStamps: Array.Empty<string>(),
+            RequiresConfirmation: true,
+            Notes: "Call preview_valuation_invoice_xero_raise first and show the user everything it "
+                + "returns — client, net, VAT reading, Sites option, due date, the certificate to be "
+                + "attached — and its blockers; raise only when canRaise is true and the user has said "
+                + "yes. Never invoice off Jewel's own valuation figure when a certificate says "
+                + "otherwise: the valuation invoice's amount must already be the certified figure "
+                + "(update_valuation_invoice fixes it first). issue_valuation_invoice is the route for "
+                + "an invoice someone raised in Xero by hand."),
+
+        new AiAction(
             Name: "issue_valuation_invoice",
             Area: "Valuation invoices",
-            Description: "ISSUES a valuation invoice — marks the client invoice as sent "
-                + "(Approved → Issued, or Raised → Issued for projects that skip the approval "
-                + "loop). A real financial action: from this point the amount counts toward "
-                + "Certified to date. The skip path freezes a report snapshot if none is linked.",
+            Description: "ISSUES a valuation invoice WITHOUT raising it in Xero — marks the client "
+                + "invoice as sent (Approved → Issued, or Raised → Issued for projects that skip the "
+                + "approval loop) for an invoice someone raised in Xero by hand. A real financial "
+                + "action: from this point the amount counts toward Certified to date. The skip path "
+                + "freezes a report snapshot if none is linked. To raise it in Xero from here as well, "
+                + "use raise_valuation_invoice_in_xero instead.",
             CommandType: typeof(IssueValuationInvoice),
             ResultType: typeof(ValuationInvoice),
             AuthorisationType: typeof(IssueValuationInvoiceAuthorisation),

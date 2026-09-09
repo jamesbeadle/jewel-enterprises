@@ -64,6 +64,10 @@ public sealed class XeroOptions
     /// <summary>Tracking category (as named in Xero) that identifies the cost code on an invoice line ("Cost Code" in the org; matching ignores case and spaces).</summary>
     public string CostCodeTrackingCategory { get; set; } = "Cost Code";
 
+    /// <summary>The revenue account a valuation invoice raised from the portal posts to (2026-09-09,
+    /// the accountant's ask) — "200 Sales" in Xero's UK chart unless Xero__SalesAccountCode says otherwise.</summary>
+    public string SalesAccountCode { get; set; } = "200";
+
     public bool IsConfigured =>
         !string.IsNullOrWhiteSpace(ClientId) && !string.IsNullOrWhiteSpace(ClientSecret);
 
@@ -102,6 +106,10 @@ public sealed class XeroOptions
         var costCodeCategory = section["CostCodeTrackingCategory"];
         if (!string.IsNullOrWhiteSpace(costCodeCategory))
             options.CostCodeTrackingCategory = costCodeCategory;
+
+        var salesAccountCode = section["SalesAccountCode"];
+        if (!string.IsNullOrWhiteSpace(salesAccountCode))
+            options.SalesAccountCode = salesAccountCode;
 
         return options;
     }

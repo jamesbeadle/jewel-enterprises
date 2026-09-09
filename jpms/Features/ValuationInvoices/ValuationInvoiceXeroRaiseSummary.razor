@@ -1,0 +1,36 @@
+@namespace Jewel.JPMS.Features.ValuationInvoices
+@using Jewel.JPMS.Contracts.ValuationInvoices
+
+@* What Xero will hold, one fact per row — the same reading the connector's preview returns. *@
+<dl class="grid grid-cols-[10rem_1fr] gap-x-4 gap-y-2 text-sm">
+    <dt class="text-content-subtle">Client</dt>
+    <dd class="text-content">
+        <span class="font-medium">@Preview.ContactName</span>
+        <span class="text-content-muted"> — @Preview.ContactStatus</span>
+    </dd>
+
+    <dt class="text-content-subtle">Net</dt>
+    <dd class="text-content font-medium">@Money(Preview.Net)</dd>
+
+    <dt class="text-content-subtle">VAT</dt>
+    <dd class="text-content-muted">@Preview.TaxNote</dd>
+
+    <dt class="text-content-subtle">Line</dt>
+    <dd class="text-content">@Preview.Description <span class="text-content-muted">· account @Preview.AccountCode</span></dd>
+
+    <dt class="text-content-subtle">Sites tracking</dt>
+    <dd class="@(Preview.SiteOption is null ? "text-negative" : "text-content")">@(Preview.SiteOption ?? "Not mapped")</dd>
+
+    <dt class="text-content-subtle">Dates</dt>
+    <dd class="text-content">
+        Invoice @DateText(Preview.Date)@(Preview.DueDate is { } due ? $", due {DateText(due)}" : "")
+        <span class="block text-content-muted">@Preview.DueDateNote</span>
+    </dd>
+
+    <dt class="text-content-subtle">Attachment</dt>
+    <dd class="@(Preview.CertificateFileName is null ? "text-content-muted" : "text-content")">@Preview.CertificateNote</dd>
+</dl>
+
+@code {
+    [Parameter, EditorRequired] public ValuationInvoiceXeroRaisePreview Preview { get; set; } = default!;
+}

@@ -216,9 +216,9 @@ public partial class ProjectValuation
             switch (StageFor(claim))
             {
                 case ClaimStage.InvoiceDraft:
-                    items.Add(new(Label: "Issue without approval",
-                        OnSelect: EventCallback.Factory.Create(this, IssueInvoiceAsync),
-                        Hint: "For clients with no formal approval loop — counts toward certified to date",
+                    items.Add(new(Label: "Issue without approval…",
+                        OnSelect: EventCallback.Factory.Create(this, OpenXeroRaise),
+                        Hint: "For clients with no formal approval loop — raise in Xero (or issue without) and count toward certified to date",
                         Disabled: busy, Group: 1));
                     break;
                 case ClaimStage.AwaitingApproval:
@@ -226,9 +226,9 @@ public partial class ProjectValuation
                         OnSelect: EventCallback.Factory.Create(this, OpenRejectInvoice),
                         Hint: "The client refused the claim — unlocks the invoice for amendment or cancellation",
                         Disabled: busy, Group: 1));
-                    items.Add(new(Label: "Issue without approval",
-                        OnSelect: EventCallback.Factory.Create(this, IssueInvoiceAsync),
-                        Hint: "For clients with no formal approval loop — counts toward certified to date",
+                    items.Add(new(Label: "Issue without approval…",
+                        OnSelect: EventCallback.Factory.Create(this, OpenXeroRaise),
+                        Hint: "For clients with no formal approval loop — raise in Xero (or issue without) and count toward certified to date",
                         Disabled: busy, Group: 1));
                     break;
                 case ClaimStage.AwaitingPayment:

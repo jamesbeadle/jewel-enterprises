@@ -1,3 +1,4 @@
+using Jewel.JPMS.Contracts.ValuationInvoices;
 
 namespace Jewel.JPMS.Services;
 
@@ -26,6 +27,11 @@ public interface IValuationInvoiceStore
     Task<ValuationInvoice> CancelAsync(string valuationInvoiceId, string? note = null, CancellationToken cancellationToken = default);
 
     Task<ValuationInvoice> IssueAsync(string valuationInvoiceId, CancellationToken cancellationToken = default);
+
+    /// <summary>The claim card's "Raise in Xero" (2026-09-09): what Xero would hold, then the raise
+    /// itself — the AUTHORISED sales invoice, the certificate attached, the invoice issued.</summary>
+    Task<ValuationInvoiceXeroRaisePreview> PreviewXeroRaiseAsync(string valuationInvoiceId, CancellationToken cancellationToken = default);
+    Task<ValuationInvoiceXeroRaiseOutcome> RaiseInXeroAsync(string valuationInvoiceId, CancellationToken cancellationToken = default);
     Task<ValuationInvoice> RecordPaymentAsync(string valuationInvoiceId, decimal amountPaid, CancellationToken cancellationToken = default);
     Task DeleteAsync(string valuationInvoiceId, CancellationToken cancellationToken = default);
 }

@@ -1,4 +1,5 @@
 @using static Jewel.JPMS.Features.Commercial.ValuationInvoiceDisplay
+@using Jewel.JPMS.Features.ValuationInvoices
 @inject IValuationInvoiceStore Invoices
 @inject SessionService Session
 
@@ -54,6 +55,10 @@
         {
             <p class="border-t border-line bg-negative/10 px-4 py-2 text-sm text-negative">@error</p>
         }
+        @if (xeroRaiseNote is not null)
+        {
+            <Notice Tone="Tone.Positive" Class="mx-4 my-2" Dismissible="true" OnDismiss="() => xeroRaiseNote = null">@xeroRaiseNote</Notice>
+        }
 
         @if (invoices.Count == 0)
         {
@@ -99,6 +104,10 @@
                                 <td class="text-right text-content whitespace-nowrap">@Money(invoice.Amount)</td>
                                 <td class="whitespace-nowrap">
                                     <Pill Tone="@invoice.Status.ToTone()" Title="@StatusTitle(invoice)">@StatusLabel(invoice.Status)</Pill>
+                                    @if (invoice.IsRaisedInXero)
+                                    {
+                                        <span class="ml-1 text-xs text-content-subtle" title="@($"Raised in Xero {DateText(invoice.XeroRaisedAt)} as {invoice.XeroInvoiceNumber}")">Xero @invoice.XeroInvoiceNumber</span>
+                                    }
                                 </td>
                                 <td class="text-right whitespace-nowrap">@(invoice.AmountPaid > 0 ? Money(invoice.AmountPaid) : "—")</td>
                                 <td class="whitespace-nowrap">
@@ -237,6 +246,8 @@
         }
     }
 </div>
+
+<ValuationInvoiceXeroRaiseModal @ref="xeroRaiseModal" OnIssued="OnIssuedFromModalAsync" />
 
 <Modal IsOpen="paymentInvoice is not null"
        Title="Record client payment"

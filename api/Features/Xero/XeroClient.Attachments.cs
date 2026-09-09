@@ -77,6 +77,29 @@ public sealed partial class XeroClient
         return new XeroAttachmentContent(content, contentType, attachment.FileName);
     }
 
+    public async Task<XeroApprovalResult> AttachToInvoiceAsync(
+        string invoiceId, string fileName, string contentType, byte[] content, CancellationToken ct)
+    {
+        if (!_options.IsConfigured) return XeroApprovalResult.Failed(NotConnected);
+        var token = await GetAccessTokenAsync(ct);
+        var url = $"{InvoicesUrl}/{invoiceId}/Attachments/{Uri.EscapeDataString(fileName)}";
+        using var request = new HttpRequestMessage(HttpMethod.Put, url) { Content = new ByteArrayContent(content) };
+        request.Content.Headers.ContentType = new MediaTypeHeaderValue(contentType);
+        request.Headers.Authorization = new AuthenticationHeaderValue("Bearer", token);
+        request.Headers.Accept.Add(new MediaTypeWithQualityHeaderValue("application/json"));
+        if (!string.IsNullOrWhiteSpace(_options.TenantId))
+            request.Headers.Add("xero-tenant-id", _options.TenantId);
+
+        using var response = await _http.SendAsync(request, ct);
+        if (response.IsSuccessStatusCode) return XeroApprovalResult.Ok("ATTACHED");
+        var body = await response.Content.ReadAsStringAsync(ct);
+        _logger.LogWarning("Xero attach call failed: {Status} {Body}.", (int)response.StatusCode, Truncate(body));
+        var reason = (int)response.StatusCode == 403
+            ? "the Xero custom connection needs the accounting.attachments scope ticked in the Xero developer portal"
+            : ExtractXeroErrors(body);
+        return XeroApprovalResult.Failed($"Xero rejected the attachment with HTTP {(int)response.StatusCode} — {reason}");
+    }
+
     /// <summary>
     /// Rebuilds the invoice's full line list for the update: untouched lines pass through
     /// as-is (keyed by LineItemID so Xero updates in place), single-centre lines get their

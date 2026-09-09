@@ -307,7 +307,8 @@ public sealed class AiConnectorTests
         {
             "record_cis_verification", "link_directory_record_to_xero_contact",
             "push_directory_contacts_to_xero", "send_work_order_po_email",
-            "approve_work_order_bill", "undo_work_order_bill_approval"
+            "approve_work_order_bill", "undo_work_order_bill_approval",
+            "raise_valuation_invoice_in_xero"
         })
         {
             Assert.Contains(name, names);
@@ -315,7 +316,7 @@ public sealed class AiConnectorTests
 
         var financeDirector = AiToolCatalogue.ForConnector(UserWith(Role.FinanceDirector)).Select(t => t.Name).ToList();
         var subcontractor = AiToolCatalogue.ForConnector(UserWith(Role.Subcontractor)).Select(t => t.Name).ToList();
-        foreach (var name in new[] { "list_compliance_register", "preview_xero_contact_push", "list_xero_ledger_lines", "read_source" })
+        foreach (var name in new[] { "list_compliance_register", "preview_xero_contact_push", "preview_valuation_invoice_xero_raise", "list_xero_ledger_lines", "read_source" })
         {
             Assert.Contains(name, financeDirector);
             Assert.DoesNotContain(name, subcontractor);
@@ -323,7 +324,7 @@ public sealed class AiConnectorTests
 
         // Approve writes tracking to Xero and approves the bill there; undo clears the tracking.
         // Both confirm-first, and the FD's button, never the site's.
-        foreach (var name in new[] { "approve_work_order_bill", "undo_work_order_bill_approval" })
+        foreach (var name in new[] { "approve_work_order_bill", "undo_work_order_bill_approval", "raise_valuation_invoice_in_xero" })
         {
             var action = AiActionRegistry.All.Single(a => a.Name == name);
             Assert.True(action.RequiresConfirmation, $"{name} must be confirm-first.");

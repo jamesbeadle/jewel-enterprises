@@ -1,3 +1,5 @@
+using Jewel.JPMS.Features.ValuationInvoices;
+
 namespace Jewel.JPMS.Components;
 
 public partial class ValuationInvoicesSection
@@ -67,19 +69,23 @@ public partial class ValuationInvoicesSection
         finally { busy = false; }
     }
 
-    private async Task IssueAsync(ValuationInvoice invoice)
+    // Issue is Raise in Xero (2026-09-09): the modal shows what Xero will hold and owns both moves
+    // — the raise, or issuing without Xero for an invoice raised there by hand.
+    private ValuationInvoiceXeroRaiseModal? xeroRaiseModal;
+    private string? xeroRaiseNote;
+
+    private void OpenXeroRaise(ValuationInvoice invoice)
     {
         if (busy) return;
         error = null;
-        try
-        {
-            busy = true;
-            await Invoices.IssueAsync(invoice.ValuationInvoiceId);
-            await ReloadAsync();
-            await OnCertifiedChanged.InvokeAsync();
-        }
-        catch { error = "Couldn't issue the invoice. Please try again."; }
-        finally { busy = false; }
+        xeroRaiseModal?.Open(invoice);
+    }
+
+    private async Task OnIssuedFromModalAsync(string note)
+    {
+        xeroRaiseNote = note;
+        await ReloadAsync();
+        await OnCertifiedChanged.InvokeAsync();
     }
 
     private async Task RecordPaymentAsync()

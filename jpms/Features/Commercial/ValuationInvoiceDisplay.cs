@@ -40,6 +40,7 @@ public static class ValuationInvoiceDisplay
         ValuationInvoiceEventType.PaymentRecorded => "Payment recorded",
         ValuationInvoiceEventType.Cancelled => "Cancelled",
         ValuationInvoiceEventType.ManualEntry => "Historic entry",
+        ValuationInvoiceEventType.RaisedInXero => "Raised in Xero",
         _ => type.ToString()
     };
 }
