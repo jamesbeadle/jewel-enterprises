@@ -1,6 +1,7 @@
 using Jewel.JPMS.Api.Features.Subcontractors.Commands;
 using Jewel.JPMS.Api.Features.Subcontractors.Queries;
 using Jewel.JPMS.Api.Features.Subcontractors.Storage;
+using Jewel.JPMS.Api.Features.Subcontractors.XeroContacts;
 using Jewel.JPMS.Contracts.Subcontractors;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
@@ -72,6 +73,11 @@ public static class SubcontractorsFeatureRegistration
         services.AddScoped<ICommandHandler<UnlinkDirectoryRecordFromXeroContact, Subcontractor>, UnlinkDirectoryRecordFromXeroContactHandler>();
         services.AddScoped<UnlinkDirectoryRecordFromXeroContactAuthorisation>();
         services.AddScoped<UnlinkDirectoryRecordFromXeroContactValidation>();
+
+        services.AddScoped<IQueryHandler<PreviewXeroContactPush, XeroContactPushPreview>, PreviewXeroContactPushHandler>();
+        services.AddScoped<ICommandHandler<PushDirectoryContactsToXeroContact, XeroContactPushOutcome>, PushDirectoryContactsToXeroContactHandler>();
+        services.AddScoped<PushDirectoryContactsToXeroContactAuthorisation>();
+        services.AddScoped<PushDirectoryContactsToXeroContactValidation>();
 
         services.AddScoped<ICommandHandler<ConsolidateDirectoryRecords, Subcontractor>, ConsolidateDirectoryRecordsHandler>();
         services.AddScoped<ConsolidateDirectoryRecordsAuthorisation>();

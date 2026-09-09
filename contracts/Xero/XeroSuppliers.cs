@@ -41,6 +41,9 @@ public sealed record XeroSuppliersSnapshot(
 /// Xero's own flags (set once a contact has had a bill / an invoice; a brand-new contact carries
 /// neither). <see cref="AlreadyImported"/> and <see cref="LinkedSubcontractorId"/> are stamped by
 /// the API from the directory's Xero links — the Xero client itself leaves them at their defaults.
+/// <see cref="PrimaryPersonName"/> is the contact's own FirstName + LastName — what Xero's UI
+/// calls the Primary person, held apart from <see cref="ContactPersons"/> (2026-09-09: Tom Dix
+/// was there all along, and the import never read it).
 /// </summary>
 public sealed record XeroSupplier(
     string ContactId,
@@ -58,7 +61,8 @@ public sealed record XeroSupplier(
     bool AlreadyImported = false,
     string? LinkedSubcontractorId = null,
     string? MatchingSubcontractorId = null,
-    string MatchingSubcontractorName = "");
+    string MatchingSubcontractorName = "",
+    string PrimaryPersonName = "");
 
 /// <summary>An additional person on a Xero contact (Xero's ContactPersons list).</summary>
 public sealed record XeroContactPerson(string Name, string EmailAddress);

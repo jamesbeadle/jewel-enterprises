@@ -56,6 +56,14 @@ public static class SubcontractorsRouteRegistration
             new CommandRoute("POST", "/api/subcontractors/{subcontractorId}/xero-link",
                 command => $"/api/subcontractors/{((LinkDirectoryRecordToXeroContact)command).SubcontractorId}/xero-link"));
 
+        queries.Register<PreviewXeroContactPush, XeroContactPushPreview>(
+            new QueryRoute("/api/subcontractors/{subcontractorId}/xero-contact-push",
+                query => $"/api/subcontractors/{((PreviewXeroContactPush)query).SubcontractorId}/xero-contact-push"));
+
+        commands.Register<PushDirectoryContactsToXeroContact, XeroContactPushOutcome>(
+            new CommandRoute("POST", "/api/subcontractors/{subcontractorId}/xero-contact-push",
+                command => $"/api/subcontractors/{((PushDirectoryContactsToXeroContact)command).SubcontractorId}/xero-contact-push"));
+
         commands.Register<UnlinkDirectoryRecordFromXeroContact, Subcontractor>(
             new CommandRoute("DELETE", "/api/subcontractors/{subcontractorId}/xero-link/{xeroContactId}",
                 command =>

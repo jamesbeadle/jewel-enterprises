@@ -5,11 +5,12 @@ namespace Jewel.JPMS.Api.Features.Xero.Ledger;
 
 public sealed partial class WorkOrderBillRecognition
 {
-    /// <summary>The match as one line carries it: the order's figures plus this line's proposed
-    /// shares across the order's cost codes.</summary>
-    private static WorkOrderBillMatch MatchFor(OpenOrder order, WorkOrderMatchRule rule, string detail, XeroLedgerLineEntity line) =>
+    /// <summary>The match as one line carries it: its order, the bill's rule, this line's
+    /// proposed shares across the order's cost codes, and every open order of the supplier.</summary>
+    private static WorkOrderBillMatch MatchFor(
+        OpenOrder order, WorkOrderMatchRule rule, string detail, XeroLedgerLineEntity line, IReadOnlyList<OpenOrder> supplierOrders) =>
         new(order.WorkOrderId, order.Reference, order.Title, order.ProjectId, rule, detail,
-            order.Value, order.InvoicedToDate, ProposedSplitsFor(order, line));
+            ProposedSharesFor(order, line), supplierOrders.Select(candidate => candidate.ToOption()).ToList());
 
     /// <summary>
     /// The line's net shared across the order's cost codes in proportion to the order's own
@@ -32,6 +33,8 @@ public sealed partial class WorkOrderBillRecognition
             .ToList();
     }
 
-    private static IReadOnlyList<XeroCostSplit> ProposedSplitsFor(OpenOrder order, XeroLedgerLineEntity line) =>
-        ProposedSplitsFor(order.CodeWeights, order.ProjectId, line.Net);
+    private static IReadOnlyList<WorkOrderBillShare> ProposedSharesFor(OpenOrder order, XeroLedgerLineEntity line) =>
+        ProposedSplitsFor(order.CodeWeights, order.ProjectId, line.Net)
+            .Select(split => new WorkOrderBillShare(order.WorkOrderId, split.CostCenterCode, split.Net))
+            .ToList();
 }

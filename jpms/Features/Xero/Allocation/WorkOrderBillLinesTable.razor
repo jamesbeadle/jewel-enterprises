@@ -2,8 +2,9 @@
 @using static Jewel.JPMS.Features.Xero.XeroLedgerDisplay
 
 @* The bill's lines exactly as Dext published them (account codes untouched — the 321/322 CIS
-   split is Xero's), each with the coding the portal proposes from the order: one code, or
-   shares across the order's codes that can be moved between them before approval. *@
+   split is Xero's), each with the coding the portal proposes from its order: shares on the
+   order's codes, movable between them — and, since 2026-09-09, across the supplier's other
+   open orders — before approval. *@
 <div class="overflow-x-auto">
     <table class="data-table">
         <thead>
@@ -11,13 +12,12 @@
                 <th>Line</th>
                 <th class="w-32">Account</th>
                 <th class="w-32 text-right">Net</th>
-                <th class="w-96">Coding from @Match.WorkOrderReference</th>
+                <th class="w-[28rem]">Coding from the order</th>
             </tr>
         </thead>
         <tbody>
             @foreach (var line in Lines)
             {
-                var shares = SharesFor(line);
                 <tr @key="line.XeroLedgerLineId">
                     <td class="max-w-0">
                         <span class="block truncate text-content" title="@line.Description">@(line.Description ?? "—")</span>
@@ -29,14 +29,8 @@
                     <td class="text-content-muted whitespace-nowrap">@(line.AccountCode ?? "—") @(line.AccountName ?? "")</td>
                     <td class="text-right text-content font-medium whitespace-nowrap">@Money(SignedNet(line))</td>
                     <td>
-                        @if (shares.Count == 1)
-                        {
-                            <span class="text-content">@CostCenterText(shares[0].Code)</span>
-                        }
-                        else
-                        {
-                            <WorkOrderBillShareEditor Shares="shares" LineNet="@line.Net" CostCenterText="CostCenterText" Disabled="@Busy" />
-                        }
+                        <WorkOrderBillShareEditor Shares="SharesFor(line)" LineNet="@line.Net" Orders="Orders"
+                                                  CostCenterText="CostCenterText" Disabled="@Busy" OnChanged="OnChanged" />
                     </td>
                 </tr>
             }
@@ -46,8 +40,9 @@
 
 @code {
     [Parameter, EditorRequired] public IReadOnlyList<XeroLedgerLine> Lines { get; set; } = default!;
-    [Parameter, EditorRequired] public WorkOrderBillMatch Match { get; set; } = default!;
-    [Parameter, EditorRequired] public Func<XeroLedgerLine, List<XeroSplitDraft>> SharesFor { get; set; } = default!;
+    [Parameter, EditorRequired] public IReadOnlyList<WorkOrderBillOrderOption> Orders { get; set; } = default!;
+    [Parameter, EditorRequired] public Func<XeroLedgerLine, List<WorkOrderBillShareDraft>> SharesFor { get; set; } = default!;
     [Parameter, EditorRequired] public Func<string?, string> CostCenterText { get; set; } = default!;
     [Parameter] public bool Busy { get; set; }
+    [Parameter] public EventCallback OnChanged { get; set; }
 }

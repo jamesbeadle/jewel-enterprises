@@ -73,7 +73,7 @@ public sealed class ApproveWorkOrderBillHandlerTests
         WorkOrderBillFixture.AddBill(fixture.Context, "inv-dry", "77", "Drywall Co Ltd", ("321", 1000m));
         await fixture.Context.SaveChangesAsync();
         var command = await fixture.ProposedApprovalAsync("inv-dry");
-        var edited = command with { Lines = new[] { new WorkOrderBillLineCoding("inv-dry:0", new[] { new XeroCostSplit("INT-PLS", 700m), new XeroCostSplit("INT-PLB", 300m) }) } };
+        var edited = command with { Lines = new[] { new WorkOrderBillLineCoding("inv-dry:0", new[] { new WorkOrderBillShare("wo-wh-01", "INT-PLS", 700m), new WorkOrderBillShare("wo-wh-01", "INT-PLB", 300m) }) } };
 
         await fixture.ApproveAsync(edited);
 
@@ -81,7 +81,64 @@ public sealed class ApproveWorkOrderBillHandlerTests
         Assert.Equal((WorkOrderBillFixture.Woodhouse, (string?)null), (line.ProjectId, line.CostCenterCode));
         Assert.Equal(new[] { ("INT-PLB", 300m), ("INT-PLS", 700m) },
             fixture.Context.XeroCostSplits.AsNoTracking().OrderBy(split => split.CostCenterCode).AsEnumerable().Select(split => (split.CostCenterCode, split.Net)));
-        Assert.Equal(1000m, Assert.Single(fixture.Context.XeroLineWorkOrderLinks).Amount);
+        Assert.Equal(new[] { ("INT-PLB", 300m), ("INT-PLS", 700m) },
+            fixture.Context.XeroLineWorkOrderLinks.AsNoTracking().OrderBy(link => link.CostCenterCode).AsEnumerable().Select(link => (link.CostCenterCode!, link.Amount)));
+    }
+
+    [Fact]
+    public async Task TheAccountantsSecondCase_OneBillSplitAcrossTwoOrders_LinkedAndApprovedPerOrder()
+    {
+        // Sussex Tiling Lees Green-001 (2026-09-09): £1,748 to WO-0055 and £1,344 to WO-0056, one bill.
+        var fixture = await WorkOrderBillFixture.CreateAsync();
+        WorkOrderBillFixture.AddOrder(fixture.Context, "wo-lg-55", WorkOrderBillFixture.Woodhouse, 55, "sub-dry", 1748m, ("INT-PLS", 1748m));
+        WorkOrderBillFixture.AddOrder(fixture.Context, "wo-lg-56", WorkOrderBillFixture.Woodhouse, 56, "sub-dry", 2000m, ("INT-PLB", 2000m));
+        WorkOrderBillFixture.AddBill(fixture.Context, "inv-lg", "Lees Green-001", "Drywall Co Ltd", ("321", 3092m));
+        await fixture.Context.SaveChangesAsync();
+        await ReferenceAsync(fixture, "inv-lg", "WO-0055 / WO-0056");
+        var proposed = await fixture.ProposedApprovalAsync("inv-lg");
+        var split = proposed with { Lines = new[] { new WorkOrderBillLineCoding("inv-lg:0", new[] { new WorkOrderBillShare("wo-lg-55", "INT-PLS", 1748m), new WorkOrderBillShare("wo-lg-56", "INT-PLB", 1344m) }) } };
+
+        var outcome = await fixture.ApproveAsync(split);
+
+        Assert.Equal(new[] { "WO-0055", "WO-0056" }, outcome.WorkOrderReferences);
+        var line = fixture.Context.XeroLedgerLines.AsNoTracking().Single(candidate => candidate.XeroLedgerLineId == "inv-lg:0");
+        Assert.Equal((WorkOrderBillFixture.Woodhouse, (string?)null, "Work orders WO-0055, WO-0056"), (line.ProjectId, line.CostCenterCode, line.Note));
+        Assert.Equal(new[] { ("wo-lg-55", "INT-PLS", 1748m), ("wo-lg-56", "INT-PLB", 1344m) },
+            fixture.Context.XeroLineWorkOrderLinks.AsNoTracking().OrderBy(link => link.WorkOrderId).AsEnumerable().Select(link => (link.WorkOrderId, link.CostCenterCode!, link.Amount)));
+        Assert.Equal(new[] { ("wo-lg-55", 1748m), ("wo-lg-56", 1344m) },
+            fixture.Context.WorkOrderBillApprovals.AsNoTracking().OrderBy(row => row.WorkOrderId).AsEnumerable().Select(row => (row.WorkOrderId, row.BillNet)));
+        var allocated = (await fixture.ReadAllocatedAsync()).Single(candidate => candidate.XeroLedgerLineId == "inv-lg:0");
+        Assert.Equal("WO-0055 + WO-0056", allocated.WorkOrderApproval?.OrdersLabel);
+    }
+
+    [Fact]
+    public async Task AShareOnAnOrderThatIsNotTheSuppliersIsRefused()
+    {
+        var fixture = await WorkOrderBillFixture.CreateAsync();
+        await ReferenceAsync(fixture, "inv-1724", "WO-0026");
+        var command = await fixture.ProposedApprovalAsync("inv-1724");
+        var foreign = command with { Lines = command.Lines.Select(line => line with { Shares = new[] { new WorkOrderBillShare("wo-wh-01", "INT-PLS", line.Shares[0].Net) } }).ToList() };
+
+        var refusal = await Assert.ThrowsAsync<InvalidOperationException>(() => fixture.ApproveAsync(foreign));
+
+        Assert.Contains("not an open order of this supplier", refusal.Message);
+    }
+
+    [Fact]
+    public async Task AShareThatTakesItsOrderOverValueIsRefused()
+    {
+        var fixture = await WorkOrderBillFixture.CreateAsync();
+        await ReferenceAsync(fixture, "inv-1725", "WO-0001");
+        await SiteAsync(fixture, "inv-1725", "Ravenswood Ave");
+        var command = await fixture.ProposedApprovalAsync("inv-1725");
+        // Ravenswood's WO-0001 is £14,940; £10,000 invoiced since the card was drawn leaves
+        // £4,940, and the £5,976 bill no longer fits.
+        fixture.Context.XeroLineWorkOrderLinks.Add(new XeroLineWorkOrderLinkEntity { XeroLineWorkOrderLinkId = "L1", XeroLedgerLineId = "old", WorkOrderId = "wo-ra-01", ProjectId = WorkOrderBillFixture.Ravenswood, Amount = 10000m });
+        await fixture.Context.SaveChangesAsync();
+
+        var refusal = await Assert.ThrowsAsync<InvalidOperationException>(() => fixture.ApproveAsync(command));
+
+        Assert.Contains("over its value", refusal.Message);
     }
 
     [Fact]
@@ -90,7 +147,7 @@ public sealed class ApproveWorkOrderBillHandlerTests
         var fixture = await WorkOrderBillFixture.CreateAsync();
         await ReferenceAsync(fixture, "inv-1724", "WO-0026");
         var command = await fixture.ProposedApprovalAsync("inv-1724");
-        var foreign = command with { Lines = command.Lines.Select(line => line with { Splits = new[] { new XeroCostSplit("INT-PLS", line.Splits[0].Net) } }).ToList() };
+        var foreign = command with { Lines = command.Lines.Select(line => line with { Shares = new[] { new WorkOrderBillShare("wo-bf-26", "INT-PLS", line.Shares[0].Net) } }).ToList() };
 
         var refusal = await Assert.ThrowsAsync<InvalidOperationException>(() => fixture.ApproveAsync(foreign));
 
@@ -104,7 +161,7 @@ public sealed class ApproveWorkOrderBillHandlerTests
         var fixture = await WorkOrderBillFixture.CreateAsync();
         await ReferenceAsync(fixture, "inv-1724", "WO-0026");
         var command = await fixture.ProposedApprovalAsync("inv-1724");
-        var short_ = command with { Lines = command.Lines.Select(line => line with { Splits = new[] { new XeroCostSplit("ELE-STD", 1m) } }).ToList() };
+        var short_ = command with { Lines = command.Lines.Select(line => line with { Shares = new[] { new WorkOrderBillShare("wo-bf-26", "ELE-STD", 1m) } }).ToList() };
 
         var refusal = await Assert.ThrowsAsync<InvalidOperationException>(() => fixture.ApproveAsync(short_));
 
@@ -112,25 +169,13 @@ public sealed class ApproveWorkOrderBillHandlerTests
     }
 
     [Fact]
-    public async Task AnOrderTheRuleWouldNotGiveTheBillIsRefused()
-    {
-        var fixture = await WorkOrderBillFixture.CreateAsync();
-        await ReferenceAsync(fixture, "inv-1724", "WO-0026");
-        var command = await fixture.ProposedApprovalAsync("inv-1724");
-
-        var refusal = await Assert.ThrowsAsync<InvalidOperationException>(() => fixture.ApproveAsync(command with { WorkOrderId = "wo-ra-01" }));
-
-        Assert.Contains("now matches WO-0026", refusal.Message);
-    }
-
-    [Fact]
     public async Task ABillWithNoMatchIsRefusedWithTheReason()
     {
         var fixture = await WorkOrderBillFixture.CreateAsync();
-        var command = new ApproveWorkOrderBill("inv-1724", "wo-bf-26", new[]
+        var command = new ApproveWorkOrderBill("inv-1724", new[]
         {
-            new WorkOrderBillLineCoding("inv-1724:0", new[] { new XeroCostSplit("ELE-STD", 6000m) }),
-            new WorkOrderBillLineCoding("inv-1724:1", new[] { new XeroCostSplit("ELE-STD", 4000m) })
+            new WorkOrderBillLineCoding("inv-1724:0", new[] { new WorkOrderBillShare("wo-bf-26", "ELE-STD", 6000m) }),
+            new WorkOrderBillLineCoding("inv-1724:1", new[] { new WorkOrderBillShare("wo-bf-26", "ELE-STD", 4000m) })
         });
 
         var refusal = await Assert.ThrowsAsync<InvalidOperationException>(() => fixture.ApproveAsync(command));

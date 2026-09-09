@@ -15,53 +15,114 @@ public sealed partial class WorkOrderBillRecognition
         var orders = OrdersFor(bill.ContactName);
         if (orders is null) return null;
         if (isLabour)
-            return Stays("The supplier is on the labour registry — the bill settles through the Labour tab, not a work order.");
+            return Stays("The supplier is on the labour registry — the bill settles through the Labour tab, not a work order.", orders);
 
-        var numbers = WorkOrderBillReference.NumbersOn(
-            bill.Reference, billLines.Select(line => line.Description), bill.InvoiceNumber);
-        var chosen = numbers.Count > 0
-            ? ChooseByReference(orders, numbers, hintedProjectId)
-            : ChooseBySupplier(orders, hintedProjectId);
-        if (chosen.Order is null) return Stays(chosen.Reason!);
+        var assignment = ChooseByLine(orders, billLines, hintedProjectId) ?? ChooseForBill(orders, billLines, hintedProjectId);
+        if (assignment.OrderByLineId is null) return Stays(assignment.Reason!, orders);
 
-        var billNet = billLines.Sum(SignedNet);
-        if (billNet > chosen.Order.Remaining)
-            return Stays($"The bill would take {chosen.Order.Reference} over its value by "
-                         + $"{(billNet - chosen.Order.Remaining).ToString("C2", Gbp)} — "
-                         + $"{chosen.Order.Remaining.ToString("C2", Gbp)} of {chosen.Order.Value.ToString("C2", Gbp)} is left to invoice.");
+        var overValue = assignment.Pool is null
+            ? FirstOrderOverValue(assignment.OrderByLineId, billLines)
+            : PoolOverValue(assignment.Pool, billLines);
+        if (overValue is not null) return Stays(overValue, orders);
 
-        return new BillVerdict(chosen.Order, chosen.Rule, chosen.Detail, null);
+        return new BillVerdict(assignment.OrderByLineId, assignment.Rule, assignment.Detail, null, orders);
     }
 
-    private static BillVerdict Stays(string reason) => new(null, default, null, reason);
+    private static BillVerdict Stays(string reason, IReadOnlyList<OpenOrder> orders) => new(null, default, null, reason, orders);
 
     private static decimal SignedNet(XeroLedgerLineEntity line) =>
         line.Type == "ACCPAYCREDIT" ? -line.Net : line.Net;
+
+    /// <summary>Each order's slice of the bill must fit inside what is left to invoice on it.</summary>
+    private static string? FirstOrderOverValue(IReadOnlyDictionary<string, OpenOrder> orderByLineId, IReadOnlyList<XeroLedgerLineEntity> billLines)
+    {
+        foreach (var slice in billLines.GroupBy(line => orderByLineId[line.XeroLedgerLineId]))
+        {
+            var order = slice.Key;
+            var sliceNet = slice.Sum(SignedNet);
+            if (sliceNet <= order.Remaining) continue;
+            return $"The bill would take {order.Reference} over its value by "
+                 + $"{(sliceNet - order.Remaining).ToString("C2", Gbp)} — "
+                 + $"{order.Remaining.ToString("C2", Gbp)} of {order.Value.ToString("C2", Gbp)} is left to invoice.";
+        }
+        return null;
+    }
+
+    /// <summary>A bill going to the card to be split across several orders must fit inside what they have left between them.</summary>
+    private static string? PoolOverValue(IReadOnlyList<OpenOrder> pool, IReadOnlyList<XeroLedgerLineEntity> billLines)
+    {
+        var billNet = billLines.Sum(SignedNet);
+        var remaining = pool.Sum(order => order.Remaining);
+        if (billNet <= remaining) return null;
+        return $"The bill would take {string.Join(" and ", pool.Select(order => order.Reference))} over their value by "
+             + $"{(billNet - remaining).ToString("C2", Gbp)} — {remaining.ToString("C2", Gbp)} is left to invoice between them.";
+    }
+
+    /// <summary>The bill as a whole names one order (or none): every line pays the same order.</summary>
+    private static Assignment ChooseForBill(List<OpenOrder> orders, IReadOnlyList<XeroLedgerLineEntity> billLines, string? hintedProjectId)
+    {
+        var bill = billLines[0];
+        var numbers = WorkOrderBillReference.NumbersOn(bill.Reference, billLines.Select(line => line.Description), bill.InvoiceNumber);
+        if (numbers.Count > 1) return ChooseFirstOfSeveral(orders, numbers, hintedProjectId, billLines);
+        var chosen = numbers.Count == 0
+            ? ChooseBySupplier(orders, hintedProjectId)
+            : ChooseByReference(orders, numbers[0], hintedProjectId);
+        if (chosen.Order is null) return Assignment.Refused(chosen.Reason!);
+        return new Assignment(EveryLineOn(chosen.Order, billLines), chosen.Rule, chosen.Detail, null);
+    }
+
+    private static IReadOnlyDictionary<string, OpenOrder> EveryLineOn(OpenOrder order, IReadOnlyList<XeroLedgerLineEntity> billLines) =>
+        billLines.ToDictionary(line => line.XeroLedgerLineId, _ => order, StringComparer.OrdinalIgnoreCase);
 
     /// <summary>A number on the bill names the order — supplier + number, since numbers are per
     /// project; a number that fits orders on two projects falls back to the bill's site — the
     /// project set on it in the portal, else its Xero Sites tracking.</summary>
     private static (OpenOrder? Order, WorkOrderMatchRule Rule, string? Detail, string? Reason) ChooseByReference(
-        List<OpenOrder> orders, IReadOnlyList<int> numbers, string? hintedProjectId)
+        List<OpenOrder> orders, int number, string? hintedProjectId)
     {
-        if (numbers.Count > 1)
-            return (null, default, null, $"The bill names more than one work order ({string.Join(", ", numbers.Select(number => $"WO-{number:0000}"))}) — link it by hand.");
+        var fit = FitFor(orders, number, hintedProjectId, out var reason);
+        if (fit is null) return (null, default, null, reason);
+        return (fit, WorkOrderMatchRule.ByReference, $"Matched by the reference {fit.Reference} on the bill.", null);
+    }
 
-        var number = numbers[0];
+    /// <summary>The bill names several of the supplier's open orders: it reaches the card on the
+    /// first one named, for its lines to be split across them by hand (2026-09-09).</summary>
+    private static Assignment ChooseFirstOfSeveral(
+        List<OpenOrder> orders, IReadOnlyList<int> numbers, string? hintedProjectId, IReadOnlyList<XeroLedgerLineEntity> billLines)
+    {
+        var fits = new List<OpenOrder>();
+        foreach (var number in numbers)
+        {
+            var fit = FitFor(orders, number, hintedProjectId, out var reason);
+            if (fit is null) return Assignment.Refused(reason!);
+            fits.Add(fit);
+        }
+        var named = string.Join(" and ", fits.Select(fit => fit.Reference));
+        return new Assignment(EveryLineOn(fits[0], billLines), WorkOrderMatchRule.ByReference,
+            $"The bill names {named} — split its lines across them on the card.", null, fits);
+    }
+
+    /// <summary>The one open order a number means for this supplier, or null with the reason.</summary>
+    private static OpenOrder? FitFor(List<OpenOrder> orders, int number, string? hintedProjectId, out string? reason)
+    {
+        reason = null;
         var fits = orders.Where(order => order.Number == number).ToList();
         if (fits.Count == 0)
-            return (null, default, null, $"The bill references WO-{number:0000}, but the supplier has no open order with that number.");
+        {
+            reason = $"The bill references WO-{number:0000}, but the supplier has no open order with that number.";
+            return null;
+        }
         if (fits.Count > 1 && hintedProjectId is not null)
             fits = fits.Where(order => order.ProjectId.Equals(hintedProjectId, StringComparison.OrdinalIgnoreCase)).ToList();
-        if (fits.Count != 1)
-            return (null, default, null, $"WO-{number:0000} is open for this supplier on more than one project "
-                                         + $"({string.Join(", ", orders.Where(order => order.Number == number).Select(order => order.ProjectName))}) "
-                                         + "and the bill carries no site — set the project on the bill and re-check.");
-        return (fits[0], WorkOrderMatchRule.ByReference, $"Matched by the reference {fits[0].Reference} on the bill.", null);
+        if (fits.Count == 1) return fits[0];
+        reason = $"WO-{number:0000} is open for this supplier on more than one project "
+               + $"({string.Join(", ", orders.Where(order => order.Number == number).Select(order => order.ProjectName))}) "
+               + "and the bill carries no site — set the project on the bill and re-check.";
+        return null;
     }
 
     /// <summary>No number on the bill: only a supplier with exactly one open order matches — on
-    /// the project the bill's own Sites tracking names when it names one, else anywhere.</summary>
+    /// the project the bill's site names when it names one, else anywhere.</summary>
     private static (OpenOrder? Order, WorkOrderMatchRule Rule, string? Detail, string? Reason) ChooseBySupplier(
         List<OpenOrder> orders, string? hintedProjectId)
     {

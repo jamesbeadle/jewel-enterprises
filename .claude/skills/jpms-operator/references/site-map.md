@@ -41,6 +41,12 @@ Buckets, Disputed, Ignored; per-row Allocate / Set / Split… / Allocate to
 bucket / Ignore / Dispute…, bulk bars, "Allocate all matched" banner, Sync from
 Xero, Re-check matches, search, Excel export. Allocating every line of a draft
 bill confirms its Sites/Cost Code tracking to Xero **and approves the bill**.
+Work Order bills tab: bills from suppliers with an open work order, one card
+per bill pre-filled from the order; a bill naming two orders is proposed line
+by line, and any line can be split across the supplier's open orders on the
+card; one Approve allocates, links each share to its order, writes tracking to
+Xero and approves the bill there. Undo (Allocated tab, "Undo bill") reverses
+the whole bill; Xero never un-approves.
 
 ### Valuation Report — `/projects/{project}/valuation`
 The picked project's LIVE valuation report — the system's flagship output,
@@ -253,7 +259,10 @@ Compliance register tab row leads to the register. Clients/Architects render
 read-only with links to `/clients` and `/architects` where creation/editing
 lives. Entry page: company and contacts, Xero-link badge (name should exactly
 match the Xero supplier so invoices line up on WO Allocation), trades against
-the curated list, other contacts beyond the primary, "Invite to portal"
+the curated list, other contacts beyond the primary, "Link to Xero contact…"
+(optionally pulling Xero's details onto the record) and, once linked, "Push
+contacts to Xero…" (Xero's people now beside after; confirm before sending;
+an empty portal side never clears Xero's), "Invite to portal"
 (scoped login), CIS verification panel (status, HMRC verification number,
 verified-on date — "Record verification…" writes the three together), the
 compliance document list, statement of account (every WO with invoices

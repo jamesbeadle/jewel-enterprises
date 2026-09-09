@@ -1,30 +1,81 @@
 @namespace Jewel.JPMS.Features.Xero
+@using static Jewel.JPMS.Features.Xero.XeroLedgerDisplay
 
-@* A multi-code order's line: its net shared across the order's own codes. The codes are the
-   order's and fixed; only the amounts move, and the tally says when they add up. *@
+@* One bill line's shares: each on one of the supplier's open orders and one of that order's
+   cost codes, the amounts adding up to the line's net. A share can be moved to another code
+   of its order, a new share added on any open order of the supplier (the split across orders,
+   2026-09-09), and a share removed while one remains. The tally says when they add up. *@
 <div class="space-y-1.5">
     @foreach (var share in Shares)
     {
+        var order = OrderFor(share);
         <div class="flex items-center gap-2">
-            <span class="grow min-w-0 truncate text-content" title="@CostCenterText(share.Code)">@CostCenterText(share.Code)</span>
+            <span class="w-20 shrink-0 text-content whitespace-nowrap" title="@(order?.Title)">@(order?.Reference ?? "—")</span>
+            @if (order is { CostCodes.Count: > 1 })
+            {
+                <select class="field grow min-w-0" disabled="@Disabled" value="@share.Code" @onchange="e => share.Code = e.Value?.ToString() ?? share.Code">
+                    @foreach (var code in order.CostCodes)
+                    {
+                        <option value="@code">@CostCenterText(code)</option>
+                    }
+                </select>
+            }
+            else
+            {
+                <span class="grow min-w-0 truncate text-content" title="@CostCenterText(share.Code)">@CostCenterText(share.Code)</span>
+            }
             <input class="field w-32 text-right" type="number" step="0.01" disabled="@Disabled"
                    value="@share.Amount" @onchange="e => share.Amount = ParseAmount(e.Value)" />
+            <button type="button" class="btn-icon" title="Remove this share" disabled="@(Disabled || Shares.Count == 1)"
+                    @onclick="() => Shares.Remove(share)">×</button>
         </div>
     }
-    <p class="text-xs @(IsBalanced ? "text-content-subtle" : "text-negative")">
-        @Money(Total) of @Money(LineNet)@(IsBalanced ? "" : $" — {Money(LineNet - Total)} to place")
-    </p>
+    <div class="flex items-center justify-between gap-2">
+        <p class="text-xs @(IsBalanced ? "text-content-subtle" : "text-negative")">
+            @Money(Total) of @Money(LineNet)@(IsBalanced ? "" : $" — {Money(LineNet - Total)} to place")
+        </p>
+        @if (Orders.Count > 1 || Orders.Any(order => order.CostCodes.Count > 1))
+        {
+            <select @key="Shares.Count" class="field text-xs" disabled="@Disabled" value="" @onchange="e => AddShareOn(e.Value?.ToString())"
+                    title="Put part of this line on another of the supplier's open orders">
+                <option value="">Add a share on…</option>
+                @foreach (var order in Orders)
+                {
+                    <option value="@order.WorkOrderId">@order.Reference @order.Title · @order.ProjectName</option>
+                }
+            </select>
+        }
+    </div>
 </div>
 
 @code {
     /// <summary>Page-owned: edited in place so the card's Approve reads the same list.</summary>
-    [Parameter, EditorRequired] public List<XeroSplitDraft> Shares { get; set; } = default!;
+    [Parameter, EditorRequired] public List<WorkOrderBillShareDraft> Shares { get; set; } = default!;
     [Parameter] public decimal LineNet { get; set; }
+    /// <summary>Every open order of the bill's supplier, as the read found them.</summary>
+    [Parameter, EditorRequired] public IReadOnlyList<WorkOrderBillOrderOption> Orders { get; set; } = default!;
     [Parameter, EditorRequired] public Func<string?, string> CostCenterText { get; set; } = default!;
     [Parameter] public bool Disabled { get; set; }
+    [Parameter] public EventCallback OnChanged { get; set; }
 
     private decimal Total => Shares.Sum(share => share.Amount ?? 0m);
     private bool IsBalanced => Total == LineNet;
+
+    private WorkOrderBillOrderOption? OrderFor(WorkOrderBillShareDraft share) =>
+        Orders.FirstOrDefault(order => order.WorkOrderId.Equals(share.WorkOrderId, StringComparison.OrdinalIgnoreCase));
+
+    /// <summary>A new share on the chosen order takes the first of its codes not yet used on this
+    /// line, and whatever of the net is still unplaced.</summary>
+    private async Task AddShareOn(string? workOrderId)
+    {
+        if (string.IsNullOrEmpty(workOrderId)) return;
+        var order = Orders.FirstOrDefault(candidate => candidate.WorkOrderId == workOrderId);
+        if (order is null || order.CostCodes.Count == 0) return;
+        var used = Shares.Where(share => share.WorkOrderId == workOrderId).Select(share => share.Code).ToHashSet(StringComparer.OrdinalIgnoreCase);
+        var code = order.CostCodes.FirstOrDefault(candidate => !used.Contains(candidate)) ?? order.CostCodes[0];
+        Shares.Add(new WorkOrderBillShareDraft { WorkOrderId = workOrderId, Code = code, Amount = Math.Max(LineNet - Total, 0m) });
+        await OnChanged.InvokeAsync();
+    }
 
     private static decimal? ParseAmount(object? value) =>
         decimal.TryParse(value?.ToString(), System.Globalization.NumberStyles.Number,

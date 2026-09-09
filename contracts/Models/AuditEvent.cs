@@ -145,7 +145,12 @@ public enum AuditEventType
     // approval was undone. The detail names the bill, the order, the rule that matched and the
     // value. Not client-facing: Pathway is "", like CostCentreRecoded.
     WorkOrderBillApproved = 43,      // a Work Order bill was approved: allocated, linked, confirmed to Xero
-    WorkOrderBillApprovalUndone = 44 // a Work Order bill approval was reversed (allocation, links, tracking)
+    WorkOrderBillApprovalUndone = 44, // a Work Order bill approval was reversed (allocation, links, tracking)
+    // Directory → Xero contact push (written since 2026-09-09, the accountant's ask): a record's
+    // primary contact and company contacts were written onto its linked Xero contact, replacing
+    // Xero's additional persons. Someone pressed it; the detail says what Xero holds after. Not
+    // client-facing: Pathway is "".
+    DirectoryContactsPushedToXero = 45
 }
 
 // One append-only audit event. WebLink (when present) opens the email or draft in Outlook on the

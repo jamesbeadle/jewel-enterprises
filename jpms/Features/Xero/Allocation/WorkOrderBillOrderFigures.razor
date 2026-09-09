@@ -1,12 +1,15 @@
 @namespace Jewel.JPMS.Features.Xero
 
-@* The order's money as the card needs it: value, invoiced so far (off the linked bills), and
-   what is left once THIS bill is approved. A shortfall goes negative and says so — Approve is
-   held while it does. *@
-<div class="px-5 py-4 grid grid-cols-1 sm:grid-cols-3 gap-4">
-    <StatTile Label="Order value" Value="@Money(Match.OrderValue)" Title="@($"{Match.WorkOrderReference} as approved")" />
-    <StatTile Label="Invoiced to date" Value="@Money(Match.InvoicedToDate)" Title="Bills already linked to the order, before this one" />
-    <StatTile Label="Remaining after this bill" Title="Order value less invoiced to date less this bill's net">
+@* One order's money as the card needs it: value, invoiced so far (off the linked bills), and
+   what is left once THIS bill's slice on it is approved. A shortfall goes negative and says so —
+   Approve is held while it does. A bill split across orders shows one row per order. *@
+<div class="px-5 py-3 grid grid-cols-1 sm:grid-cols-4 gap-4 items-center">
+    <p class="text-sm text-content min-w-0">
+        <span class="font-medium">@Order.Reference</span> <span class="text-content-muted">@Order.Title · @Order.ProjectName</span>
+    </p>
+    <StatTile Label="Order value" Value="@Money(Order.OrderValue)" Title="@($"{Order.Reference} as approved")" />
+    <StatTile Label="Invoiced to date" Value="@Money(Order.InvoicedToDate)" Title="Bills already linked to the order, before this one" />
+    <StatTile Label="Remaining after this bill" Title="Order value less invoiced to date less this bill's slice on the order">
         <p class="text-xl font-medium @(RemainingAfterBill < 0m ? "text-negative" : "text-content")">@Money(RemainingAfterBill)</p>
         @if (RemainingAfterBill < 0m)
         {
@@ -16,9 +19,9 @@
 </div>
 
 @code {
-    [Parameter, EditorRequired] public WorkOrderBillMatch Match { get; set; } = default!;
-    /// <summary>This bill's net, signed (a credit note gives value back to the order).</summary>
-    [Parameter] public decimal BillNet { get; set; }
+    [Parameter, EditorRequired] public WorkOrderBillOrderOption Order { get; set; } = default!;
+    /// <summary>This bill's slice on the order, signed (a credit note gives value back to the order).</summary>
+    [Parameter] public decimal SliceNet { get; set; }
 
-    private decimal RemainingAfterBill => Match.OrderValue - Match.InvoicedToDate - BillNet;
+    private decimal RemainingAfterBill => Order.Remaining - SliceNet;
 }

@@ -38,9 +38,11 @@ public sealed class WorkOrderBillRecognitionTests
         {
             var match = Assert.IsType<WorkOrderBillMatch>(line.WorkOrderMatch);
             Assert.Equal(("wo-bf-26", "WO-0026", WorkOrderMatchRule.ByReference, WorkOrderBillFixture.ByFrance), (match.WorkOrderId, match.WorkOrderReference, match.Rule, match.ProjectId));
-            Assert.Equal((97810m, 0m), (match.OrderValue, match.InvoicedToDate));
-            var share = Assert.Single(match.ProposedSplits);
-            Assert.Equal(("ELE-STD", line.Net, WorkOrderBillFixture.ByFrance), (share.CostCenterCode, share.Net, share.ProjectId));
+            var order = match.SupplierOrders.Single(candidate => candidate.WorkOrderId == "wo-bf-26");
+            Assert.Equal((97810m, 0m), (order.OrderValue, order.InvoicedToDate));
+            Assert.Equal(new[] { "wo-bf-26", "wo-ra-01" }, match.SupplierOrders.Select(candidate => candidate.WorkOrderId).OrderBy(id => id));
+            var share = Assert.Single(match.ProposedShares);
+            Assert.Equal(("wo-bf-26", "ELE-STD", line.Net), (share.WorkOrderId, share.CostCenterCode, share.Net));
         });
     }
 
@@ -77,6 +79,67 @@ public sealed class WorkOrderBillRecognitionTests
     }
 
     [Fact]
+    public async Task TheAccountantsFirstCase_ANumberOpenOnTwoProjectsIsBrokenByTheProjectSetOnTheBill()
+    {
+        // Anything Electrical 1725 (2026-09-09): WO-0001 on Ravenswood AND Woodhouse, no Sites tracking,
+        // the accountant set the project on the bill in the portal — that must be the site.
+        var fixture = await WorkOrderBillFixture.CreateAsync();
+        WorkOrderBillFixture.AddOrder(fixture.Context, "wo-wh-01-ae", WorkOrderBillFixture.Woodhouse, 1, WorkOrderBillFixture.SubcontractorId, 5000m, ("ELE-STD", 5000m));
+        await fixture.Context.SaveChangesAsync();
+        await SetReferenceAsync(fixture, "inv-1725", "WO-0001");
+
+        var unresolved = (await fixture.ReadUnallocatedAsync()).First(candidate => candidate.XeroInvoiceId == "inv-1725");
+        Assert.Null(unresolved.WorkOrderMatch);
+        Assert.Contains("set the project on the bill", unresolved.WorkOrderExceptionReason);
+
+        foreach (var line in await fixture.Context.XeroLedgerLines.Where(line => line.XeroInvoiceId == "inv-1725").ToListAsync())
+            line.ProjectId = WorkOrderBillFixture.Ravenswood;
+        await fixture.Context.SaveChangesAsync();
+        var resolved = (await fixture.ReadUnallocatedAsync()).First(candidate => candidate.XeroInvoiceId == "inv-1725");
+        Assert.Equal("wo-ra-01", resolved.WorkOrderMatch?.WorkOrderId);
+    }
+
+    [Fact]
+    public async Task TheAccountantsSecondCase_LinesNamingTheirOwnOrdersAreProposedLineByLine()
+    {
+        var fixture = await WorkOrderBillFixture.CreateAsync();
+        WorkOrderBillFixture.AddOrder(fixture.Context, "wo-lg-55", WorkOrderBillFixture.Woodhouse, 55, "sub-dry", 2000m, ("INT-PLS", 2000m));
+        WorkOrderBillFixture.AddOrder(fixture.Context, "wo-lg-56", WorkOrderBillFixture.Woodhouse, 56, "sub-dry", 2000m, ("INT-PLB", 2000m));
+        WorkOrderBillFixture.AddBill(fixture.Context, "inv-lg", "Lees Green-001", "Drywall Co Ltd", ("321", 1748m), ("321", 1344m), ("321", 10m));
+        await fixture.Context.SaveChangesAsync();
+        await DescribeAsync(fixture, "inv-lg:0", "Tiling to WO-0055");
+        await DescribeAsync(fixture, "inv-lg:1", "Adhesive per WO-0056");
+
+        var lines = (await fixture.ReadUnallocatedAsync()).Where(line => line.XeroInvoiceId == "inv-lg").OrderBy(line => line.XeroLedgerLineId).ToList();
+
+        Assert.Equal(new[] { "wo-lg-55", "wo-lg-56", "wo-lg-55" }, lines.Select(line => line.WorkOrderMatch?.WorkOrderId));
+        Assert.All(lines, line => Assert.Equal(WorkOrderMatchRule.ByLineReference, line.WorkOrderMatch!.Rule));
+        Assert.Contains("WO-0055 (2 lines), WO-0056 (1 line)", lines[0].WorkOrderMatch!.Detail);
+        Assert.Contains("1 line names no order and is put on WO-0055", lines[0].WorkOrderMatch!.Detail);
+        var share = Assert.Single(lines[1].WorkOrderMatch!.ProposedShares);
+        Assert.Equal(("wo-lg-56", "INT-PLB", 1344m), (share.WorkOrderId, share.CostCenterCode, share.Net));
+    }
+
+    [Fact]
+    public async Task ABillNamingTwoOfTheSuppliersOrdersReachesTheCardOnTheFirstForAHandSplit()
+    {
+        var fixture = await WorkOrderBillFixture.CreateAsync();
+        WorkOrderBillFixture.AddOrder(fixture.Context, "wo-lg-55", WorkOrderBillFixture.Woodhouse, 55, "sub-dry", 1748m, ("INT-PLS", 1748m));
+        WorkOrderBillFixture.AddOrder(fixture.Context, "wo-lg-56", WorkOrderBillFixture.Woodhouse, 56, "sub-dry", 2000m, ("INT-PLB", 2000m));
+        WorkOrderBillFixture.AddBill(fixture.Context, "inv-lg", "Lees Green-001", "Drywall Co Ltd", ("321", 3092m));
+        await fixture.Context.SaveChangesAsync();
+        await SetReferenceAsync(fixture, "inv-lg", "WO-0055 / WO-0056");
+
+        var line = (await fixture.ReadUnallocatedAsync()).Single(candidate => candidate.XeroInvoiceId == "inv-lg");
+
+        // WO-0055 alone cannot hold £3,092 — the over-value gate is per order, so the bill still
+        // reaches the card, where the split puts £1,344 on WO-0056.
+        Assert.Null(line.WorkOrderExceptionReason);
+        Assert.Equal(("wo-lg-55", WorkOrderMatchRule.ByReference), (line.WorkOrderMatch?.WorkOrderId, line.WorkOrderMatch?.Rule));
+        Assert.Contains("names WO-0055 and WO-0056 — split", line.WorkOrderMatch!.Detail);
+    }
+
+    [Fact]
     public async Task ASupplierWithOneOpenOrderMatchesOnTheSupplierAlone()
     {
         var fixture = await WorkOrderBillFixture.CreateAsync();
@@ -99,9 +162,9 @@ public sealed class WorkOrderBillRecognitionTests
 
         var line = (await fixture.ReadUnallocatedAsync()).Single(candidate => candidate.XeroInvoiceId == "inv-dry");
 
-        var splits = line.WorkOrderMatch!.ProposedSplits;
-        Assert.Equal(new[] { ("INT-PLS", 600.01m), ("INT-PLB", 400.00m) }, splits.Select(split => (split.CostCenterCode, split.Net)));
-        Assert.Equal(1000.01m, splits.Sum(split => split.Net));
+        var shares = line.WorkOrderMatch!.ProposedShares;
+        Assert.Equal(new[] { ("INT-PLS", 600.01m), ("INT-PLB", 400.00m) }, shares.Select(share => (share.CostCenterCode, share.Net)));
+        Assert.Equal(1000.01m, shares.Sum(share => share.Net));
     }
 
     [Fact]
@@ -162,6 +225,13 @@ public sealed class WorkOrderBillRecognitionTests
     {
         foreach (var line in await fixture.Context.XeroLedgerLines.Where(line => line.XeroInvoiceId == invoiceId).ToListAsync())
             line.Reference = reference;
+        await fixture.Context.SaveChangesAsync();
+    }
+
+    private static async Task DescribeAsync(WorkOrderBillFixture fixture, string lineId, string description)
+    {
+        var line = await fixture.Context.XeroLedgerLines.FirstAsync(candidate => candidate.XeroLedgerLineId == lineId);
+        line.Description = description;
         await fixture.Context.SaveChangesAsync();
     }
 

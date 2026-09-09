@@ -5,6 +5,7 @@ using Jewel.JPMS.Api.Features.Clients.Commands;
 using Jewel.JPMS.Api.Features.Directory.Commands;
 using Jewel.JPMS.Api.Features.Parties;
 using Jewel.JPMS.Api.Features.Subcontractors.Commands;
+using Jewel.JPMS.Api.Features.Subcontractors.XeroContacts;
 using Jewel.JPMS.Contracts.Architects;
 using Jewel.JPMS.Contracts.Clients;
 using Jewel.JPMS.Contracts.Directory;
@@ -150,7 +151,35 @@ internal sealed partial class SubcontractorsAndLeadsActions
                 + "xeroContactId is Xero's ContactID (the suggestions in list_unlinked_directory_records "
                 + "carry it). A name match is a suggestion, not proof — show the user the pairing "
                 + "(record name ↔ Xero contact name) and take their yes before calling, then call "
-                + "once per confirmed pair. unlink_directory_record_from_xero_contact is the undo."),
+                + "once per confirmed pair. pullDetailsFromXero (default false) also copies Xero's "
+                + "primary person, email, phones, address and additional people onto the record where "
+                + "Xero has a value — offer it, never assume it: Xero's details are often older than "
+                + "the directory's. unlink_directory_record_from_xero_contact is the undo."),
+
+        new AiAction(
+            Name: "push_directory_contacts_to_xero",
+            Area: "Subcontractors",
+            Description: "Writes a directory record's contacts onto its linked Xero contact: the "
+                + "record's primary contact becomes Xero's primary person and its other contacts "
+                + "become Xero's additional persons (Xero replaces the list wholesale, at most five). "
+                + "A blank primary or an empty contact list on the record leaves Xero's people as "
+                + "they are. Names go to Xero as first name + last name, split on the first space. "
+                + "Refused when the record is not linked to Xero, when Xero can't be read, or when "
+                + "Xero refuses the write (the Cost Integration app needs the accounting.contacts "
+                + "scope). Audited with who pushed and what Xero holds after.",
+            CommandType: typeof(PushDirectoryContactsToXeroContact),
+            ResultType: typeof(XeroContactPushOutcome),
+            AuthorisationType: typeof(PushDirectoryContactsToXeroContactAuthorisation),
+            ValidationType: typeof(PushDirectoryContactsToXeroContactValidation),
+            VisibleTo: DirectoryCurators,
+            EmailStamps: Array.Empty<string>(),
+            NameStamps: Array.Empty<string>(),
+            RequiresConfirmation: true,
+            Notes: "This is something a person presses, never automatic. Before calling, read the "
+                + "record's primary contact and other contacts back to the user as what Xero WILL "
+                + "hold — the portal page shows Xero's people now beside the people after; the "
+                + "connector has no preview, so say plainly that Xero's additional people are "
+                + "replaced by the record's — and take their yes. Call once per record."),
 
         new AiAction(
             Name: "unlink_directory_record_from_xero_contact",

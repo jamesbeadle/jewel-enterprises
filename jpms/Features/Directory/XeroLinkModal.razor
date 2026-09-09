@@ -12,6 +12,9 @@
         Choose the Xero contact <span class="font-medium text-content">@companyName</span> settles through.
         Only the link is written — the record's work orders, contacts and trades stay as they are.
     </p>
+    <Checkbox Value="pullDetails" ValueChanged="value => pullDetails = value" Class="mb-3"
+              Label="Also pull the contact's details from Xero"
+              Title="Copies Xero's primary person, email, phones and address onto this record where Xero has a value, and adds Xero's additional people as contacts. Xero's details are often older than the directory's — leave this off to keep what is here." />
     @if (error is not null)
     {
         <Notice Tone="Tone.Negative" Class="mb-3">@error</Notice>

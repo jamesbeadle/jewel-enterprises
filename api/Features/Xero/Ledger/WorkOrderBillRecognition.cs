@@ -12,14 +12,17 @@ namespace Jewel.JPMS.Api.Features.Xero.Ledger;
 /// decided when the order was approved — project, cost code(s) — so it belongs on the allocation
 /// page's Work Order bills tab, pre-filled from the order, not in the queue for a hand decision.
 ///
-/// The rules, per BILL (never per line): the labour registry wins (a worker's bill is settlement,
-/// not a cost — the cover route); then the supplier is resolved to its directory company; then a
-/// work-order number written on the bill picks the order, else a supplier with exactly one open
-/// order matches on that alone; finally the bill must fit inside the order's remaining value. An
-/// "open" order is Released with value still left to invoice (decision 2026-09-08). Anything that
-/// does not match cleanly stays in the queue — with the reason on the row when an order was in
-/// play, and silently when none was. One partial per concern: Rules (the decision), Splits (the
-/// proposed coding and the wording).
+/// The rules, decided per BILL: the labour registry wins (a worker's bill is settlement, not a
+/// cost — the cover route); then the supplier is resolved to its directory company; then, when
+/// the lines name two or more different orders in their descriptions, each line pays the order it
+/// names (ByLine, 2026-09-09); else a work-order number written on the bill picks the order — or,
+/// naming several, puts the bill on the first for a hand split on the card — else a supplier with
+/// exactly one open order matches on that alone; finally each order's slice must fit inside what
+/// is left to invoice on it. An "open" order is Released with value still left to invoice
+/// (decision 2026-09-08). Anything that does not match cleanly stays in the queue — with the
+/// reason on the row when an order was in play, and silently when none was. One partial per
+/// concern: Rules (the whole-bill decision), ByLine (the per-line rule), Splits (the proposed
+/// coding and the wording).
 /// </summary>
 public sealed partial class WorkOrderBillRecognition
 {
@@ -70,9 +73,9 @@ public sealed partial class WorkOrderBillRecognition
         if (!verdictByInvoice.TryGetValue(line.XeroInvoiceId, out var verdict))
             verdictByInvoice[line.XeroInvoiceId] = verdict = Evaluate(billLines, isLabour, hintedProjectId);
         if (verdict is null) return null;
-        return verdict.Order is null
-            ? new LineVerdict(null, verdict.ExceptionReason)
-            : new LineVerdict(MatchFor(verdict.Order, verdict.Rule, verdict.Detail!, line), null);
+        if (verdict.OrderByLineId is null) return new LineVerdict(null, verdict.ExceptionReason);
+        var order = verdict.OrderByLineId[line.XeroLedgerLineId];
+        return new LineVerdict(MatchFor(order, verdict.Rule, verdict.Detail!, line, verdict.SupplierOrders), null);
     }
 
     /// <summary>

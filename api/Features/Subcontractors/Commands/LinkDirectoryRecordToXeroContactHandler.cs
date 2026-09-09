@@ -1,13 +1,16 @@
 using Jewel.JPMS.Api.Data.Entities;
 using Jewel.JPMS.Api.Features.Audit;
+using Jewel.JPMS.Api.Features.Subcontractors.XeroContacts;
 using Jewel.JPMS.Contracts.Subcontractors;
+using Jewel.JPMS.Contracts.Xero;
 
 namespace Jewel.JPMS.Api.Features.Subcontractors.Commands;
 
 /// <summary>
 /// Writes the one row that makes an existing directory record "linked to Xero": a
 /// SubcontractorXeroLink from the record to the Xero contact, the same row an import writes.
-/// Nothing else on the record moves. Both sides must be free — a record already holding a link,
+/// Nothing else on the record moves unless the caller asked to pull Xero's details (2026-09-09,
+/// <see cref="XeroDetailsPull"/>). Both sides must be free — a record already holding a link,
 /// or a contact already linked to another record, is refused with who holds it, because silently
 /// re-pointing a link is how a company's bills end up reconciled against the wrong supplier.
 /// </summary>
@@ -28,7 +31,7 @@ public sealed class LinkDirectoryRecordToXeroContactHandler : ICommandHandler<Li
 
     public async Task<Subcontractor> HandleAsync(LinkDirectoryRecordToXeroContact command, CancellationToken cancellationToken)
     {
-        var record = await context.Subcontractors.AsNoTracking()
+        var record = await context.Subcontractors
             .FirstOrDefaultAsync(sub => sub.SubcontractorId == command.SubcontractorId, cancellationToken)
             ?? throw new InvalidOperationException("That directory record does not exist.");
         if (record.IsProspect)
@@ -49,17 +52,29 @@ public sealed class LinkDirectoryRecordToXeroContactHandler : ICommandHandler<Li
             ImportedByEmail = actor.Email
         };
         context.SubcontractorXeroLinks.Add(link);
+        if (command.PullDetailsFromXero) await PullDetailsAsync(record, supplier, cancellationToken);
         await context.SaveChangesAsync(cancellationToken);
 
         await audit.WriteAsync(
             AuditEventType.DirectoryRecordXeroLinkChanged,
-            $"{record.CompanyName} linked to Xero contact {supplier.Name} ({supplier.ContactId}).",
+            $"{record.CompanyName} linked to Xero contact {supplier.Name} ({supplier.ContactId})"
+            + (command.PullDetailsFromXero ? ", Xero's contact details pulled onto the record." : "."),
             cancellationToken: cancellationToken);
 
         return record.ToModel(
             await context.TradesForAsync(record.SubcontractorId, cancellationToken),
             xeroLinked: true,
             xeroLinks: new[] { link.ToModel() });
+    }
+
+    private async Task PullDetailsAsync(SubcontractorEntity record, XeroSupplier supplier, CancellationToken cancellationToken)
+    {
+        var contacts = await context.CompanyContacts
+            .Where(contact => contact.SubcontractorId == record.SubcontractorId)
+            .ToListAsync(cancellationToken);
+        var before = contacts.Count;
+        XeroDetailsPull.Apply(record, contacts, supplier, DateTimeOffset.UtcNow);
+        context.CompanyContacts.AddRange(contacts.Skip(before));
     }
 
     private async Task RefuseIfEitherSideLinkedAsync(SubcontractorEntity record, string xeroContactId, CancellationToken cancellationToken)

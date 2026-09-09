@@ -15,40 +15,55 @@ public sealed partial class ApproveWorkOrderBillHandler
     }
 
     /// <summary>
-    /// What one line is left with: allocated to the order's project — the whole line on one
-    /// centre, or its shares in XeroCostSplits when the order spans several — and linked to the
-    /// order for its full (signed) net, the same slice the WO Allocation tab would have written.
+    /// What one line is left with: allocated whole to one project and centre when every share
+    /// agrees, else its centres in XeroCostSplits (one row per project + code, shares on the
+    /// same centre summed) — and one work-order link per share, order and code, for its signed
+    /// amount, so each order is invoiced by exactly its slice.
     /// </summary>
-    private void Allocate(XeroLedgerLineEntity line, WorkOrderEntity order, IReadOnlyList<XeroCostSplit> shares, string approvedBy, DateTimeOffset now)
+    private void Allocate(XeroLedgerLineEntity line, IReadOnlyList<WorkOrderBillShare> shares, Dictionary<string, PaidOrder> orders, string approvedBy, DateTimeOffset now)
     {
+        var centres = shares
+            .GroupBy(share => (ProjectId: orders[share.WorkOrderId].ProjectId, share.CostCenterCode), CentreComparer.Instance)
+            .Select(group => (group.Key.ProjectId, group.Key.CostCenterCode, Net: group.Sum(share => share.Net)))
+            .ToList();
+        var projects = centres.Select(centre => centre.ProjectId).Distinct(StringComparer.OrdinalIgnoreCase).ToList();
+
         line.AllocationStatus = (int)XeroAllocationStatus.Allocated;
-        line.ProjectId = order.ProjectId;
-        line.CostCenterCode = shares.Count == 1 ? shares[0].CostCenterCode : null;
+        line.ProjectId = projects.Count == 1 ? projects[0] : null;
+        line.CostCenterCode = centres.Count == 1 ? centres[0].CostCenterCode : null;
         line.Bucket = null;
         line.AllocatedBy = approvedBy;
         line.AllocatedAtUtc = now;
-        line.Note = $"Work order {order.Reference}";
-        if (shares.Count > 1)
-            foreach (var share in shares)
+        line.Note = NoteFor(shares, orders);
+        if (centres.Count > 1)
+            foreach (var centre in centres)
                 context.XeroCostSplits.Add(new XeroCostSplitEntity
                 {
-                    XeroCostSplitId = $"{line.XeroLedgerLineId}:{order.ProjectId}:{share.CostCenterCode}",
+                    XeroCostSplitId = $"{line.XeroLedgerLineId}:{centre.ProjectId}:{centre.CostCenterCode}",
                     XeroLedgerLineId = line.XeroLedgerLineId,
-                    ProjectId = order.ProjectId,
-                    CostCenterCode = share.CostCenterCode,
-                    Net = share.Net
+                    ProjectId = centre.ProjectId,
+                    CostCenterCode = centre.CostCenterCode,
+                    Net = centre.Net
                 });
-        context.XeroLineWorkOrderLinks.Add(new XeroLineWorkOrderLinkEntity
-        {
-            XeroLineWorkOrderLinkId = CommercialIdentifierFactory.NextXeroLineWorkOrderLinkId(),
-            XeroLedgerLineId = line.XeroLedgerLineId,
-            WorkOrderId = order.WorkOrderId,
-            ProjectId = order.ProjectId,
-            Amount = line.Type == "ACCPAYCREDIT" ? -line.Net : line.Net
-        });
+        foreach (var share in shares)
+            context.XeroLineWorkOrderLinks.Add(new XeroLineWorkOrderLinkEntity
+            {
+                XeroLineWorkOrderLinkId = CommercialIdentifierFactory.NextXeroLineWorkOrderLinkId(),
+                XeroLedgerLineId = line.XeroLedgerLineId,
+                WorkOrderId = share.WorkOrderId,
+                ProjectId = orders[share.WorkOrderId].ProjectId,
+                CostCenterCode = share.CostCenterCode,
+                Amount = line.Type == "ACCPAYCREDIT" ? -share.Net : share.Net
+            });
     }
 
-    private void RecordApproval(ApproveWorkOrderBill command, WorkOrderEntity order, WorkOrderBillMatch match, List<XeroLedgerLineEntity> lines, DateTimeOffset now) =>
+    private static string NoteFor(IReadOnlyList<WorkOrderBillShare> shares, Dictionary<string, PaidOrder> orders)
+    {
+        var references = shares.Select(share => orders[share.WorkOrderId].Reference).Distinct().OrderBy(reference => reference).ToList();
+        return references.Count == 1 ? $"Work order {references[0]}" : $"Work orders {string.Join(", ", references)}";
+    }
+
+    private void RecordApproval(ApproveWorkOrderBill command, PaidOrder order, WorkOrderBillMatch match, decimal sliceNet, DateTimeOffset now) =>
         context.WorkOrderBillApprovals.Add(new WorkOrderBillApprovalEntity
         {
             WorkOrderBillApprovalId = Guid.NewGuid().ToString("N"),
@@ -57,8 +72,18 @@ public sealed partial class ApproveWorkOrderBillHandler
             ProjectId = order.ProjectId,
             MatchRule = (int)match.Rule,
             MatchDetail = match.Detail.Length <= 512 ? match.Detail : match.Detail[..512],
-            BillNet = BillNet(lines),
+            BillNet = sliceNet,
             ApprovedByEmail = command.ApprovedBy ?? "",
             ApprovedAtUtc = now
         });
+
+    private sealed class CentreComparer : IEqualityComparer<(string ProjectId, string CostCenterCode)>
+    {
+        public static readonly CentreComparer Instance = new();
+        public bool Equals((string ProjectId, string CostCenterCode) x, (string ProjectId, string CostCenterCode) y) =>
+            string.Equals(x.ProjectId, y.ProjectId, StringComparison.OrdinalIgnoreCase)
+            && string.Equals(x.CostCenterCode, y.CostCenterCode, StringComparison.OrdinalIgnoreCase);
+        public int GetHashCode((string ProjectId, string CostCenterCode) key) =>
+            HashCode.Combine(key.ProjectId.ToUpperInvariant(), key.CostCenterCode.ToUpperInvariant());
+    }
 }

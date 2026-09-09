@@ -29,7 +29,8 @@ public static partial class WorkOrderBillReference
         return Array.Empty<int>();
     }
 
-    private static IReadOnlyList<int> NumbersIn(string? text)
+    /// <summary>The distinct order numbers named in one field; empty when it names none.</summary>
+    public static IReadOnlyList<int> NumbersIn(string? text)
     {
         if (string.IsNullOrWhiteSpace(text)) return Array.Empty<int>();
         return NumberPattern().Matches(text)

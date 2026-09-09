@@ -36,10 +36,10 @@
             }
             @if (Line.WorkOrderApproval is { } approval)
             {
-                @* Approved as a Work Order bill (2026-09-08): the order it pays and who pressed
+                @* Approved as a Work Order bill (2026-09-08): the order(s) it pays and who pressed
                    Approve. Undo on this row reverses the whole bill's approval. *@
                 <span class="block text-xs text-content-subtle mt-0.5" title="@approval.Rule.Label()">
-                    Work Order bill · @approval.WorkOrderReference · approved by @approval.ApprovedBy @DateText(approval.ApprovedAtUtc.ToLocalTime())
+                    Work Order bill · @approval.OrdersLabel · approved by @approval.ApprovedBy @DateText(approval.ApprovedAtUtc.ToLocalTime())
                 </span>
             }
             @if (WriteBackBadge is { } badge)

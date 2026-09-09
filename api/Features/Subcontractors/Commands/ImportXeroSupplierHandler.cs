@@ -44,7 +44,7 @@ public sealed class ImportXeroSupplierHandler : ICommandHandler<ImportXeroSuppli
         {
             SubcontractorId = SubcontractorIdentifierFactory.NextSubcontractorId(),
             CompanyName = supplier.Name,
-            ContactName = supplier.ContactPersons.Count > 0 ? supplier.ContactPersons[0].Name : "",
+            ContactName = XeroContacts.XeroDetailsPull.PrimaryPersonOf(supplier),
             ContactEmail = supplier.EmailAddress,
             ContactPhone = supplier.Phone,
             CisStatus = "",
@@ -70,7 +70,9 @@ public sealed class ImportXeroSupplierHandler : ICommandHandler<ImportXeroSuppli
         context.SubcontractorXeroLinks.Add(link);
 
         // Xero's additional contact persons come across as company contacts, so nothing Xero
-        // holds about who to talk to is lost. The first person also seeds the primary line above.
+        // holds about who to talk to is lost. Xero's own primary person seeds the primary line
+        // above (2026-09-09 — it was never read before, so Tom Dix never came across); the first
+        // additional person only stands in when the contact has none.
         foreach (var person in supplier.ContactPersons)
         {
             context.CompanyContacts.Add(new CompanyContactEntity
