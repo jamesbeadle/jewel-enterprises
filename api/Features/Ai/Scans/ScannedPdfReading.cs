@@ -16,7 +16,7 @@ namespace Jewel.JPMS.Api.Features.Ai.Scans;
 /// An OCR failure is logged and leaves the document readable as images too; it never fails the
 /// tool call.
 /// </summary>
-public static class ScannedPdfReading
+internal static class ScannedPdfReading
 {
     /// <summary>Below this, the assistant is shown the page rather than trusted with the text.</summary>
     public const double TrustedConfidence = 0.6;
