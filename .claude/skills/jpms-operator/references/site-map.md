@@ -248,8 +248,8 @@ Internal staff. Subcontractors: search, Type filter, "+ Add company"
 field; references re-point). Clients/Architects render read-only with links to
 `/clients` and `/architects` where creation/editing lives. Entry page: company
 and contacts, Xero-link badge (name should exactly match the Xero supplier so
-invoices line up on WO Allocation), trades against the curated list, additional
-contacts, "Invite to portal" (scoped login), statement of account (every WO with invoices claimed against it — PDF
+invoices line up on WO Allocation), trades against the curated list, other
+contacts beyond the primary, "Invite to portal" (scoped login), statement of account (every WO with invoices claimed against it — PDF
 or email draft).
 
 ### Registers — `/registers` · Policies — `/policies`

@@ -87,7 +87,7 @@ public static class ProcurementPageGuides
             + "contacts, portal access, statement of account and the compliance document list. "
             + "Manually: \"Edit details\" (the company name should match the supplier's exact Xero "
             + "name so invoices line up on WO Allocation; payment terms print on their purchase "
-            + "orders), trade chips against the curated list, additional contacts, \"Invite to "
+            + "orders), trade chips against the curated list, other contacts beyond the primary, \"Invite to "
             + "portal\" (a set-password link "
             + "scoping their login to their own company's data), and the statement of account — "
             + "every work order they hold with invoices claimed against each — downloadable as PDF "

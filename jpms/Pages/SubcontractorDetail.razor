@@ -131,16 +131,18 @@
             </div>
         </div>
 
-        @* Contacts: the people on this record beyond its primary contact line. A consolidated
-           master keeps every merged email/phone here. *@
+        @* Other contacts: everyone at the company beyond the primary contact, which lives in the
+           header and is edited under "Edit details". A consolidated master keeps every merged
+           email/phone here. *@
         <div class="panel p-4 mb-6">
-            <div class="flex items-center justify-between mb-3">
-                <h2 class="text-sm font-semibold text-content">Contacts</h2>
+            <div class="flex items-center justify-between mb-1">
+                <h2 class="text-sm font-semibold text-content">Other contacts</h2>
                 @if (contactsNote is not null)
                 {
                     <span class="text-xs text-content-subtle">@contactsNote</span>
                 }
             </div>
+            <p class="text-xs text-content-subtle mb-3">@PrimaryContactStrapline(subcontractor)</p>
             @if (contactsError is not null)
             {
                 <Notice Tone="Tone.Negative" Class="mb-3">@contactsError</Notice>
@@ -151,7 +153,7 @@
             }
             else if (Contacts.Count == 0)
             {
-                <p class="text-sm text-content-subtle italic mb-3">No additional contacts on this record.</p>
+                <p class="text-sm text-content-subtle italic mb-3">No other contacts on this record.</p>
             }
             else
             {
@@ -288,7 +290,7 @@
                 </div>
                 <div class="grid grid-cols-2 gap-3">
                     <div>
-                        <FormField Label="Contact name">
+                        <FormField Label="Primary contact name">
                         <input class="field" @bind="eContact" />
                         </FormField>
                     </div>
