@@ -27,6 +27,8 @@ internal static partial class AiRecordTools
         CorrespondenceTools()
             .Concat(ContextTools())
             .Concat(DirectoryTools())
+            .Concat(ComplianceTools())
+            .Concat(XeroContactPushTools())
             .ToList();
 
     /// <summary>The model's (or the route's) name for a record type onto the enum the record-link

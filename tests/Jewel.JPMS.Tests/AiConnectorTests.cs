@@ -296,6 +296,49 @@ public sealed class AiConnectorTests
     }
 
     [Fact]
+    public void AccountantsSeptemberNinthAsks_reachTheConnector()
+    {
+        // Everything handed to the accountant on 2026-09-09 must be doable from the connector as
+        // well as the page: CIS verification, the compliance register, the Xero contact link /
+        // pull / push (with its preview), the purchase order email, and the Work Order bill
+        // approve / undo with a figure per order.
+        var names = AiActionRegistry.All.Select(a => a.Name).ToList();
+        foreach (var name in new[]
+        {
+            "record_cis_verification", "link_directory_record_to_xero_contact",
+            "push_directory_contacts_to_xero", "send_work_order_po_email",
+            "approve_work_order_bill", "undo_work_order_bill_approval"
+        })
+        {
+            Assert.Contains(name, names);
+        }
+
+        var financeDirector = AiToolCatalogue.ForConnector(UserWith(Role.FinanceDirector)).Select(t => t.Name).ToList();
+        var subcontractor = AiToolCatalogue.ForConnector(UserWith(Role.Subcontractor)).Select(t => t.Name).ToList();
+        foreach (var name in new[] { "list_compliance_register", "preview_xero_contact_push", "list_xero_ledger_lines", "read_source" })
+        {
+            Assert.Contains(name, financeDirector);
+            Assert.DoesNotContain(name, subcontractor);
+        }
+
+        // Approve writes tracking to Xero and approves the bill there; undo clears the tracking.
+        // Both confirm-first, and the FD's button, never the site's.
+        foreach (var name in new[] { "approve_work_order_bill", "undo_work_order_bill_approval" })
+        {
+            var action = AiActionRegistry.All.Single(a => a.Name == name);
+            Assert.True(action.RequiresConfirmation, $"{name} must be confirm-first.");
+            Assert.True(action.VisibleTo.IncludesAny(UserWith(Role.FinanceDirector).Roles));
+            Assert.False(action.VisibleTo.IncludesAny(UserWith(Role.Foreman).Roles));
+        }
+
+        // The actor is stamped server-side — never a schema property the model could supply.
+        var approve = AiActionRegistry.All.Single(a => a.Name == "approve_work_order_bill");
+        var schema = System.Text.Json.JsonSerializer.Serialize(AiActionSchema.InputSchema(approve));
+        Assert.DoesNotContain("approvedBy", schema);
+        Assert.Contains("slices", schema);
+    }
+
+    [Fact]
     public void SaveSkillReference_isAWriteToolBehindTheSkillGate()
     {
         var admin = AiToolCatalogue.ForConnector(UserWith(Role.Admin));

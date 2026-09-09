@@ -21,7 +21,9 @@ internal static partial class AiRecordTools
                 + "with its category, trades (ids and names, exactly what update_subcontractor must "
                 + "send back in full), primary contact, postal address, CIS status, payment terms, "
                 + "whether it is linked to a Xero contact (and which — xeroLinks carries the Xero "
-                + "ContactID and name), and whether it is still a tender-only prospect "
+                + "ContactID and name), its compliance standing (complianceStanding: Expired, "
+                + "ExpiringSoon, Missing or Current — list_compliance_register has the documents "
+                + "behind it), and whether it is still a tender-only prospect "
                 + "(promote_subcontractor_to_directory makes those permanent). Call this "
                 + "BEFORE update_subcontractor or add_subcontractor_to_directory — never guess an "
                 + "id, and never create a record before checking it isn't already here.",
@@ -73,6 +75,10 @@ internal static partial class AiRecordTools
                         select new { link.SubcontractorId, trade.TradeId, trade.Name })
                         .ToListAsync(ct);
                     var xeroLinks = await DirectoryXeroLinks.ByRecordAsync(context.Db, ct);
+                    var complianceByCompany = (await context.Db.ComplianceDocuments.AsNoTracking()
+                        .Where(document => ids.Contains(document.SubcontractorId) && document.SupersededAt == null)
+                        .ToListAsync(ct))
+                        .ToLookup(document => document.SubcontractorId, document => document.ToModel(), StringComparer.OrdinalIgnoreCase);
 
                     var companies = rows.Select(row => new
                     {
@@ -91,6 +97,7 @@ internal static partial class AiRecordTools
                         cisStatus = row.CisStatus,
                         cisVerificationNumber = row.CisVerificationNumber,
                         cisVerifiedOn = row.CisVerifiedOn,
+                        complianceStanding = complianceByCompany[row.SubcontractorId].Standing().ToString(),
                         paymentTermsDays = row.PaymentTermsDays,
                         xeroLinked = xeroLinks.ContainsKey(row.SubcontractorId),
                         xeroLinks = xeroLinks.TryGetValue(row.SubcontractorId, out var links)

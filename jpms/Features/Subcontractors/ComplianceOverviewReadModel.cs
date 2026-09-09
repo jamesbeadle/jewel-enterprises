@@ -21,12 +21,8 @@ public sealed class ComplianceOverviewReadModel : IReadModelStore<IReadOnlyList<
 
     /// <summary>The listed subcontractor's overall standing: the worst status among its current
     /// documents, or Missing when it has none on record.</summary>
-    public ComplianceStatus WorstStatusFor(string subcontractorId)
-    {
-        var documents = (Current ?? Array.Empty<ComplianceDocument>())
+    public ComplianceStatus WorstStatusFor(string subcontractorId) =>
+        (Current ?? Array.Empty<ComplianceDocument>())
             .Where(document => string.Equals(document.SubcontractorId, subcontractorId, StringComparison.OrdinalIgnoreCase))
-            .ToList();
-        if (documents.Count == 0) return ComplianceStatus.Missing;
-        return documents.Select(document => document.Status()).Max();
-    }
+            .Standing();
 }
