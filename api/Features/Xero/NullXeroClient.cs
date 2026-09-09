@@ -70,6 +70,18 @@ public sealed class NullXeroClient : IXeroClient
         string invoiceId, bool isCreditNote, string fileName, CancellationToken ct) =>
         Task.FromResult<XeroAttachmentContent?>(null);
 
+    private const string NotConnected = "Xero isn't connected — add the Xero__ClientId / Xero__ClientSecret app settings.";
+
+    public Task<XeroSalesInvoiceResult> CreateSalesInvoiceAsync(XeroSalesInvoiceRequest request, CancellationToken ct) =>
+        Task.FromResult(XeroSalesInvoiceResult.Failed(NotConnected));
+
+    public Task<XeroSalesContactLookup> LookupSalesContactAsync(string? contactId, string contactName, CancellationToken ct) =>
+        Task.FromResult(new XeroSalesContactLookup(null, NotConnected));
+
+    public Task<XeroApprovalResult> AttachToInvoiceAsync(
+        string invoiceId, string fileName, string contentType, byte[] content, CancellationToken ct) =>
+        Task.FromResult(XeroApprovalResult.Failed(NotConnected));
+
     public Task<IReadOnlyList<XeroSitePnlMonthFigures>> GetSiteMonthlyPnlAsync(
         string siteOption, DateTime fromMonth, DateTime toMonth, CancellationToken ct) =>
         Task.FromResult<IReadOnlyList<XeroSitePnlMonthFigures>>(Array.Empty<XeroSitePnlMonthFigures>());

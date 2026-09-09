@@ -83,6 +83,16 @@ public sealed class HttpValuationInvoiceStore : IValuationInvoiceStore
         return call;
     }
 
+    public Task<ValuationInvoiceXeroRaisePreview> PreviewXeroRaiseAsync(string valuationInvoiceId, CancellationToken cancellationToken = default) =>
+        queries.AskAsync(new PreviewValuationInvoiceXeroRaise(valuationInvoiceId), cancellationToken);
+
+    public async Task<ValuationInvoiceXeroRaiseOutcome> RaiseInXeroAsync(string valuationInvoiceId, CancellationToken cancellationToken = default)
+    {
+        var outcome = await commands.SendAsync(new RaiseValuationInvoiceInXero(valuationInvoiceId), cancellationToken);
+        OnChange?.Invoke();
+        return outcome;
+    }
+
     public async Task<ValuationInvoice> RecordPaymentAsync(string valuationInvoiceId, decimal amountPaid, CancellationToken cancellationToken = default)
     {
         var call = await commands.SendAsync(new RecordValuationInvoicePayment(valuationInvoiceId, amountPaid), cancellationToken);

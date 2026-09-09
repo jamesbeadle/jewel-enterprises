@@ -29,6 +29,11 @@ public sealed class ValuationInvoiceEntity
     // Cash-up-front deposit credit embedded in Amount (stamped from the claim's outstanding
     // deduction at raise time). The gross certificate = Amount + DepositCredited.
     public decimal DepositCredited { get; set; }
+    // The AUTHORISED sales invoice raised in Xero from this row (2026-09-09): Xero's InvoiceID,
+    // its number and when. Null when the invoice was issued without a Xero raise.
+    [MaxLength(64)]      public string? XeroInvoiceId { get; set; }
+    [MaxLength(64)]      public string? XeroInvoiceNumber { get; set; }
+    public DateTimeOffset? XeroRaisedAt { get; set; }
 }
 
 // Audit trail: everything that has happened to a valuation invoice (creation, submission,

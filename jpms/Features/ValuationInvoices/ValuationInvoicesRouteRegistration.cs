@@ -46,6 +46,14 @@ public static class ValuationInvoicesRouteRegistration
             new CommandRoute("POST", "/api/valuation-invoices/{valuationInvoiceId}/issue",
                 command => $"/api/valuation-invoices/{((IssueValuationInvoice)command).ValuationInvoiceId}/issue"));
 
+        queries.Register<PreviewValuationInvoiceXeroRaise, ValuationInvoiceXeroRaisePreview>(
+            new QueryRoute("/api/valuation-invoices/{valuationInvoiceId}/xero-raise",
+                query => $"/api/valuation-invoices/{((PreviewValuationInvoiceXeroRaise)query).ValuationInvoiceId}/xero-raise"));
+
+        commands.Register<RaiseValuationInvoiceInXero, ValuationInvoiceXeroRaiseOutcome>(
+            new CommandRoute("POST", "/api/valuation-invoices/{valuationInvoiceId}/xero-raise",
+                command => $"/api/valuation-invoices/{((RaiseValuationInvoiceInXero)command).ValuationInvoiceId}/xero-raise"));
+
         commands.Register<RecordValuationInvoicePayment, ValuationInvoice>(
             new CommandRoute("POST", "/api/valuation-invoices/{valuationInvoiceId}/payment",
                 command => $"/api/valuation-invoices/{((RecordValuationInvoicePayment)command).ValuationInvoiceId}/payment"));

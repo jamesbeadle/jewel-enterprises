@@ -10,17 +10,17 @@ public partial class ValuationInvoicesSection
         ValuationInvoiceStatus.Raised when !invoice.IsManual => new[]
         {
             Item("Record claim sent", () => SubmitAsync(invoice), "The claim has gone to the architect/client — records it as awaiting their approval (nothing is emailed)"),
-            Item("Issue without approval", () => IssueAsync(invoice), "Skip the approval loop — counts toward certified to date"),
+            Item("Issue without approval…", () => OpenXeroRaise(invoice), "Skip the approval loop — raise in Xero (or issue without) and count toward certified to date"),
         },
         ValuationInvoiceStatus.Submitted => new[]
         {
             Item("Record approval", () => ApproveAsync(invoice), "Record the client's approval — issue next to count toward certified to date"),
             Item("Record rejection…", () => OpenReject(invoice), "Record the client's rejection — the invoice unlocks for amendment or cancellation"),
-            Item("Issue without approval", () => IssueAsync(invoice), "For clients with no formal approval loop — counts toward certified to date"),
+            Item("Issue without approval…", () => OpenXeroRaise(invoice), "For clients with no formal approval loop — raise in Xero (or issue without) and count toward certified to date"),
         },
         ValuationInvoiceStatus.Approved => new[]
         {
-            Item("Issue invoice", () => IssueAsync(invoice), "Counts toward certified to date"),
+            Item("Raise in Xero & issue…", () => OpenXeroRaise(invoice), "Raises the sales invoice in Xero with the certificate attached and issues it here — counts toward certified to date"),
         },
         ValuationInvoiceStatus.Issued => new[]
         {

@@ -181,3 +181,40 @@ public sealed record XeroApprovalResult(
 
 // Penny-safe pro-rating of a Xero line amount across cost-centre splits lives in
 // XeroSplitMaths (contracts project, next to the other tested calculation helpers).
+
+// -- The sales invoice raised from the portal (2026-09-09) ----------------------------------
+
+/// <summary>
+/// One AUTHORISED ACCREC invoice: the client (Xero's ContactID when the portal knows it, else the
+/// name — Xero matches an existing contact by name or creates one), one line on the sales
+/// account with the project's Sites tracking, the tax type left to Xero's own answer (contact
+/// default, else their last sales invoice, else the account default — never assumed). DueDate
+/// null lets the organisation's sales default apply.
+/// </summary>
+public sealed record XeroSalesInvoiceRequest(
+    string? ContactId,
+    string ContactName,
+    DateTime Date,
+    DateTime? DueDate,
+    string Reference,
+    string Description,
+    decimal Net,
+    string AccountCode,
+    string SiteOption);
+
+/// <summary>What Xero holds after the raise. Note says where the VAT treatment came from.</summary>
+public sealed record XeroSalesInvoiceResult(
+    bool Succeeded,
+    string? InvoiceId,
+    string? InvoiceNumber,
+    decimal SubTotal,
+    decimal TotalTax,
+    decimal Total,
+    string Note,
+    string? Error)
+{
+    public static XeroSalesInvoiceResult Failed(string error) => new(false, null, null, 0m, 0m, 0m, "", error);
+}
+
+/// <summary>The client as Xero holds it, for the preview: (ContactID or null, the tax note).</summary>
+public sealed record XeroSalesContactLookup(string? ContactId, string TaxNote);

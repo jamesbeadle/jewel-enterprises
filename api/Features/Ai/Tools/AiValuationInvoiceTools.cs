@@ -15,7 +15,7 @@ namespace Jewel.JPMS.Api.Features.Ai.Tools;
 /// portal's own PDF and workbook, rendered by the download endpoints' builders and handed over
 /// as expiring links — so an AI session pulls the real document instead of rebuilding one.
 /// </summary>
-internal static class AiValuationInvoiceTools
+internal static partial class AiValuationInvoiceTools
 {
     private static readonly JsonSerializerOptions Json = new() { WriteIndented = false };
 
@@ -25,7 +25,9 @@ internal static class AiValuationInvoiceTools
     private static string? ProjectId(AiToolContext context, JsonElement input) =>
         AiToolSchema.Text(input, "projectId") ?? context.Scope?.ProjectId;
 
-    public static IReadOnlyList<AiTool> Build()
+    public static IReadOnlyList<AiTool> Build() => Registers().Concat(XeroRaiseTools()).ToList();
+
+    private static IReadOnlyList<AiTool> Registers()
     {
         return new List<AiTool>
         {
@@ -87,7 +89,10 @@ internal static class AiValuationInvoiceTools
                             invoice.RejectionReason,
                             invoice.AmendmentCount,
                             invoice.IsManual,
-                            snapshotId = invoice.ValuationReportSnapshotId
+                            snapshotId = invoice.ValuationReportSnapshotId,
+                            invoice.XeroInvoiceId,
+                            invoice.XeroInvoiceNumber,
+                            invoice.XeroRaisedAt
                         }),
                         note = "The client-facing statement behind an invoice is its FROZEN snapshot "
                                + "(get_valuation_snapshot), never the live report."

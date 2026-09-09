@@ -1,5 +1,6 @@
 using Jewel.JPMS.Commercial;
 using Jewel.JPMS.Features.Commercial;
+using Jewel.JPMS.Features.ValuationInvoices;
 
 namespace Jewel.JPMS.Pages;
 
@@ -60,16 +61,24 @@ public partial class ProjectValuation
         }
     }
 
-    private Task IssueInvoiceAsync()
+    // Issue is Raise in Xero (2026-09-09, the accountant's ask): the modal shows what Xero will
+    // hold, raises the AUTHORISED sales invoice and issues here in one press — or issues without
+    // Xero for an invoice raised there by hand. The modal owns both moves; the page re-reads.
+    private ValuationInvoiceXeroRaiseModal? xeroRaiseModal;
+    private string? xeroRaiseNote;
+
+    private void OpenXeroRaise()
     {
-        if (busy || SelectedInvoice is not { } invoice) return Task.CompletedTask;
-        return GuardAsync(async () =>
-        {
-            await Invoices.IssueAsync(invoice.ValuationInvoiceId);
-            await ReloadInvoicePanelsAsync();
-            // Issuing moves certified to date — re-pull claims for the re-frozen totals.
-            OnCertifiedChanged();
-        }, "Couldn't issue the invoice — the server may be restarting. Please try again.");
+        if (busy || SelectedInvoice is not { } invoice) return;
+        actionError = null;
+        xeroRaiseModal?.Open(invoice);
+    }
+
+    private async Task OnInvoiceIssuedAsync(string note)
+    {
+        xeroRaiseNote = note;
+        await ReloadInvoicePanelsAsync();
+        OnCertifiedChanged();
     }
 
     // The moves that need a form (amount, reason) open the invoices section's own modals —

@@ -3,7 +3,7 @@
 ## Terminology
 
 - **Programme** is the canonical term for the project's plan of work and the project tab that holds it (the programme itself, its claims documents, and its correspondence). Never call it "Schedule" (or US-spelled "Program") in UI copy, code identifiers, routes, or docs. "Scheduling"/"schedule" survive only in persisted backend identifiers (e.g. `RecordType.Scheduling`, the `JPMS/SCH-` mail tag, API routes), immutable EF migrations, and the distinct retention-release concept `RetentionSchedule`, which is not the programme.
-- **Valuation invoice** is the canonical term for an amount of money Jewel has claimed for the client to pay (raised against the current valuation; lifecycle: Raised — accounts' first move once the project team has valued & locked the claim; files a draft and freezes the report snapshot, sends nothing — → Submitted, i.e. the claim recorded as sent to the architect/client (the portal never emails it; "Record claim sent") → Approved → Issued → Paid; one click per material stage, driven from the claim card on the valuation page, and every button either creates a portal record ("Raise …") or records an outside event ("Record …") — none says "send"). Never introduce "cash call", "payment application", "application for payment", or "client invoice" for this concept in UI copy, code identifiers, or docs. "Cash call" survives only in historical meeting notes and immutable EF migrations. See `docs/00-business-context/glossary.md`.
+- **Valuation invoice** is the canonical term for an amount of money Jewel has claimed for the client to pay (raised against the current valuation; lifecycle: Raised — accounts' first move once the project team has valued & locked the claim; files a draft and freezes the report snapshot, sends nothing — → Submitted, i.e. the claim recorded as sent to the architect/client (the portal never emails it; "Record claim sent") → Approved → Issued → Paid; one click per material stage, driven from the claim card on the valuation page, and every button either creates a portal record ("Raise …") or records an outside event ("Record …") — none says "send"; since 2026-09-09 Issue is "Raise in Xero & issue…", which creates the AUTHORISED sales invoice in Xero and issues here in one press). Never introduce "cash call", "payment application", "application for payment", or "client invoice" for this concept in UI copy, code identifiers, or docs. "Cash call" survives only in historical meeting notes and immutable EF migrations. See `docs/00-business-context/glossary.md`.
 - **Variation** is the canonical term for the priced change item, and it is **one document with one number through every stage** — its `VariationOrderStatus` (Quoting → Issued → Awaiting AI → Approved / Rejected) is what says where it has got to. Never present "VOQ" and "VO" as two records or two ladder steps: the 2026-07-23 `UnifyVariationOrders` migration folded them into one row, and the UI followed. The record lineage is **three** stages — Request → RFI → Variation. (Bid packages left the chain on 2026-08-12: a variation order sets the sales side for a cost code, a bid package groups works across cost codes by trade — they are separate records, and tendering runs entirely on the bid package. `SelectedBidPackageId` and the packages' parent `VariationOrderQuoteId` column survive as legacy data only.) A user always reads the number as `V72` (`VariationOrder.DisplayNumber`, and the `VariationRef` minted at approval, which is the same number). "VOQ" survives only in persisted identifiers and API surface: the `VariationOrderQuotes` table and its `VariationOrderQuoteId` column, the stored `Reference` (`VOQ-0072`), the `JPMS/VOQ-…` mail tags, the `/api/…/voq(s)/…` routes, `RecordType.VariationQuote`, and command names like `CreateVoqFromRfq`. The page route is `/projects/{id}/variations/{id}`; the old `/voq/{id}` route is kept on the same page so links already sent out still land.
 
 - **Sales strategy** and **lead** (Sales folder, 2026-09-06). A *strategy* is a methodology for
@@ -314,6 +314,34 @@ finds drift.
   `search_directory` carries `complianceStanding` and the CIS fields). Pin each batch in
   `AiConnectorTests` (`…_reachTheConnector`) so a rename never drops one. A page-only feature
   is a gap the accountant finds first.
+
+## The sales invoice raised in Xero from the claim card (api + jpms)
+
+- **Issue IS raise-in-Xero** (2026-09-09, the accountant's ask: Cert 15 was raised, tracked and
+  had its PDF attached by hand). The claim card's "Raise in Xero & issue…" and the invoices
+  section's menu open `ValuationInvoiceXeroRaiseModal`, which shows the plan first
+  (`PreviewValuationInvoiceXeroRaise`) and then runs `RaiseValuationInvoiceInXero`: one
+  AUTHORISED ACCREC invoice on the project's client (the Client account's name, else the
+  project's `ClientName`; Xero's ContactID from a Client-category directory record's Xero link,
+  else Xero's contact by exact name, else created with the invoice), one line for the invoice's
+  cash `Amount` on `XeroOptions.SalesAccountCode` ("200" unless `Xero__SalesAccountCode`), the
+  project's `XeroSiteName` as Sites tracking (no cost code on income), due date = certificate
+  issue date + the contract's `FinalDateForPaymentDays` else Xero's sales default. **The VAT
+  treatment is never assumed**: `XeroClient.ResolveSalesContactAsync` — the contact's
+  `AccountsReceivableTaxType`, else their most recent ACCREC invoice, else Xero's account
+  default — and the note says which, in the preview, the outcome and the audit event.
+- **Nothing is lost between Xero and the portal.** `RaiseValuationInvoiceInXeroHandler` plans
+  (every blocker named before anything is touched), raises, stamps `XeroInvoiceId` /
+  `XeroInvoiceNumber` / `XeroRaisedAt` and SAVES, then attaches the register's newest
+  certificate for the claim (`IXeroClient.AttachToInvoiceAsync`, best effort — the outcome's
+  `AttachmentError` and a `RaisedInXero` audit event say when it did not), then calls the
+  existing `IssueValuationInvoice` handler so the issue rules, snapshot re-freeze and certified
+  totals are the one implementation. An invoice carrying a Xero id is refused a second raise;
+  "Issue without raising in Xero" (the old `IssueValuationInvoice`) stays for one raised by
+  hand. Xero never un-raises — a wrong invoice is voided in Xero. Connector:
+  `preview_valuation_invoice_xero_raise` + `raise_valuation_invoice_in_xero` (confirm-first,
+  `RaisedBy` stamped). Needs the Cost Integration app's `accounting.attachments` scope for the
+  PDF.
 
 ## Reading scans — the assistant's document reader (api)
 

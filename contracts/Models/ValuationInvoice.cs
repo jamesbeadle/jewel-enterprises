@@ -34,7 +34,8 @@ public enum ValuationInvoiceEventType
     Issued = 5,
     PaymentRecorded = 6,
     Cancelled = 7,
-    ManualEntry = 8
+    ManualEntry = 8,
+    RaisedInXero = 9   // the AUTHORISED sales invoice created in Xero from the portal (2026-09-09)
 }
 
 // A valuation invoice: the client invoice raised against the current valuation/CVR. Drawn from a
@@ -68,9 +69,17 @@ public sealed record ValuationInvoice(
     int AmendmentCount = 0,
     bool IsManual = false,
     string? ValuationReportSnapshotId = null,  // latest snapshot backing this invoice
-    decimal DepositCredited = 0m)              // deposit credit embedded in Amount; gross certificate = Amount + DepositCredited
+    decimal DepositCredited = 0m,              // deposit credit embedded in Amount; gross certificate = Amount + DepositCredited
+    // The AUTHORISED sales invoice this raised in Xero (2026-09-09, the accountant's ask): Xero's
+    // InvoiceID, its number (INV-0123) and when. Null on invoices issued without a Xero raise —
+    // one raised in Xero by hand, or issued before the portal could raise them.
+    string? XeroInvoiceId = null,
+    string? XeroInvoiceNumber = null,
+    DateTimeOffset? XeroRaisedAt = null)
 {
     public string DisplayNumber => Number > 0 ? $"VI-{Number:0000}" : "";
+
+    public bool IsRaisedInXero => !string.IsNullOrWhiteSpace(XeroInvoiceId);
 
     // The gross certificate this invoice represents (works certified before the deposit credit).
     public decimal CertifiedAmount => Amount + DepositCredited;

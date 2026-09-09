@@ -6935,6 +6935,17 @@ namespace Jewel.JPMS.Api.Migrations
                         .HasMaxLength(64)
                         .HasColumnType("nvarchar(64)");
 
+                    b.Property<string>("XeroInvoiceId")
+                        .HasMaxLength(64)
+                        .HasColumnType("nvarchar(64)");
+
+                    b.Property<string>("XeroInvoiceNumber")
+                        .HasMaxLength(64)
+                        .HasColumnType("nvarchar(64)");
+
+                    b.Property<DateTimeOffset?>("XeroRaisedAt")
+                        .HasColumnType("datetimeoffset");
+
                     b.HasKey("ValuationInvoiceId");
 
                     b.ToTable("ValuationInvoices");

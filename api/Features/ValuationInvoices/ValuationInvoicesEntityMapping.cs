@@ -25,7 +25,10 @@ internal static class ValuationInvoicesEntityMapping
         AmendmentCount: entity.AmendmentCount,
         IsManual: entity.IsManual,
         ValuationReportSnapshotId: entity.ValuationReportSnapshotId,
-        DepositCredited: entity.DepositCredited);
+        DepositCredited: entity.DepositCredited,
+        XeroInvoiceId: entity.XeroInvoiceId,
+        XeroInvoiceNumber: entity.XeroInvoiceNumber,
+        XeroRaisedAt: entity.XeroRaisedAt);
 
     public static ValuationInvoiceEvent ToModel(this ValuationInvoiceEventEntity entity) => new(
         ValuationInvoiceEventId: entity.ValuationInvoiceEventId,

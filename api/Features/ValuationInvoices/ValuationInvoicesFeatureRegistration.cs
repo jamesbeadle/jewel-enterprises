@@ -1,5 +1,6 @@
 using Jewel.JPMS.Api.Features.ValuationInvoices.Commands;
 using Jewel.JPMS.Api.Features.ValuationInvoices.Queries;
+using Jewel.JPMS.Api.Features.ValuationInvoices.XeroRaise;
 using Jewel.JPMS.Contracts.ValuationInvoices;
 using Microsoft.Extensions.DependencyInjection;
 
@@ -20,6 +21,12 @@ public static class ValuationInvoicesFeatureRegistration
         services.AddScoped<ICommandHandler<IssueValuationInvoice, ValuationInvoice>, IssueValuationInvoiceHandler>();
         services.AddScoped<IssueValuationInvoiceAuthorisation>();
         services.AddScoped<IssueValuationInvoiceValidation>();
+
+        // The sales invoice raised in Xero at issue (2026-09-09) — the preview and the raise.
+        services.AddScoped<IQueryHandler<PreviewValuationInvoiceXeroRaise, ValuationInvoiceXeroRaisePreview>, PreviewValuationInvoiceXeroRaiseHandler>();
+        services.AddScoped<ICommandHandler<RaiseValuationInvoiceInXero, ValuationInvoiceXeroRaiseOutcome>, RaiseValuationInvoiceInXeroHandler>();
+        services.AddScoped<RaiseValuationInvoiceInXeroAuthorisation>();
+        services.AddScoped<RaiseValuationInvoiceInXeroValidation>();
 
         services.AddScoped<ICommandHandler<RecordValuationInvoicePayment, ValuationInvoice>, RecordValuationInvoicePaymentHandler>();
         services.AddScoped<RecordValuationInvoicePaymentAuthorisation>();
