@@ -259,7 +259,10 @@ Compliance register tab row leads to the register. Clients/Architects render
 read-only with links to `/clients` and `/architects` where creation/editing
 lives. Entry page: company and contacts, Xero-link badge (name should exactly
 match the Xero supplier so invoices line up on WO Allocation), trades against
-the curated list, other contacts beyond the primary, "Invite to portal"
+the curated list, other contacts beyond the primary, "Link to Xero contact…"
+(optionally pulling Xero's details onto the record) and, once linked, "Push
+contacts to Xero…" (Xero's people now beside after; confirm before sending;
+an empty portal side never clears Xero's), "Invite to portal"
 (scoped login), CIS verification panel (status, HMRC verification number,
 verified-on date — "Record verification…" writes the three together), the
 compliance document list, statement of account (every WO with invoices

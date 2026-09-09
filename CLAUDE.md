@@ -234,6 +234,23 @@ finds drift.
   (`MatchingSubcontractorId`), which is what the import modal's "Link to …" and the record page's
   "Suggested" read; several matches stamp nothing. The connector's `list_unlinked_directory_records`
   shows every candidate, and a match is a suggestion a human confirms — nothing links by itself.
+- **Xero's primary person is read, and details move only on request** (2026-09-09, the
+  accountant's ask). `XeroSupplier.PrimaryPersonName` is the contact's own FirstName + LastName
+  (Xero's "Primary person"), held apart from `ContactPersons`; `XeroDetailsPull.PrimaryPersonOf`
+  is the one reading (primary person, else the first additional person) the import and the link
+  share. Linking never touches the record unless `LinkDirectoryRecordToXeroContact.
+  PullDetailsFromXero` is asked for — a choice, never automatic, because Xero's details are
+  often older than the directory's — and then `XeroDetailsPull` copies only where Xero has a
+  value and adds Xero's people as contacts where the record lacks them.
+- **Contacts push to Xero when a person presses it** (`PushDirectoryContactsToXeroContact`,
+  `api/Features/Subcontractors/XeroContacts`). One rule, `XeroContactPushPlanner`, plans both the
+  preview (`PreviewXeroContactPush`, the record page's modal: Xero's people NOW beside AFTER) and
+  the write, read fresh from Xero each time (`IXeroClient.GetContactPeopleAsync`): the record's
+  primary contact → Xero's primary person, its company contacts → Xero's additional persons
+  (Xero replaces the list wholesale, five at most), and an EMPTY side on the portal never clears
+  Xero's. Names go as first + last split on the first space (`XeroClient.NameParts`). Needs the
+  Cost Integration app's `accounting.contacts` scope; a 403 comes back saying so. Audited
+  (`DirectoryContactsPushedToXero`). Never call the push from a handler.
 
 ## Directory: CIS verification & the compliance register (api + jpms)
 
