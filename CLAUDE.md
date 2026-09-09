@@ -301,6 +301,27 @@ finds drift.
   register. `CisVerificationPanel` sits directly above `SubcontractorComplianceList` on the
   record page — the two together are the record's standing to be paid.
 
+## Reading scans — the assistant's document reader (api)
+
+- **A PDF with no text layer is a scan, kept and read — never refused** (2026-09-09, the
+  accountant's ask: Quarry's certificates and the executed contracts are all scans).
+  `AiSourceReader.LoadPdf` returns the document with `ScanBytes`; `ScannedPdfReading.FillAsync`
+  (called by `AiSourceTools.LoadAsync` on every open) OCRs every page through `IDocumentOcr`
+  (`AzureVisionOcr` when `DocumentOcr__Endpoint` / `__ApiKey` are set, `NullDocumentOcr`
+  otherwise) and caches the result in `DocumentOcrResults` by the file's SHA-256. OCR text is
+  FLAGGED: `AiSourceDocument.TextSource = "ocr"` with `OcrConfidence`, on the manifest, in every
+  `read_source` result (`text_source`, `ocr_confidence`, a note to say figures came off a scan)
+  — never passed off as an extracted layer.
+- **Any page of a scan can be SHOWN as a picture** — `ScannedPdfPages.Render` (pdfium via
+  Docnet, 150 dpi, `PngEncoder`), returned through `AiImageToolResult`. `read_source` shows the
+  page when asked (`as_image`), when its OCR is missing or below
+  `ScannedPdfReading.TrustedConfidence`, and — with no OCR at all — for the first page by
+  default; `find_in_source` says so instead of searching nothing. The flat
+  `AiAttachmentReader.Extract` (tender extractor) still refuses a scan, naming the route.
+- **A refusal names the format and the route that works** (`AiSourceReader.RefusalFor`): .xls →
+  Save As .xlsx or upload to the chat; .doc → .docx; .msg → open the email; .zip → name the file.
+  Never a bare "unsupported".
+
 ## Loading states (jpms)
 
 - **Never render a figure, a row count or an empty state from a store that has not loaded.** A `0`

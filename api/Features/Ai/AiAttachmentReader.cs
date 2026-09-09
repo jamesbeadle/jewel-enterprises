@@ -181,6 +181,13 @@ internal static class AiAttachmentReader
             // as unreadable exactly as it did before.
             throw new NotSupportedException($"\"{fileName}\" is an image — it has no text to extract.");
         }
+        if (document.IsScan)
+        {
+            throw new InvalidDataException(
+                $"\"{fileName}\" is a scan with no text layer. The assistant's read_source and "
+                + "read_email_attachment read scans (OCR where configured, else page by page as images); a "
+                + "flat text extract cannot.");
+        }
         var manifest = document.Manifest();
         var read = Sources.AiSourceReader.Read(document, null, 1, MaxChars);
         var truncated = read.Next is not null;

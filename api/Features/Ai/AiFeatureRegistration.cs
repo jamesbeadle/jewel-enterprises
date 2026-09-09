@@ -35,6 +35,15 @@ public static class AiFeatureRegistration
             services.AddSingleton<IClaudeClient, NullClaudeClient>();
         }
 
+        // Reading scans (2026-09-09): Azure AI Vision's Read behind the document reader when
+        // DocumentOcr__Endpoint / __ApiKey are set; otherwise scans show as page images only.
+        var ocrOptions = Scans.DocumentOcrOptions.FromConfiguration(configuration);
+        services.AddSingleton(ocrOptions);
+        if (ocrOptions.IsConfigured)
+            services.AddSingleton<Scans.IDocumentOcr>(sp => new Scans.AzureVisionOcr(new HttpClient(), ocrOptions));
+        else
+            services.AddSingleton<Scans.IDocumentOcr, Scans.NullDocumentOcr>();
+
         // The agent activity log. Scoped because it writes through the request's JpmsContext.
         services.AddScoped<AgentActivityLog>();
         services.AddScoped<IQueryHandler<ListAgentActivity, IReadOnlyList<AgentActivity>>, ListAgentActivityHandler>();

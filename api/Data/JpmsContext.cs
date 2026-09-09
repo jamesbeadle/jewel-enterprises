@@ -221,6 +221,7 @@ public sealed partial class JpmsContext : DbContext
     // administrators only (2026-09-03).
     public DbSet<KpiPersonEntity> KpiPeople => Set<KpiPersonEntity>();
     public DbSet<KpiEmailEntity> KpiEmails => Set<KpiEmailEntity>();
+    public DbSet<DocumentOcrResultEntity> DocumentOcrResults => Set<DocumentOcrResultEntity>();
 
     // Building control — the statutory sign-off trail: the case with the body, its inspection
     // stages, and the files (photos, site reports, notices, the completion certificate).

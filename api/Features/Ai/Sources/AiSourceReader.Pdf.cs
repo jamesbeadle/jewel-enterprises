@@ -41,12 +41,11 @@ internal static partial class AiSourceReader
                 parts.Add(new AiSourcePart($"p{page.Number}", $"Page {page.Number}", "line", lines));
             }
 
+            // A scan (2026-09-09, the accountant's ask): no text layer is not a dead end. The
+            // document keeps its bytes so each page can be rendered and shown as an image, and
+            // OCR'd where Azure AI Vision is configured (ScannedPdfReading fills the parts).
             if (!anyText)
-            {
-                throw new InvalidDataException(
-                    "That PDF has no selectable text — it is likely a scan. Reading scans needs "
-                    + "OCR, which is not available here; the figures have to come from the user.");
-            }
+                return new AiSourceDocument(AiSourceDocument.Pdf, parts) { ScanBytes = content };
 
             return new AiSourceDocument(AiSourceDocument.Pdf, parts);
         }

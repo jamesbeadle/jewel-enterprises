@@ -49,6 +49,10 @@
     <!-- PDF TEXT EXTRACTION (reading, where PDFsharp above is generation) — read_email_attachment
          and chat uploads route PDFs through AiAttachmentReader.ExtractPdf on it. -->
     <PackageReference Include="PdfPig" Version="0.1.9" />
+    <!-- PAGE RENDERING (a scanned PDF has no text layer — its pages are shown to the assistant as
+         images, and OCR'd when Azure AI Vision is configured). Docnet wraps pdfium with the native
+         library for linux-x64 / win-x64 / osx in the package; nothing to install on the host. -->
+    <PackageReference Include="Docnet.Core" Version="2.6.0" />
     <!--
       ClosedXML (MIT, pure managed — fine on the Linux Functions host) reads the spreadsheets users
       attach to the assistant chat (AiAttachmentReader): the boss's tracker workbook goes in, text

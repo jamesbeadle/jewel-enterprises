@@ -263,8 +263,11 @@ internal static partial class AiRecordTools
                 + "read_source: it reads a NAMED sheet or page and pages through a long file, and "
                 + "find_in_source finds where a reference appears first. Every standard format opens "
                 + "(spreadsheets as displayed values, PDFs by page, Word documents, text files) and an "
-                + "IMAGE is SHOWN to you on your next step. What genuinely cannot be read is refused "
-                + "with the reason — relay it and ask the user rather than guessing.",
+                + "IMAGE is SHOWN to you on your next step. A SCANNED PDF reads by OCR where configured "
+                + "(the result says text_source \"ocr\" and a confidence — say a figure came off a scan) "
+                + "and otherwise its first page is SHOWN to you as a picture, the rest through read_source. "
+                + "What genuinely cannot be read is refused naming the format and the route that works "
+                + "— relay it rather than guessing.",
                 AiToolSchema.Object(
                     ("messageId", "string",
                         "The email's messageId from read_record_emails or get_mailbox_message.", true),
