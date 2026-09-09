@@ -39,7 +39,8 @@ public sealed partial class WorkOrderBillRecognition
         line.Type == "ACCPAYCREDIT" ? -line.Net : line.Net;
 
     /// <summary>A number on the bill names the order — supplier + number, since numbers are per
-    /// project; a number that fits orders on two projects falls back to the bill's own site.</summary>
+    /// project; a number that fits orders on two projects falls back to the bill's site — the
+    /// project set on it in the portal, else its Xero Sites tracking.</summary>
     private static (OpenOrder? Order, WorkOrderMatchRule Rule, string? Detail, string? Reason) ChooseByReference(
         List<OpenOrder> orders, IReadOnlyList<int> numbers, string? hintedProjectId)
     {
@@ -55,7 +56,7 @@ public sealed partial class WorkOrderBillRecognition
         if (fits.Count != 1)
             return (null, default, null, $"WO-{number:0000} is open for this supplier on more than one project "
                                          + $"({string.Join(", ", orders.Where(order => order.Number == number).Select(order => order.ProjectName))}) "
-                                         + "and the bill carries no site.");
+                                         + "and the bill carries no site — set the project on the bill and re-check.");
         return (fits[0], WorkOrderMatchRule.ByReference, $"Matched by the reference {fits[0].Reference} on the bill.", null);
     }
 

@@ -163,8 +163,9 @@ finds drift.
   `WorkOrderExceptionReason` per BILL (decided once per invoice, memoised): the labour registry
   wins → the supplier resolves to its directory record through `DirectoryXeroMatcher` → a WO
   number on the bill (`WorkOrderBillReference`: Reference, then descriptions, then invoice
-  number; supplier + number, since numbers are per project; the bill's own Sites hint breaks a
-  tie) → else exactly one open order → the value gate. "Open" = Released with remaining value
+  number; supplier + number, since numbers are per project; the bill's site breaks a tie — the
+  project set on the bill in the portal first, else its Xero Sites hint, the sweep's own
+  precedence, 2026-09-09) → else exactly one open order → the value gate. "Open" = Released with remaining value
   > 0 (decision 2026-09-08). Nothing is persisted for the match, so Sync and Re-check re-run it
   for free; the sweep (`AllocateSuggestedXeroLinesHandler`, page button and nightly worker
   alike) skips matched bills exactly as it skips labour lines.
