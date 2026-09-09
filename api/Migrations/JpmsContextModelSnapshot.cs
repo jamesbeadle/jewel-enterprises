@@ -1267,11 +1267,6 @@ namespace Jewel.JPMS.Api.Migrations
                         .HasMaxLength(64)
                         .HasColumnType("nvarchar(64)");
 
-                    b.Property<string>("Purpose")
-                        .IsRequired()
-                        .HasMaxLength(128)
-                        .HasColumnType("nvarchar(128)");
-
                     b.Property<string>("SubcontractorId")
                         .IsRequired()
                         .HasMaxLength(64)

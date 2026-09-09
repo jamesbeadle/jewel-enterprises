@@ -116,7 +116,6 @@ public sealed class ConsolidateDirectoryRecordsHandler
             CompanyContactId = SubcontractorIdentifierFactory.NextCompanyContactId(),
             SubcontractorId = command.MasterSubcontractorId,
             Name = name,
-            Purpose = "",
             Email = email,
             Phone = string.IsNullOrWhiteSpace(phone) ? record.MobileNumber.Trim() : phone,
             CreatedAt = DateTimeOffset.UtcNow

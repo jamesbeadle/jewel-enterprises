@@ -21,5 +21,5 @@ internal static class SubcontractorEntityMapping
             entity.Version, entity.SupersededAt, HasFile: !string.IsNullOrEmpty(entity.BlobPath), entity.FileSize);
 
     public static CompanyContact ToModel(this CompanyContactEntity entity) =>
-        new(entity.CompanyContactId, entity.SubcontractorId, entity.Name, entity.Purpose, entity.Email, entity.Phone, entity.CreatedAt);
+        new(entity.CompanyContactId, entity.SubcontractorId, entity.Name, entity.Email, entity.Phone, entity.CreatedAt);
 }

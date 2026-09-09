@@ -152,8 +152,7 @@ internal sealed partial class SubcontractorsAndLeadsActions
         new AiAction(
             Name: "upsert_company_contact",
             Area: "Subcontractors",
-            Description: "Adds or updates a person on a directory record's contact list, with the "
-                + "free-text purpose the contact serves (\"Accounts\", \"Projects\", \"Estimating\"…). A "
+            Description: "Adds or updates a person on a directory record's contact list. A "
                 + "null/blank companyContactId inserts; a populated one updates in place.",
             CommandType: typeof(UpsertCompanyContact),
             ResultType: typeof(CompanyContact),

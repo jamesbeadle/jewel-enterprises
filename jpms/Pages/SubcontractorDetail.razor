@@ -132,8 +132,7 @@
         </div>
 
         @* Contacts: the people on this record beyond its primary contact line. A consolidated
-           master keeps every merged email/phone here, and Purpose says what each contact is used
-           for ("Accounts", "Projects"…) — different contacts for different system purposes. *@
+           master keeps every merged email/phone here. *@
         <div class="panel p-4 mb-6">
             <div class="flex items-center justify-between mb-3">
                 <h2 class="text-sm font-semibold text-content">Contacts</h2>
@@ -160,7 +159,6 @@
                     <thead>
                         <tr>
                             <th>Name</th>
-                            <th>Purpose</th>
                             <th>Email</th>
                             <th>Phone</th>
                             <th class="w-24"></th>
@@ -171,7 +169,6 @@
                         {
                             <tr>
                                 <td class="text-content font-medium">@Dash(contact.Name)</td>
-                                <td>@Dash(contact.Purpose)</td>
                                 <td>@Dash(contact.Email)</td>
                                 <td>@Dash(contact.Phone)</td>
                                 <td class="text-right whitespace-nowrap">
@@ -185,22 +182,11 @@
                     </tbody>
                 </table>
             }
-            <div class="grid grid-cols-2 md:grid-cols-5 gap-2 items-end">
+            <div class="grid grid-cols-2 md:grid-cols-4 gap-2 items-end">
                 <div>
                     <FormField Label="Name">
                     <input class="field" @bind="cName" />
                     </FormField>
-                </div>
-                <div>
-                    <FormField Label="Purpose">
-                    <input class="field" list="contact-purposes" placeholder="e.g. Accounts" @bind="cPurpose" />
-                    </FormField>
-                    <datalist id="contact-purposes">
-                        <option value="Accounts" />
-                        <option value="Projects" />
-                        <option value="Estimating" />
-                        <option value="Site" />
-                    </datalist>
                 </div>
                 <div>
                     <FormField Label="Email">

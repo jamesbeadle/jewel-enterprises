@@ -8,14 +8,11 @@ public sealed record ListCompanyContacts(string SubcontractorId) : IQuery<IReadO
 
 /// <summary>
 /// Adds or updates a person on a directory record's contact list. A null/blank CompanyContactId
-/// inserts; a populated one updates in place. <paramref name="Purpose"/> is the free-text system
-/// purpose the contact serves ("Accounts", "Projects", "Estimating"…), so different contacts can be
-/// used for different purposes on one consolidated master record.
+/// inserts; a populated one updates in place.
 /// </summary>
 public sealed record UpsertCompanyContact(
     string SubcontractorId,
     string Name,
-    string Purpose,
     string Email,
     string Phone,
     string? CompanyContactId = null) : ICommand<CompanyContact>;
