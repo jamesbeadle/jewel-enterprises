@@ -1,0 +1,38 @@
+@namespace Jewel.JPMS.Features.Directory
+@inject ISubcontractorStore SubcontractorStore
+
+@* Push contacts to Xero (2026-09-09, the accountant's ask): the record's primary contact and
+   other contacts written onto its linked Xero contact, shown first as Xero holds them NOW beside
+   what Xero will hold AFTER, so nothing in Xero is overwritten by accident. Something a person
+   presses, never automatic. Owns the preview read and the push; the page re-reads nothing — the
+   record itself does not change. *@
+<Modal IsOpen="open" Title="@($"Push contacts to Xero — {companyName}")" ShowFooter="true"
+       ConfirmLabel="@(pushing ? "Pushing…" : "Push to Xero")" CancelLabel="Cancel"
+       ConfirmDisabled="@(pushing || preview is null || !preview.ChangesAnything)"
+       OnCancel="Close" OnConfirm="PushAsync" Class="max-w-3xl w-full">
+    @if (error is not null)
+    {
+        <Notice Tone="Tone.Negative" Class="mb-3">@error</Notice>
+    }
+    <LoadGate IsLoading="@(preview is null && error is null)" Prominent="true" Label="Reading Xero">
+        @if (preview is not null)
+        {
+            <p class="text-sm text-content-muted mb-4">
+                Xero contact <span class="font-medium text-content">@preview.Now.Name</span>. Xero replaces its additional
+                people with the record's; a blank primary or an empty contact list here leaves Xero's as they are.
+            </p>
+            @foreach (var warning in preview.Warnings)
+            {
+                <Notice Tone="Tone.Warning" Class="mb-3">@warning</Notice>
+            }
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                <XeroContactPeopleList Title="In Xero now" People="preview.Now" />
+                <XeroContactPeopleList Title="After the push" People="preview.After" Emphasise="true" />
+            </div>
+            @if (!preview.ChangesAnything)
+            {
+                <p class="text-sm text-content-subtle mt-4">Xero already holds exactly these people — nothing to push.</p>
+            }
+        }
+    </LoadGate>
+</Modal>

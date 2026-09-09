@@ -59,7 +59,13 @@ public interface ISubcontractorStore
     /// <summary>Links an existing directory record to a Xero contact — the one-field change for a
     /// supplier already in the directory — and refreshes the directory list. Server-side this is
     /// LinkDirectoryRecordToXeroContact: refused when either side is already linked.</summary>
-    Task<Subcontractor> LinkToXeroAsync(string subcontractorId, string xeroContactId);
+    Task<Subcontractor> LinkToXeroAsync(string subcontractorId, string xeroContactId, bool pullDetailsFromXero = false);
+
+    /// <summary>What pushing the record's contacts to its linked Xero contact would write — Xero's people now and after.</summary>
+    Task<XeroContactPushPreview> PreviewXeroContactPushAsync(string subcontractorId);
+
+    /// <summary>Writes the record's contacts onto its linked Xero contact, as the preview showed.</summary>
+    Task<XeroContactPushOutcome> PushContactsToXeroAsync(string subcontractorId);
 
     /// <summary>Removes one Xero link from a directory record (the undo of LinkToXeroAsync or of
     /// a mistaken import's link) and refreshes the directory list.</summary>

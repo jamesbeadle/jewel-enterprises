@@ -61,6 +61,22 @@ internal sealed class RecordingXero : IXeroClient
         Calls.Add(force ? "GetSuppliers:force" : "GetSuppliers");
         return Task.FromResult(new XeroSuppliersSnapshot(true, null, DateTimeOffset.UtcNow, false, Suppliers.ToList()));
     }
+    public Dictionary<string, XeroContactPeople> ContactPeople { get; } = new(StringComparer.OrdinalIgnoreCase);
+    public List<XeroContactPeople> PeopleWritten { get; } = new();
+
+    public Task<XeroContactPeople?> GetContactPeopleAsync(string contactId, CancellationToken ct)
+    {
+        Calls.Add($"GetContactPeople:{contactId}");
+        return Task.FromResult(ContactPeople.TryGetValue(contactId, out var people) ? people : null);
+    }
+
+    public Task<XeroApprovalResult> SetContactPeopleAsync(XeroContactPeople people, CancellationToken ct)
+    {
+        Calls.Add($"SetContactPeople:{people.ContactId}");
+        PeopleWritten.Add(people);
+        ContactPeople[people.ContactId] = people;
+        return Task.FromResult(XeroApprovalResult.Ok("OK"));
+    }
     public Task<XeroTrackingCategoriesSnapshot> GetTrackingCategoriesSnapshotAsync(bool force, CancellationToken ct) => throw new NotSupportedException();
     /// <summary>A fixed answer for the next approval / site write when a test sets one (the
     /// write-back tests); otherwise approval answers as the real client would, off Bills.</summary>

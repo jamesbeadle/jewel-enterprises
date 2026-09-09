@@ -191,7 +191,8 @@ public sealed partial class XeroClient
         Postcode: AddressPartOf(contact, "PostalCode"),
         ContactPersons: ReadContactPersons(contact),
         IsSupplier: BoolOf(contact, "IsSupplier"),
-        IsCustomer: BoolOf(contact, "IsCustomer"));
+        IsCustomer: BoolOf(contact, "IsCustomer"),
+        PrimaryPersonName: FullNameOf(contact));
 
     /// <summary>The street line(s) from the contact's first address that carries any — Xero's
     /// AddressLine1–4 joined onto one line for the directory record's AddressLine field.</summary>
@@ -245,12 +246,14 @@ public sealed partial class XeroClient
         if (!contact.TryGetProperty("ContactPersons", out var persons) || persons.ValueKind != JsonValueKind.Array)
             return Array.Empty<XeroContactPerson>();
         return persons.EnumerateArray()
-            .Select(person => new XeroContactPerson(
-                Name: string.Join(" ",
-                    new[] { StringOf(person, "FirstName"), StringOf(person, "LastName") }
-                        .Where(part => !string.IsNullOrWhiteSpace(part))),
-                EmailAddress: StringOf(person, "EmailAddress") ?? ""))
+            .Select(person => new XeroContactPerson(FullNameOf(person), StringOf(person, "EmailAddress") ?? ""))
             .Where(person => !string.IsNullOrWhiteSpace(person.Name) || !string.IsNullOrWhiteSpace(person.EmailAddress))
             .ToList();
     }
+
+    /// <summary>FirstName + LastName as one name — the shape a person has on the contact itself and on each ContactPerson.</summary>
+    private static string FullNameOf(JsonElement personOrContact) =>
+        string.Join(" ",
+            new[] { StringOf(personOrContact, "FirstName"), StringOf(personOrContact, "LastName") }
+                .Where(part => !string.IsNullOrWhiteSpace(part)));
 }

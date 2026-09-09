@@ -58,6 +58,20 @@ public interface IXeroClient
     Task<XeroSuppliersSnapshot> GetSuppliersAsync(bool force, CancellationToken ct);
 
     /// <summary>
+    /// The people on one Xero contact, read fresh by id — the contact's primary person and its
+    /// additional persons — for the contact push's "now" (2026-09-09). Null when Xero has no
+    /// contact by that id. Throws XeroCallFailedException when Xero cannot be asked.
+    /// </summary>
+    Task<XeroContactPeople?> GetContactPeopleAsync(string contactId, CancellationToken ct);
+
+    /// <summary>
+    /// Writes the people onto one Xero contact: its primary person (FirstName / LastName /
+    /// EmailAddress) and its additional persons, which Xero replaces wholesale. Needs the
+    /// connection's accounting.contacts scope; a refusal comes back on the result, never thrown.
+    /// </summary>
+    Task<XeroApprovalResult> SetContactPeopleAsync(XeroContactPeople people, CancellationToken ct);
+
+    /// <summary>
     /// Lists the organisation's tracking categories with their options exactly as Xero holds
     /// them (archived options included and flagged) — the read behind the Cost codes page's
     /// "Xero sites" / "Xero cost codes" tabs, so the exact phrasing of each option can be

@@ -61,6 +61,12 @@
                             title="Link this record to the Xero contact its bills arrive under — no second record is created"
                             @onclick="OpenXeroLink">Link to Xero contact…</button>
                 }
+                @if (CanManageXeroLink && subcontractor.XeroLinked)
+                {
+                    <button type="button" class="btn-secondary shrink-0"
+                            title="Write this record's primary contact and other contacts onto the linked Xero contact — you see what Xero holds now and after before anything is sent"
+                            @onclick="OpenXeroContactPush">Push contacts to Xero…</button>
+                }
                 @if (CanManageXeroLink)
                 {
                     @foreach (var link in subcontractor.XeroLinks)
@@ -78,9 +84,14 @@
         </PageHeader>
 
         <XeroLinkModal @ref="xeroLinkModal" />
+        <XeroContactPushModal @ref="xeroContactPushModal" OnPushed="note => xeroNote = note" />
         @if (xeroError is not null)
         {
             <Notice Tone="Tone.Negative" Class="mb-4">@xeroError</Notice>
+        }
+        @if (xeroNote is not null)
+        {
+            <Notice Tone="Tone.Positive" Class="mb-4" Dismissible="true" OnDismiss="() => xeroNote = null">@xeroNote</Notice>
         }
 
         @* Trades are managed here: each is a chip from the curated list, so when a company changes

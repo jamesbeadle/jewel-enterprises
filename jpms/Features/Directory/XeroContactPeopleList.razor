@@ -1,0 +1,34 @@
+@namespace Jewel.JPMS.Features.Directory
+
+@* One side of the push's before/after: a Xero contact's primary person and additional people. *@
+<div class="panel p-4">
+    <h3 class="eyebrow mb-2">@Title</h3>
+    <dl class="text-sm space-y-2">
+        <div>
+            <dt class="text-content-subtle">Primary person</dt>
+            <dd class="@(Emphasise ? "text-content font-medium" : "text-content")">@PersonText(People.PrimaryPerson)</dd>
+        </div>
+        <div>
+            <dt class="text-content-subtle">Additional people</dt>
+            @if (People.AdditionalPersons.Count == 0)
+            {
+                <dd class="text-content-muted">None</dd>
+            }
+            @foreach (var person in People.AdditionalPersons)
+            {
+                <dd class="@(Emphasise ? "text-content font-medium" : "text-content")">@PersonText(person)</dd>
+            }
+        </div>
+    </dl>
+</div>
+
+@code {
+    [Parameter, EditorRequired] public string Title { get; set; } = "";
+    [Parameter, EditorRequired] public XeroContactPeople People { get; set; } = default!;
+    [Parameter] public bool Emphasise { get; set; }
+
+    private static string PersonText(XeroContactPerson? person) =>
+        person is null ? "—"
+        : string.IsNullOrWhiteSpace(person.EmailAddress) ? person.Name
+        : $"{person.Name} · {person.EmailAddress}";
+}

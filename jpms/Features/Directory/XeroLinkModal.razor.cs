@@ -12,6 +12,7 @@ public partial class XeroLinkModal
     private bool loading;
     private string? error;
     private string? linkingContactId;
+    private bool pullDetails;
 
     /// <summary>Opens the dialog for one record, its search seeded with the company name so the
     /// likely contact is on screen at once.</summary>
@@ -21,6 +22,7 @@ public partial class XeroLinkModal
         companyName = recordCompanyName;
         search = recordCompanyName;
         error = null;
+        pullDetails = false;
         open = true;
         _ = LoadSuppliersAsync(force: false);
         StateHasChanged();
@@ -71,7 +73,7 @@ public partial class XeroLinkModal
         try
         {
             linkingContactId = contactId;
-            var linked = await SubcontractorStore.LinkToXeroAsync(subcontractorId, contactId);
+            var linked = await SubcontractorStore.LinkToXeroAsync(subcontractorId, contactId, pullDetails);
             open = false;
             await OnLinked.InvokeAsync(linked);
         }

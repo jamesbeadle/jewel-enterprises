@@ -79,8 +79,10 @@ public partial class SubcontractorDetail
         r is Role.Admin or Role.ManagingDirector or Role.FinanceDirector);
 
     private XeroLinkModal? xeroLinkModal;
+    private XeroContactPushModal? xeroContactPushModal;
     private bool xeroBusy;
     private string? xeroError;
+    private string? xeroNote;
 
     private static string XeroLinkTitle(Subcontractor sub) =>
         sub.XeroLinks.Count == 0
@@ -92,6 +94,14 @@ public partial class SubcontractorDetail
         if (subcontractor is null) return;
         xeroError = null;
         xeroLinkModal?.Open(subcontractor.SubcontractorId, subcontractor.CompanyName);
+    }
+
+    private void OpenXeroContactPush()
+    {
+        if (subcontractor is null) return;
+        xeroError = null;
+        xeroNote = null;
+        xeroContactPushModal?.Open(subcontractor.SubcontractorId, subcontractor.CompanyName);
     }
 
     private async Task UnlinkFromXero(string xeroContactId)
