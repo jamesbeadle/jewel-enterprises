@@ -277,8 +277,7 @@
             detail.Order,
             detail.SubcontractorName,
             detail.Lines.OrderBy(l => l.SortOrder).Select(WorkOrderPoEmail.ToLine).ToList(),
-            Project?.Name ?? "",
-            Nav.BaseUri);
+            Project?.Name ?? "");
 
     // Sends the reviewed email now, purchase order attached — the same SendWorkOrderPoEmail the
     // release fires automatically (2026-09-09: the accountant asked for a send, not a draft).
