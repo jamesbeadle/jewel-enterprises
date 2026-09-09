@@ -10,10 +10,11 @@ namespace Jewel.JPMS.Api.Migrations
     /// <summary>
     /// Drops CompanyContacts.Purpose (2026-09-09): the field was read only as the caption on an
     /// email-picker chip, was almost always blank, and read as a question about Jewel's side rather
-    /// than the contact's. Destructive — deploy the code that stops reading it first, then apply.
+    /// than the contact's. Step two of two, DESTRUCTIVE: apply only after the code that stops
+    /// reading the column is deployed (step one, DefaultCompanyContactPurpose, goes before it).
     /// </summary>
     [DbContext(typeof(JpmsContext))]
-    [Migration("20260909100000_DropCompanyContactPurpose")]
+    [Migration("20260909110000_DropCompanyContactPurpose")]
     public partial class DropCompanyContactPurpose : Migration
     {
         /// <inheritdoc />
