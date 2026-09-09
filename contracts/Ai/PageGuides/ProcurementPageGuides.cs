@@ -50,10 +50,10 @@ public static class ProcurementPageGuides
             "The printable purchase order for one work order — the sheet as issued, with supplier "
             + "and site addresses, approver and payment terms, plus a status pill (Draft awaiting "
             + "approval, Awaiting supplier acceptance, Accepted, Rejected, Cancelled). Manually: "
-            + "\"Print / save PDF\" via the browser dialog, and \"Draft email to supplier\" which "
-            + "creates a covering-email draft in the shared mailbox for the user to review and send "
-            + "from Outlook — nothing sends from the page, and the button is hidden for draft, "
-            + "rejected and cancelled orders. Below the sheet sits a record-keeping attachments "
+            + "\"Print / save PDF\" via the browser dialog, and \"Email to supplier…\" which SENDS the "
+            + "covering email now from the shared projects mailbox with the purchase order PDF "
+            + "attached (a failed send is left in the mailbox's Drafts folder); the button is hidden "
+            + "for draft, rejected and cancelled orders. Below the sheet sits a record-keeping attachments "
             + "panel (quotes, signed copies) that never prints or goes to the supplier. You can "
             + "navigate_to here with a real work-order id. Approving, rejecting, cancelling and "
             + "re-coding are done on the Work Orders tab, not here."),
@@ -74,7 +74,9 @@ public static class ProcurementPageGuides
             + "default, the company directory) and Internal staff. Manually, on the Subcontractors "
             + "group: search and Type filter, click a row to open its record — each row carries a "
             + "Compliance pill (the company's worst current-document status: Missing, Current, "
-            + "Expiring soon inside 30 days, or Expired) — \"+ Add company\" "
+            + "Expiring soon inside 30 days, or Expired) and a Compliance chip row narrows the list to "
+            + "one standing; a Companies | Compliance register tab row leads to /directory/compliance — "
+            + "\"+ Add company\" "
             + "(Admin/MD/FD), \"Import from Xero\", and Consolidate — tick two or more records, pick "
             + "the master and the winning value per field; references re-point, losing contact "
             + "details become contacts on the master. Clients and Architects render read-only here "
@@ -84,7 +86,10 @@ public static class ProcurementPageGuides
 
         new("/directory/{subcontractorId}", "Directory entry",
             "A subcontractor's master record: company and contact details, Xero-link badge, trades, "
-            + "contacts, portal access, statement of account and the compliance document list. "
+            + "contacts, portal access, statement of account, the CIS verification panel (the HMRC "
+            + "result as three fields — status, verification number, verified-on date — written together "
+            + "by \"Record verification…\" / record_cis_verification, never squeezed into the status) "
+            + "and the compliance document list beneath it. "
             + "Manually: \"Edit details\" (the company name should match the supplier's exact Xero "
             + "name so invoices line up on WO Allocation; payment terms print on their purchase "
             + "orders), trade chips against the curated list, other contacts beyond the primary, \"Invite to "
@@ -93,6 +98,15 @@ public static class ProcurementPageGuides
             + "every work order they hold with invoices claimed against each — downloadable as PDF "
             + "or drafted by email. You can navigate_to here with a real id (tools return "
             + "ready-made routes); no dialog is registered."),
+
+        new("/directory/compliance", "Compliance register",
+            "Every directory company's current compliance documents in ONE list, worst first — "
+            + "Expired, Expiring soon (inside 30 days), Missing (a company with nothing on file is a "
+            + "row), then Current — with search (company, trade, document), a status chip row with "
+            + "counts, and an Excel export that can ignore the search and filter. Rows open the "
+            + "company's record, where the renewal is filed. The Companies tab leads back to "
+            + "/directory; the dashboard's \"Documents expiring\" tile lands here. Same gate as the "
+            + "Directory (Admin/MD/FD/PM). You can navigate_to here; no dialog is registered."),
 
         new("/subcontractors/communications", "Subcontractor communications",
             "The live list of every email tagged with the SubComms family — general subcontractor "

@@ -215,8 +215,9 @@ Awarding a tender happens on the bid package; invoice linking on WO Allocation.
 ### Purchase order — `/projects/{project}/work-orders/{id}/po`
 The printable PO as issued: supplier and site addresses, approver, payment
 terms, status pill (Draft / Awaiting supplier acceptance / Accepted / Rejected
-/ Cancelled). "Print / save PDF"; "Draft email to supplier" (Outlook draft in
-the shared mailbox; hidden for draft/rejected/cancelled). Record-keeping
+/ Cancelled). "Print / save PDF"; "Email to supplier…" (sends now from the
+shared projects mailbox, PO PDF attached; a failed send stays in Drafts;
+hidden for draft/rejected/cancelled). Record-keeping
 attachments panel below never prints or goes to the supplier.
 
 ### WO Allocation — `/projects/{project}/work-order-allocation`
@@ -241,16 +242,29 @@ sent copy inheriting the thread's tags. Tagging/untagging: Control Centre.
 
 ## Internal folder
 
-### Directory — `/directory`, entry `/directory/{subcontractorId}`
+### Directory — `/directory`, entry `/directory/{subcontractorId}`, register `/directory/compliance`
 Unified directory: chips for Clients, Architects, Subcontractors (default),
-Internal staff. Subcontractors: search, Type filter, "+ Add company"
-(Admin/MD/FD), "Import from Xero", Consolidate (pick master, winning value per
-field; references re-point). Clients/Architects render read-only with links to
-`/clients` and `/architects` where creation/editing lives. Entry page: company
-and contacts, Xero-link badge (name should exactly match the Xero supplier so
-invoices line up on WO Allocation), trades against the curated list, other
-contacts beyond the primary, "Invite to portal" (scoped login), statement of account (every WO with invoices claimed against it — PDF
-or email draft).
+Internal staff. Subcontractors: search, Type filter, Compliance filter
+(Expired / Expiring soon / Missing / Current — the company's worst current
+document), "+ Add company" (Admin/MD/FD), "Import from Xero", Consolidate
+(pick master, winning value per field; references re-point; the CIS
+verification number and date follow the chosen status). A Companies |
+Compliance register tab row leads to the register. Clients/Architects render
+read-only with links to `/clients` and `/architects` where creation/editing
+lives. Entry page: company and contacts, Xero-link badge (name should exactly
+match the Xero supplier so invoices line up on WO Allocation), trades against
+the curated list, other contacts beyond the primary, "Invite to portal"
+(scoped login), CIS verification panel (status, HMRC verification number,
+verified-on date — "Record verification…" writes the three together), the
+compliance document list, statement of account (every WO with invoices
+claimed against it — PDF or email draft).
+
+**Compliance register** (`/directory/compliance`): every company's current
+compliance documents in one list, worst first (Expired, Expiring soon,
+Missing — a company with nothing on file is a row — then Current); search
+by company, trade or document; status chips with counts; Excel export with
+"Ignore search & filter". Rows open the company's record. The dashboard's
+"Documents expiring" tile lands here.
 
 ### Registers — `/registers` · Policies — `/policies`
 Registers: the Monday replacement — insurances, subscriptions, vans, trade

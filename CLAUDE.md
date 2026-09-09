@@ -221,6 +221,27 @@ finds drift.
   "Suggested" read; several matches stamp nothing. The connector's `list_unlinked_directory_records`
   shows every candidate, and a match is a suggestion a human confirms — nothing links by itself.
 
+## Directory: CIS verification & the compliance register (api + jpms)
+
+- **The HMRC CIS verification result is three fields written together** (2026-09-09, the
+  accountant's ask): `CisStatus` is the SHORT reading only ("Verified 20% standard", 64 chars);
+  the verification number ("V1415495651") and the verified-on date are `CisVerificationNumber` /
+  `CisVerifiedOn`, and `RecordCisVerification` (the record page's "Record verification…", the
+  connector's `record_cis_verification`) is the ONE writer of all three. `UpdateSubcontractor`
+  keeps its `CisStatus` parameter and refuses one over 64 characters with a 400 that points at
+  `RecordCisVerification` — never squeeze the number and date into the status again. On
+  consolidation the number and date follow whichever record's status was chosen.
+- **Compliance standing is per company and reads in one order.** A company's standing is the
+  worst status among its current documents, Missing when it holds none
+  (`ComplianceOverviewReadModel.WorstStatusFor`); `DirectoryComplianceFilter.WorstFirst`
+  (Expired → Expiring soon → Missing → Current) is the order every compliance list and chip row
+  reads in. The Directory's Compliance `FilterChips` and the register at `/directory/compliance`
+  (`ComplianceRegister` page, `ComplianceRegisterRow.Build`: one row per current document plus
+  one Missing row per empty company) both read it; the two views are siblings joined by
+  `DirectoryViewTabs` (a `TabRow`), and the dashboard's "Documents expiring" tile lands on the
+  register. `CisVerificationPanel` sits directly above `SubcontractorComplianceList` on the
+  record page — the two together are the record's standing to be paid.
+
 ## Loading states (jpms)
 
 - **Never render a figure, a row count or an empty state from a store that has not loaded.** A `0`
