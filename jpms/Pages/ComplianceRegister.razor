@@ -1,0 +1,87 @@
+@page "/directory/compliance"
+@using Jewel.JPMS.Features.Directory
+@using Jewel.JPMS.Features.Subcontractors
+@inject AuthService Auth
+@inject SessionService Session
+@inject ISubcontractorStore SubcontractorStore
+@inject ComplianceOverviewReadModel Compliance
+@inject NavigationManager Nav
+@implements IDisposable
+
+<PageTitle>Compliance register · JPMS</PageTitle>
+
+@*
+    The compliance register (2026-09-09, the accountant's ask): every directory company's current
+    compliance documents in ONE list, worst first, so lapsing insurance is seen across the whole
+    supply chain rather than one record at a time. A company with nothing on file is a row too —
+    Missing is a standing, not an absence. Rows open the company's record, where the renewal is
+    filed. Same gate as the Directory; same whole-company read as its Compliance column.
+*@
+
+<Page>
+    @if (!CanAccess)
+    {
+        <PageHeader Title="Not available" />
+        <p class="text-content-muted">The directory is restricted to administrators, directors and project managers.</p>
+    }
+    else
+    {
+        <PageHeader>
+            <SubtitleContent>
+                @if (IsLoaded)
+                {
+                    @Summary
+                }
+            </SubtitleContent>
+            <Actions>
+                <Toolbar>
+                    <ExportToExcelButton FileName="Compliance register"
+                                         Disabled="@(FilteredRows.Count == 0)"
+                                         ShowIncludeAllRows="@FiltersActive"
+                                         IncludeAllLabel="Ignore search & filter"
+                                         BuildWorkbook="BuildExportWorkbook" />
+                </Toolbar>
+            </Actions>
+        </PageHeader>
+
+        <TabRow Items="DirectoryViewTabs.Items" ActiveKey="@DirectoryViewTabs.ComplianceRegister" AriaLabel="Directory views" />
+
+        <div class="flex flex-wrap items-center gap-3 mb-5">
+            <SearchInput Value="@search" ValueChanged="value => search = value" Placeholder="Company, trade, document…" />
+            <FilterChips Items="StatusChips" Selected="@statusFilter" OnSelect="key => statusFilter = key"
+                         Disabled="@(!IsLoaded)" AriaLabel="Compliance" />
+        </div>
+
+        @if (dataFailed)
+        {
+            <Notice Tone="Tone.Negative">Couldn't load the compliance documents — refresh to try again.</Notice>
+        }
+        else
+        {
+            <RecordsTable IsLoading="@(!IsLoaded)" LoadingLabel="Loading the register" Dense="true"
+                          IsEmpty="@(FilteredRows.Count == 0)" EmptyMessage="No documents match.">
+                <thead>
+                    <tr>
+                        <th>Company</th>
+                        <th class="hidden md:table-cell">Trade</th>
+                        <th>Document</th>
+                        <th class="text-right">Expires</th>
+                        <th>Compliance</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    @foreach (var row in FilteredRows)
+                    {
+                        <tr class="is-clickable" @onclick="() => Open(row.Company.SubcontractorId)">
+                            <td class="text-content font-medium">@row.Company.CompanyName</td>
+                            <td class="hidden md:table-cell">@row.Company.TradesLabel</td>
+                            <td>@row.DocumentLabel</td>
+                            <td class="text-right whitespace-nowrap">@DateText(row.ExpiresAt)</td>
+                            <td><ComplianceStatusPill Status="@row.Status" /></td>
+                        </tr>
+                    }
+                </tbody>
+            </RecordsTable>
+        }
+    }
+</Page>
