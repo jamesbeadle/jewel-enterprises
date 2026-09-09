@@ -32,6 +32,20 @@
   Open; the rest are Applied / Discarded / Superseded, never deleted. Code: `contracts/Site/
   ProgrammeDrafts.cs`, `api/Features/Site/Drafts`, `jpms/Features/Site/Programme/
   ProgrammeDraftReview`; spec `docs/Programme-Draft-From-Valuation-Spec.md`.
+- **Variations and EOTs on the programme** (Programme tab, 2026-09-09). The Gantt has two
+  sections beneath the tasks on the same ruler (`ProgrammeTimeline`): **Variations** — every
+  variation but a rejected one, approved or not, placed on the tasks its cost centres map to
+  through `ProgrammeTaskCostCentres` — and **Extensions of time**. The programme READS
+  variations and never writes them: what a variation does to the programme is the programme's
+  OWN record, `ProgrammeVariationEffect` (variation + task + days; `RecordProgrammeVariationEffect`
+  / `RemoveProgrammeVariationEffect`, Director + PM, connector actions of the same names). A
+  push is an OVERLAY — a segment on the task's end, dashed until the variation is approved —
+  and planned dates, cost centres and the valuation never move because of one. An EOT's days
+  are the request's own facts (`Request.EotDaysClaimed` / `EotDaysGranted`, EOT only, written by
+  `RaiseRequest` / `UpdateRequestDetails` under the "null means not supplied" convention) and
+  the row is drawn from the completion it extends (baselined, else current). Placement is pure
+  and shared with `get_programme` (`ProgrammeVariationPlacement`, `ProgrammeExtensionPlacement`,
+  contracts/Models). RFIs are not on the chart: nothing links an RFI to a task yet.
 
 ## Record tabs & the in-view toolbar (jpms)
 

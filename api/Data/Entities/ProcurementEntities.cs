@@ -338,6 +338,11 @@ public sealed class RequestEntity
     // Optional — an EOT can stand alone; never set for other kinds.
     [MaxLength(64)]      public string? RelatedNodRequestId { get; set; }
 
+    // EOT only: the extension sought and, once the architect answers, awarded — calendar days.
+    // The Programme tab draws the EOT from completion by these; null until entered.
+    public int? EotDaysClaimed { get; set; }
+    public int? EotDaysGranted { get; set; }
+
     // Set when this (General) request was merged into another: the survivor's id and when it
     // happened. A merged request is closed at the same time and kept purely as the audit trail —
     // its conversation, items and emails all live on the survivor from then on.

@@ -1,0 +1,48 @@
+@namespace Jewel.JPMS.Features.Site
+
+@* The EOT's day counts: the extension sought when it was raised, and the extension awarded once
+   the architect has answered. Written onto the EOT request — they are the document's own facts. *@
+<div class="bg-surface-raised border border-line rounded p-4 my-2 space-y-3">
+    <p class="text-sm font-semibold text-content">Days on @Row.Eot.Reference <span class="font-normal text-content-subtle">— calendar days from the completion the programme shows</span></p>
+    <div class="grid grid-cols-1 md:grid-cols-4 gap-3">
+        <div>
+            <FormField Label="Days claimed">
+            <input type="number" min="0" class="field" @bind="daysClaimed" />
+            </FormField>
+        </div>
+        <div>
+            <FormField Label="Days granted" Hint="Leave blank until the architect has answered.">
+            <input type="number" min="0" class="field" @bind="daysGranted" />
+            </FormField>
+        </div>
+    </div>
+    <div class="flex flex-wrap items-center gap-2">
+        <button type="button" class="btn-primary" disabled="@(Busy || daysClaimed is null)" @onclick="SaveAsync">Record days</button>
+        <button type="button" class="btn-neutral" @onclick="OnClose">Cancel</button>
+    </div>
+</div>
+
+@code {
+    [Parameter, EditorRequired] public ProgrammeExtensionRow Row { get; set; } = default!;
+    [Parameter] public bool Busy { get; set; }
+    /// <summary>Writes the days onto the EOT; true means it took and the editor closes.</summary>
+    [Parameter, EditorRequired] public Func<DaysEdit, Task<bool>> Save { get; set; } = default!;
+    [Parameter] public EventCallback OnClose { get; set; }
+
+    public sealed record DaysEdit(string RequestId, int DaysClaimed, int? DaysGranted);
+
+    private int? daysClaimed;
+    private int? daysGranted;
+
+    protected override void OnInitialized()
+    {
+        daysClaimed = Row.Eot.EotDaysClaimed;
+        daysGranted = Row.Eot.EotDaysGranted;
+    }
+
+    private async Task SaveAsync()
+    {
+        if (daysClaimed is null) return;
+        if (await Save(new DaysEdit(Row.Eot.RequestId, daysClaimed.Value, daysGranted))) await OnClose.InvokeAsync();
+    }
+}

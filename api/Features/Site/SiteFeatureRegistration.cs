@@ -37,6 +37,12 @@ public static class SiteFeatureRegistration
         services.AddScoped<RemoveProgrammeTaskLinkAuthorisation>();
         services.AddScoped<RemoveProgrammeTaskLinkValidation>();
 
+        services.AddScoped<ProgrammeVariationEffectAuthorisation>();
+        services.AddScoped<ICommandHandler<RecordProgrammeVariationEffect, ProgrammeVariationEffect>, RecordProgrammeVariationEffectHandler>();
+        services.AddScoped<RecordProgrammeVariationEffectValidation>();
+        services.AddScoped<ICommandHandler<RemoveProgrammeVariationEffect, Jewel.JPMS.Contracts.Cqrs.Acknowledgement>, RemoveProgrammeVariationEffectHandler>();
+        services.AddScoped<RemoveProgrammeVariationEffectValidation>();
+
         services.AddScoped<ICommandHandler<TakeProgrammeBaseline, ProgrammeBaseline>, TakeProgrammeBaselineHandler>();
         services.AddScoped<TakeProgrammeBaselineAuthorisation>();
         services.AddScoped<TakeProgrammeBaselineValidation>();

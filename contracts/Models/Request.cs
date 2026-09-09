@@ -67,7 +67,9 @@ public sealed record Request(
     DateTimeOffset? ClosedAt = null,        // when the request was closed — user-chosen (today or prior), cleared on reopen
     DateTimeOffset? IssuedAt = null,        // the one visible request date — stamped on creation (today / backfill date), user-editable thereafter
     bool CriticalPath = false,              // Critical Path tag — the RFI is programme-related; shows in the Programme tab's "Critical Path RFIs" view
-    bool CriticalPathNudgeDismissed = false) // "No" was clicked on the two-week critical-path nudge — the banner never re-asks on this RFI
+    bool CriticalPathNudgeDismissed = false, // "No" was clicked on the two-week critical-path nudge — the banner never re-asks on this RFI
+    int? EotDaysClaimed = null,             // EOT only: the extension sought, in calendar days — what the Programme tab draws from completion
+    int? EotDaysGranted = null)             // EOT only: the extension awarded, in calendar days — null until the architect answers
 {
     // Human-readable request number / mailbox folder name (e.g. "REQ-0001"). Empty until assigned.
     public string DisplayNumber => Number > 0 ? $"REQ-{Number:0000}" : "";

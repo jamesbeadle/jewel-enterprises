@@ -4002,6 +4002,55 @@ namespace Jewel.JPMS.Api.Migrations
                     b.ToTable("ProgrammeTaskLinks");
                 });
 
+            modelBuilder.Entity("Jewel.JPMS.Api.Data.Entities.ProgrammeVariationEffectEntity", b =>
+                {
+                    b.Property<string>("ProgrammeVariationEffectId")
+                        .HasMaxLength(64)
+                        .HasColumnType("nvarchar(64)");
+
+                    b.Property<int>("DelayDays")
+                        .HasColumnType("int");
+
+                    b.Property<string>("Note")
+                        .IsRequired()
+                        .HasMaxLength(512)
+                        .HasColumnType("nvarchar(512)");
+
+                    b.Property<string>("ProgrammeTaskId")
+                        .IsRequired()
+                        .HasMaxLength(64)
+                        .HasColumnType("nvarchar(64)");
+
+                    b.Property<string>("ProjectId")
+                        .IsRequired()
+                        .HasMaxLength(64)
+                        .HasColumnType("nvarchar(64)");
+
+                    b.Property<DateTimeOffset>("RecordedAt")
+                        .HasColumnType("datetimeoffset");
+
+                    b.Property<string>("RecordedByEmail")
+                        .IsRequired()
+                        .HasMaxLength(256)
+                        .HasColumnType("nvarchar(256)");
+
+                    b.Property<string>("VariationOrderId")
+                        .IsRequired()
+                        .HasMaxLength(64)
+                        .HasColumnType("nvarchar(64)");
+
+                    b.HasKey("ProgrammeVariationEffectId");
+
+                    b.HasIndex("ProjectId")
+                        .HasDatabaseName("IX_ProgrammeVariationEffects_ProjectId");
+
+                    b.HasIndex("VariationOrderId", "ProgrammeTaskId")
+                        .IsUnique()
+                        .HasDatabaseName("IX_ProgrammeVariationEffects_VariationOrderId_ProgrammeTaskId");
+
+                    b.ToTable("ProgrammeVariationEffects");
+                });
+
             modelBuilder.Entity("Jewel.JPMS.Api.Data.Entities.ProgressPhotoEntity", b =>
                 {
                     b.Property<string>("ProgressPhotoId")
@@ -5060,6 +5109,12 @@ namespace Jewel.JPMS.Api.Migrations
                     b.Property<string>("DrawingRef")
                         .HasMaxLength(256)
                         .HasColumnType("nvarchar(256)");
+
+                    b.Property<int?>("EotDaysClaimed")
+                        .HasColumnType("int");
+
+                    b.Property<int?>("EotDaysGranted")
+                        .HasColumnType("int");
 
                     b.Property<bool>("HasRfq")
                         .HasColumnType("bit");

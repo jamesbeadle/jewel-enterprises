@@ -69,7 +69,9 @@ public sealed class RaiseRequestHandler : ICommandHandler<RaiseRequest, Request>
                 InternalNotes = command.InternalNotes,
                 ClientNotes = command.ClientNotes,
                 // EOT -> NoD provenance only makes sense on an EOT; ignore it for every other kind.
-                RelatedNodRequestId = command.Kind == RequestType.ExtensionOfTime ? command.RelatedNodRequestId : null
+                RelatedNodRequestId = command.Kind == RequestType.ExtensionOfTime ? command.RelatedNodRequestId : null,
+                EotDaysClaimed = command.Kind == RequestType.ExtensionOfTime ? command.EotDaysClaimed : null,
+                EotDaysGranted = command.Kind == RequestType.ExtensionOfTime ? command.EotDaysGranted : null
             };
             context.Requests.Add(entity);
 

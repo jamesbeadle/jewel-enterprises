@@ -1,0 +1,84 @@
+@namespace Jewel.JPMS.Features.Site
+
+@* The variations on the programme, beneath the tasks on the same ruler: every variation that is
+   not rejected — approved or not — placed against the tasks its cost centres map to, with a
+   marker where it was issued and a bar for each push recorded on it. The variation document is
+   read here, never written: "Programme effect…" records the programme's own fact about it. *@
+<div class="grid grid-cols-[240px_1fr] border-b border-line-strong pb-1 mb-1 mt-5">
+    <div class="eyebrow">Variations <span class="text-content-subtle font-normal">— @Rows.Count on the programme</span></div>
+    <div></div>
+</div>
+
+@if (Rows.Count == 0)
+{
+    <EmptyState Message="No variations on the programme — every variation but a rejected one appears here from the moment it is raised." Class="py-4" />
+}
+
+@foreach (var row in Rows)
+{
+    <div class="grid grid-cols-[240px_1fr] items-center border-b border-line/60">
+        <div class="py-1.5 pr-3">
+            <div class="flex items-center gap-1.5">
+                <span class="font-mono text-xs text-content-muted shrink-0">@row.Variation.DisplayNumber</span>
+                <a href="@VariationHref(row)" class="text-sm text-content truncate hover:text-accent" title="Open the variation">@row.Variation.Title</a>
+                <Pill Tone="@row.Variation.Status.ToTone()">@row.Variation.Status.DisplayName()</Pill>
+            </div>
+            <div class="flex flex-wrap items-center gap-x-2 text-xs text-content-subtle mt-0.5">
+                <span>@LandsOnText(row)</span>
+                @if (CanEdit)
+                {
+                    <button type="button" class="text-accent hover:underline" @onclick="() => ToggleEditor(row)">Programme effect…</button>
+                }
+            </div>
+        </div>
+        <div class="relative h-9">
+            @if (Timeline.TodayStyle is { } todayStyle)
+            {
+                <div class="absolute inset-y-0 w-px bg-info/60" style="@todayStyle"></div>
+            }
+            @if (Timeline.PointStyle(row.Marker) is { } markerStyle)
+            {
+                <div class="absolute top-[11px] h-2.5 w-2.5 -ml-[5px] rotate-45 bg-info/80" style="@markerStyle"
+                     title="@row.Variation.DisplayNumber @(row.Variation.IssuedAt is null ? "raised" : "issued") @DateText(row.Marker)"></div>
+            }
+            @foreach (var push in row.Pushes)
+            {
+                <ProgrammePushBar Timeline="Timeline" Push="push" Variation="row.Variation" />
+            }
+        </div>
+    </div>
+
+    @if (editingVariationId == row.Variation.VariationOrderId)
+    {
+        <ProgrammeVariationEffectEditor Row="row" Tasks="Tasks" Busy="Busy" Save="SaveEffect" Remove="RemoveEffect" OnClose="() => editingVariationId = null" />
+    }
+}
+
+@code {
+    [Parameter, EditorRequired] public string ProjectId { get; set; } = "";
+    [Parameter, EditorRequired] public ProgrammeTimeline Timeline { get; set; } = default!;
+    [Parameter] public IReadOnlyList<ProgrammeVariationRow> Rows { get; set; } = Array.Empty<ProgrammeVariationRow>();
+    [Parameter] public IReadOnlyList<ProgrammeTask> Tasks { get; set; } = Array.Empty<ProgrammeTask>();
+    [Parameter] public bool CanEdit { get; set; }
+    [Parameter] public bool Busy { get; set; }
+    [Parameter, EditorRequired] public Func<ProgrammeVariationEffectEditor.EffectEdit, Task<bool>> SaveEffect { get; set; } = default!;
+    [Parameter, EditorRequired] public Func<string, Task<bool>> RemoveEffect { get; set; } = default!;
+
+    private string? editingVariationId;
+
+    private string VariationHref(ProgrammeVariationRow row) =>
+        $"/projects/{ProjectId}/variations/{row.Variation.VariationOrderId}";
+
+    private void ToggleEditor(ProgrammeVariationRow row) =>
+        editingVariationId = editingVariationId == row.Variation.VariationOrderId ? null : row.Variation.VariationOrderId;
+
+    // Where the variation lands, in the programme's own words: the tasks its cost centres map
+    // to, else why none do — no cost centre on it yet, or a centre no task is mapped to.
+    private static string LandsOnText(ProgrammeVariationRow row)
+    {
+        var codes = ProgrammeVariationPlacement.CostCodesOf(row.Variation);
+        if (codes.Count == 0) return "No cost centre yet — lands nowhere until it is priced";
+        if (row.LandsOn.Count == 0) return $"No task mapped to {string.Join(", ", codes)}";
+        return "Lands on " + string.Join(", ", row.LandsOn.Select(task => task.Title));
+    }
+}

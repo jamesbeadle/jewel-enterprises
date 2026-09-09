@@ -3,7 +3,8 @@ using Jewel.JPMS.Contracts.Site;
 namespace Jewel.JPMS.Api.Features.Site.Commands;
 
 // Removes a live programme task together with any dependency links that touch it (a link without
-// both ends is meaningless) and its saved cost-centre mappings (a mapping of nothing). Baseline snapshots are deliberately kept: they are the
+// both ends is meaningless), its saved cost-centre mappings (a mapping of nothing) and the variation
+// pushes recorded on it (a push of nothing). Baseline snapshots are deliberately kept: they are the
 // contemporaneous record movement is measured against, and ProgrammeMovementCalculator simply
 // skips snapshot rows whose live task no longer exists.
 public sealed class RemoveProgrammeTaskHandler : ICommandHandler<RemoveProgrammeTask, Acknowledgement>
@@ -25,6 +26,10 @@ public sealed class RemoveProgrammeTaskHandler : ICommandHandler<RemoveProgramme
                 .Where(mapping => mapping.ProgrammeTaskId == command.ProgrammeTaskId)
                 .ToListAsync(cancellationToken);
             context.ProgrammeTaskCostCentres.RemoveRange(costCentres);
+            var variationEffects = await context.ProgrammeVariationEffects
+                .Where(effect => effect.ProgrammeTaskId == command.ProgrammeTaskId)
+                .ToListAsync(cancellationToken);
+            context.ProgrammeVariationEffects.RemoveRange(variationEffects);
             context.ProgrammeTasks.Remove(entity);
             await context.SaveChangesAsync(cancellationToken);
         }

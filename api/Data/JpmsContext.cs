@@ -128,6 +128,7 @@ public sealed partial class JpmsContext : DbContext
     public DbSet<ProgrammeTaskCostCentreEntity> ProgrammeTaskCostCentres => Set<ProgrammeTaskCostCentreEntity>();
     public DbSet<ProgrammeDraftEntity> ProgrammeDrafts => Set<ProgrammeDraftEntity>();
     public DbSet<ProgrammeDraftLineEntity> ProgrammeDraftLines => Set<ProgrammeDraftLineEntity>();
+    public DbSet<ProgrammeVariationEffectEntity> ProgrammeVariationEffects => Set<ProgrammeVariationEffectEntity>();
     public DbSet<PhotoEntity> Photos => Set<PhotoEntity>();
 
     public DbSet<ProgressUpdateEntity> ProgressUpdates => Set<ProgressUpdateEntity>();

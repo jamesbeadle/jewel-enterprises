@@ -66,10 +66,13 @@ public sealed record ProgrammeTaskCostCentre(
 // Baselines lists every baseline taken, newest first (so Baselines[0] is the current yardstick,
 // the same one Baseline carries), for the tab's baseline-management view. CostCentres is every
 // task's confirmed cost-centre mapping — the saved half of the valuation-to-programme draft.
+// VariationEffects is every push a variation has been recorded as making on a task
+// (ProgrammeVariationEffect); the variations themselves are read from their own store.
 public sealed record ProgrammeDetail(
     IReadOnlyList<ProgrammeTask> Tasks,
     IReadOnlyList<ProgrammeTaskLink> Links,
     ProgrammeBaseline? Baseline,
     IReadOnlyList<ProgrammeBaselineTask> BaselineTasks,
     IReadOnlyList<ProgrammeBaseline> Baselines,
-    IReadOnlyList<ProgrammeTaskCostCentre> CostCentres);
+    IReadOnlyList<ProgrammeTaskCostCentre> CostCentres,
+    IReadOnlyList<ProgrammeVariationEffect> VariationEffects);

@@ -83,6 +83,7 @@ public partial class ProgrammeWorkbench : IDisposable
         {
             programme = await Queries.AskAsync(new GetProgrammeDetail(ProjectId), CancellationToken.None);
             draft = await Queries.AskAsync(new GetOpenProgrammeDraft(ProjectId), CancellationToken.None);
+            await LoadVariationsAsync();
             if (draft is null) reviewingDraft = false;
         }
         catch
@@ -146,7 +147,7 @@ public partial class ProgrammeWorkbench : IDisposable
         openForm = Form.None;
     }
 
-    private Task<bool> SaveTaskAsync(ProgrammeGanttChart.TaskEdit edit) =>
+    private Task<bool> SaveTaskAsync(ProgrammeTaskEditor.TaskEdit edit) =>
         WriteAsync(new UpdateProgrammeTask(
             edit.ProgrammeTaskId, edit.Title,
             new DateTimeOffset(edit.Start, TimeSpan.Zero),
