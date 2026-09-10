@@ -12,6 +12,6 @@ public static class DirectoryViewTabs
     {
         new TabItem(Companies, "Companies", "/directory"),
         new TabItem(ComplianceRegister, "Compliance register", "/directory/compliance",
-            Title: "Every company's compliance documents in one list — expired, expiring and missing first")
+            Title: "Every company's compliance documents in one list — expired and expiring first, companies with nothing on file last")
     };
 }

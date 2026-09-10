@@ -292,9 +292,11 @@ finds drift.
   consolidation the number and date follow whichever record's status was chosen.
 - **Compliance standing is per company and reads in one order.** A company's standing is the
   worst status among its current documents, Missing when it holds none
-  (`ComplianceOverviewReadModel.WorstStatusFor`); `DirectoryComplianceFilter.WorstFirst`
-  (Expired → Expiring soon → Missing → Current) is the order every compliance list and chip row
-  reads in. The Directory's Compliance `FilterChips` and the register at `/directory/compliance`
+  (`ComplianceOverviewReadModel.WorstStatusFor`); `ComplianceStatusExtensions.ReadingOrder` in
+  contracts (Expired → Expiring soon → Current → Missing, 2026-09-10 the accountant's second ask:
+  Missing is most of the directory and was burying the handful of Current companies) is the ONE
+  order every compliance list, chip row and the connector's `list_compliance_register` read in —
+  `status.ReadingRank()` sorts by it; never redeclare the array locally. The Directory's Compliance `FilterChips` and the register at `/directory/compliance`
   (`ComplianceRegister` page, `ComplianceRegisterRow.Build`: one row per current document plus
   one Missing row per empty company) both read it; the two views are siblings joined by
   `DirectoryViewTabs` (a `TabRow`), and the dashboard's "Documents expiring" tile lands on the

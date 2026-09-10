@@ -7,9 +7,10 @@ namespace Jewel.JPMS.Api.Features.Ai.Tools;
 /// The compliance register (`/directory/compliance`, 2026-09-09, the accountant's ask) as a
 /// connector read: every directory company with its standing — the worst status among its
 /// current documents, Missing when it holds none — and each current document with its expiry,
-/// worst first. Same read as the page (ListCurrentComplianceDocuments) and the same standing
-/// rule (ComplianceDocumentExtensions.Standing), so the connector and the register never
-/// disagree about who is lapsing.
+/// in ComplianceStatusExtensions.ReadingOrder (expired, expiring, current, then the companies
+/// with nothing on file). Same read as the page (ListCurrentComplianceDocuments), the same
+/// standing rule (ComplianceDocumentExtensions.Standing) and the same order, so the connector
+/// and the register never disagree about who is lapsing or what comes first.
 /// </summary>
 internal static partial class AiRecordTools
 {
@@ -20,11 +21,6 @@ internal static partial class AiRecordTools
         JpmsRoles.Estimator, JpmsRoles.SiteManager, JpmsRoles.HealthAndSafetyLead,
         JpmsRoles.OfficeComplianceCoordinator, JpmsRoles.OfficeAdmin, JpmsRoles.SalesMarketing);
 
-    private static readonly ComplianceStatus[] WorstFirst =
-    {
-        ComplianceStatus.Expired, ComplianceStatus.ExpiringSoon, ComplianceStatus.Missing, ComplianceStatus.Current
-    };
-
     private static IEnumerable<AiTool> ComplianceTools() => new AiTool[]
     {
         new(
@@ -32,7 +28,8 @@ internal static partial class AiRecordTools
             "The compliance register: every company in the directory (tender-only prospects "
             + "excluded) with its standing — Expired (a current document has passed its expiry), "
             + "ExpiringSoon (expires within 30 days), Missing (no compliance documents on file) or "
-            + "Current — and its current documents (kind, file, expiry, status), worst first. Pass "
+            + "Current — and its current documents (kind, file, expiry, status), expired and expiring "
+            + "first, then current, then the companies with nothing on file. Pass "
             + "a status to read only the companies standing there; a search narrows to a company. "
             + "This is the data behind the Directory's compliance chips and /directory/compliance — "
             + "call it for anything about who can be paid, whose insurance has lapsed, or what "
@@ -84,7 +81,7 @@ internal static partial class AiRecordTools
                             }).ToList()
                     })
                     .Where(row => wanted is null || row.standing == wanted)
-                    .OrderBy(row => Array.IndexOf(WorstFirst, row.standing))
+                    .OrderBy(row => row.standing.ReadingRank())
                     .ThenBy(row => row.documents.Select(document => document.ExpiresAt).Min() ?? DateTimeOffset.MaxValue)
                     .ThenBy(row => row.companyName)
                     .Select(row => new { row.subcontractorId, row.companyName, row.category, standing = row.standing.ToString(), row.documents })
@@ -94,7 +91,7 @@ internal static partial class AiRecordTools
                 {
                     ok = true,
                     count = rows.Count,
-                    counts = WorstFirst.ToDictionary(status => status.ToString(),
+                    counts = ComplianceStatusExtensions.ReadingOrder.ToDictionary(status => status.ToString(),
                         status => companies.Count(company => byCompany[company.SubcontractorId].Standing() == status)),
                     companies = rows,
                     note = "A company's standing is the worst of its current documents; superseded "

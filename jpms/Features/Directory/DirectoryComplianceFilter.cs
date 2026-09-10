@@ -4,30 +4,24 @@ namespace Jewel.JPMS.Features.Directory;
 
 /// <summary>The Directory's compliance chips (2026-09-09, the accountant's ask): narrow the company
 /// list to everyone whose standing — the worst status among their current documents, Missing when
-/// they hold none — is Expired, Expiring soon, Missing or Current. The chips carry counts only once
-/// both the directory and the whole-company compliance read have landed.</summary>
+/// they hold none — is Expired, Expiring soon, Current or Missing. The chips sit in
+/// <see cref="ComplianceStatusExtensions.ReadingOrder"/>, the same order the register's rows read
+/// in, and carry counts only once both the directory and the whole-company compliance read have
+/// landed.</summary>
 public static class DirectoryComplianceFilter
 {
     public const string All = "all";
-
-    /// <summary>The order a compliance list reads in: what needs acting on first.</summary>
-    public static readonly ComplianceStatus[] WorstFirst =
-    {
-        ComplianceStatus.Expired, ComplianceStatus.ExpiringSoon, ComplianceStatus.Missing, ComplianceStatus.Current
-    };
-
-    public static int RankOf(ComplianceStatus status) => Array.IndexOf(WorstFirst, status);
 
     public static IReadOnlyList<TabItem> CompanyChips(
         IReadOnlyList<Subcontractor> companies, ComplianceOverviewReadModel compliance, bool isLoaded) =>
         Chips(status => isLoaded ? companies.Count(company => StandingOf(company, compliance) == status) : null);
 
-    /// <summary>All, then one chip per standing worst first; countFor answers null until the data
-    /// has landed so no chip ever shows a zero that becomes real a second later.</summary>
+    /// <summary>All, then one chip per standing in reading order; countFor answers null until the
+    /// data has landed so no chip ever shows a zero that becomes real a second later.</summary>
     public static IReadOnlyList<TabItem> Chips(Func<ComplianceStatus, int?> countFor)
     {
         var chips = new List<TabItem> { new(All, "All") };
-        foreach (var status in WorstFirst)
+        foreach (var status in ComplianceStatusExtensions.ReadingOrder)
             chips.Add(new TabItem(KeyFor(status), status.DisplayName(), Count: countFor(status), Title: TitleFor(status)));
         return chips;
     }

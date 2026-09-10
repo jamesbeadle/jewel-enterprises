@@ -159,4 +159,16 @@ public static class ComplianceStatusExtensions
         _ => status.ToString()
     };
 
+    /// <summary>The order every compliance list, chip row and connector read shares (2026-09-10,
+    /// the accountant's ask): what is lapsing, then what is in date, then the companies with
+    /// nothing on file. Missing is a standing but not a document — most of the directory has
+    /// never filed one, so ranking it above Current buried the handful of companies whose
+    /// documents actually matter under hundreds of blank rows. Expired stays first: an expired
+    /// document is the worst thing on file.</summary>
+    public static readonly ComplianceStatus[] ReadingOrder =
+    {
+        ComplianceStatus.Expired, ComplianceStatus.ExpiringSoon, ComplianceStatus.Current, ComplianceStatus.Missing
+    };
+
+    public static int ReadingRank(this ComplianceStatus status) => Array.IndexOf(ReadingOrder, status);
 }
