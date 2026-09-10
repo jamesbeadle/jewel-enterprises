@@ -305,6 +305,12 @@ finds drift.
 
 ## The connector mirrors the page — every button the accountant gets, the assistant gets (api)
 
+- **"The assistant" IS the Jewel_Portal MCP connector used from Claude** — the in-site chat panel
+  was retired (2026-08-27) and removed; there is no chat in jpms. Claude renders (tables,
+  dashboards, artifacts) and the api's job is the READ that makes the answer consistent and the
+  confirm-first ACTION that makes it doable. Never propose an in-portal chat widget, a "render
+  type", or page-side AI; an assistant feature is a connector tool in `api/Features/Ai/Tools`
+  plus, where the team's judgement matters, a portal skill (`save_skill`).
 - **A feature is not done until the MCP connector can do it too** (2026-09-09, the coverage
   audit). Every command that gains an endpoint gains an `AiAction` in the same commit
   (`api/Features/Ai/Tools/Actions`, one partial per area — `CommercialActions.WorkOrderBills`
@@ -325,6 +331,29 @@ finds drift.
   (`tenderList[].recipientId — never the company name`), not "the recipient list". Code:
   `AiRecordTools.BidPackageContext.cs` + `BidPackageContextReads.cs`; pinned by
   `BidPackageContext_handsOverTheIdsItsActionsTake`.
+
+## The to-do brief (api)
+
+- **`get_todo_brief` is the To-do board joined to what clears each item** (2026-09-10, the
+  accountant's ask: "show me the to-do for Ravenswood" should come back as a table of what is
+  open WITH the action needed to clear it, not a list of titles). `list_todos` stays the
+  register; the brief (`AiToolCatalogue.TodoBrief.cs`) is the same open items joined
+  server-side to the project's records — three readings in order of trust, all in
+  `Features/Todos/TodoBrief.cs`, pure and tested (`TodoBriefTests`): what the item is **about**
+  (`AboutRecord`, a fact someone set), what it **names** (a reference in its own words, the
+  `RecordReferenceScan` grammar the completion tagger files by), and what it **concerns** (an
+  inference: `ReadIntent` reads the verb and the kind of record the wording should produce —
+  "raise … variation", "chase … quote", "order …" = work order — and `Relate` matches the
+  title's distinctive words against the project's variations, bid packages, work orders,
+  requests and defects; one short shared word is never a match, the newer record wins a tie).
+  Every item carries `daysOverdue`, `signals` (calendar → ownership → conditional wording →
+  links → same-subject items → mail → quiet days) and ONE deterministic `nextStep`
+  (`TodoBrief.NextStep`: a Draft bid package under a "chase quote" item reads "nothing has been
+  asked for through the portal yet"; an approved variation under a "raise variation" item reads
+  "looks done"; nothing matching reads "raise it"). Inferred matches are LABELLED inferred in
+  the output and the step. Tagged mail is read per item through `RecordEmailReader`, best
+  effort, capped at 30 items. The tool's description tells the model to answer as a table and
+  render `nextStep`, never re-derive it; same gate as the To-do tab (`AllInternal`).
 
 ## The sales invoice raised in Xero from the claim card (api + jpms)
 

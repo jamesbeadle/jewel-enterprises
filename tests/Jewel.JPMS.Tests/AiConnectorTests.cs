@@ -384,6 +384,28 @@ public sealed class AiConnectorTests
     }
 
     [Fact]
+    public void TodoBrief_reachesTheConnector_asATableRead()
+    {
+        // The accountant's ask (2026-09-10): "show me the to-do for Ravenswood" must come back as
+        // what is open AND what clears each item — a read every internal role gets (the To-do
+        // tab's own gate), never an external login, and one whose description tells the model
+        // to answer as a table with the portal's nextStep, not to re-derive it from list_todos.
+        var financeDirector = AiToolCatalogue.ForConnector(UserWith(Role.FinanceDirector));
+        var tool = Assert.Single(financeDirector, candidate => candidate.Name == "get_todo_brief");
+        Assert.Equal(AiToolKind.Read, tool.Kind);
+        Assert.Contains("TABLE", tool.Description);
+        Assert.Contains("nextStep", tool.Description);
+        Assert.Contains("not list_todos", tool.Description);
+        Assert.DoesNotContain("get_todo_brief",
+            AiToolCatalogue.ForConnector(UserWith(Role.Subcontractor)).Select(t => t.Name));
+
+        var schema = System.Text.Json.JsonSerializer.Serialize(tool.InputSchema);
+        Assert.Contains("projectId", schema);
+        Assert.Contains("role", schema);
+        Assert.Contains("includeDone", schema);
+    }
+
+    [Fact]
     public void SaveSkillReference_isAWriteToolBehindTheSkillGate()
     {
         var admin = AiToolCatalogue.ForConnector(UserWith(Role.Admin));

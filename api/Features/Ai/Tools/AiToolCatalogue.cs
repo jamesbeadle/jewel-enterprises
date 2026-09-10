@@ -89,6 +89,7 @@ public static partial class AiToolCatalogue
             .Concat(RecordsTools())
             .Concat(ProcurementTools())
             .Concat(SiteWorkTools())
+            .Concat(TodoBriefTools())
             .Concat(LookupTools())
             .Concat(RequestContextTools())
             .Concat(MastersTools())
