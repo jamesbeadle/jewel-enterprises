@@ -27,6 +27,8 @@ public static class ProjectsFeatureRegistration
 
         services.AddScoped<ICommandHandler<SetNextValuationDate, Project>, SetNextValuationDateHandler>();
         services.AddScoped<SetNextValuationDateAuthorisation>();
+        services.AddScoped<ICommandHandler<SetProjectXeroContact, Project>, SetProjectXeroContactHandler>();
+        services.AddScoped<SetProjectXeroContactAuthorisation>();
 
         services.AddScoped<ICommandHandler<SetExpectedMonthlyValuation, Project>, SetExpectedMonthlyValuationHandler>();
         services.AddScoped<SetExpectedMonthlyValuationAuthorisation>();

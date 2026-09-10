@@ -30,18 +30,30 @@ description: "The monthly valuation claim and invoice cycle — the money path f
 Buttons and actions that say "Raise …" create a portal record; ones that say "Record …" record
 an outside event. None sends.
 
+## Naming the claims
+
+A claim's name is free text and can be changed at any status (`rename_valuation_claim`,
+valuationClaimId from `get_valuation_context` or `list_valuation_snapshots`). The house form is
+**`Valuation NN - Month YYYY`** — "Valuation 05 - September 2026" — the same NN the invoice and
+the Xero reference carry, so the claim picker, the statement and Xero all read the same. When
+the user asks to tidy the names, list the claims with their numbers and current names, propose
+the renamed set, get the yes, then rename each one. Names only — nothing financial moves.
+
 ## Raising in Xero — preview, then stop or go
 
 1. Always `preview_valuation_invoice_xero_raise` first and show the user everything it returns:
    the Xero contact mapped on the project and whether Xero still holds it, net, VAT reading,
    Sites tracking, reference and description, invoice date, due date, the certificate.
-2. **The contact is the one MAPPED ON THE PROJECT** (Project settings → Xero contact). The raise
-   never matches the client by name and never creates a contact. If the preview's blockers say no
-   Xero contact is mapped (or the mapped one is not found in Xero) — STOP. Do not raise. Tell the
-   user the one thing that unblocks it: set the Xero contact in Project settings, or — with their
-   yes and the contact named — set it yourself with `update_project_details` (`xeroContactId` +
-   `xeroContactName`, from the Xero contacts list in Project settings; echo every other field as
-   it is). Then preview again.
+2. **The contact is the one MAPPED ON THE PROJECT.** The raise never matches the client by name
+   and never creates a contact. If the preview's blockers say no Xero contact is mapped (or the
+   mapped one is not found in Xero) — STOP, do not raise, and map it yourself:
+   `list_xero_customers` (the same list Project settings shows), find the contact whose name
+   matches the project's client or address the way a person would — spelling and abbreviations
+   differ, "Ravenswood Ave" is "64 Ravenswood Avenue" — show the user the proposed contact (name
+   and town), and on their yes `set_project_xero_contact` (projectId, xeroContactId). The portal
+   re-reads the contact from Xero and stores Xero's own name. Then preview again. If nothing in
+   the list matches, say so — the client may not be in Xero yet, and that is for a person to
+   create in Xero, never the raise.
 3. **Dates come from the user.** `invoiceDate` and `dueDate` (yyyy-MM-dd) go on the preview and
    on the raise. If the user did not say, ask; the defaults are today and the certificate's issue
    date + the contract's final date for payment days (else Xero's sales default), and the preview

@@ -55,9 +55,9 @@ internal sealed partial class ProjectsAndTendersActions
             Notes: "projectId comes from list_projects. Echo current values for anything unchanged — "
                 + "a null partyId clears the party assignment, and a null xeroContactId clears the Xero "
                 + "contact mapping (raise_valuation_invoice_in_xero is blocked until it is set). "
-                + "xeroContactId is Xero's ContactID and xeroContactName the name as Xero holds it, "
-                + "from the Xero contacts list in Project settings — never guess an id; set them only "
-                + "when the user has named the contact and said yes."),
+                + "Prefer set_project_xero_contact for the Xero mapping — it takes only the contactId "
+                + "(from list_xero_customers) and stores Xero's own name; here the pair must be echoed "
+                + "exactly as read, never guessed."),
 
         new AiAction(
             Name: "delete_project",
@@ -92,6 +92,27 @@ internal sealed partial class ProjectsAndTendersActions
             EmailStamps: Array.Empty<string>(),
             NameStamps: Array.Empty<string>(),
             Notes: "projectId comes from list_projects. The date is ISO 8601."),
+
+        new AiAction(
+            Name: "set_project_xero_contact",
+            Area: "Projects",
+            Description: "Maps (or clears, with null) the Xero customer a project's sales invoices are "
+                + "raised on — the one field, without round-tripping the full project details. Only "
+                + "the Xero contactId is given: the portal reads the contact back from Xero and stores "
+                + "Xero's own name, so a contact Xero does not hold is refused. Raise in Xero is blocked "
+                + "on a project until this is set.",
+            CommandType: typeof(SetProjectXeroContact),
+            ResultType: typeof(Project),
+            AuthorisationType: typeof(SetProjectXeroContactAuthorisation),
+            ValidationType: null,
+            VisibleTo: ProjectEditors,
+            EmailStamps: Array.Empty<string>(),
+            NameStamps: Array.Empty<string>(),
+            Notes: "projectId from list_projects; xeroContactId from list_xero_customers — find the "
+                + "contact whose name matches the project's client or address by READING the list "
+                + "(spelling and abbreviations differ: \"Ravenswood Ave\" is \"64 Ravenswood Avenue\"), "
+                + "show the user the proposed contact and take their yes, then call. Never pass an id "
+                + "you have not read from list_xero_customers. After mapping, preview the raise again."),
 
         new AiAction(
             Name: "set_expected_monthly_valuation",

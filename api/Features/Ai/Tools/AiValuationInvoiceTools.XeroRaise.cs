@@ -29,9 +29,9 @@ internal static partial class AiValuationInvoiceTools
             + "no Xero contact mapped on the project, mapped contact not found in Xero, no Xero site "
             + "mapping); canRaise is true only when that list is empty. Reads Xero fresh. Call this "
             + "before the raise and show the user all of it. When a blocker says no Xero contact is "
-            + "mapped, STOP: do not raise — the user sets the Xero contact in Project settings, or "
-            + "you do it with update_project_details (xeroContactId + xeroContactName from the Xero "
-            + "contacts list in Project settings) once they say yes — then preview again.",
+            + "mapped, STOP: do not raise — map it: list_xero_customers, pick the contact whose name "
+            + "matches the project's client or address by reading, propose it to the user, and on "
+            + "their yes set_project_xero_contact — then preview again.",
             AiToolSchema.Object(
                 ("valuationInvoiceId", "string", "The valuation invoice (from list_valuation_invoices).", true),
                 ("invoiceDate", "string", "The invoice date to raise with, yyyy-MM-dd. Blank = today.", false),
@@ -60,7 +60,7 @@ internal static partial class AiValuationInvoiceTools
                               + (preview.DueDate is { } due ? $", due {due:yyyy-MM-dd}" : ", due per Xero's default")
                               + ", and issues the valuation invoice (certified to date moves). Confirm the dates and the contact with the user, take their yes, then raise_valuation_invoice_in_xero with the same invoiceDate/dueDate."
                             : contactBlocked
-                                ? "STOP — blocked on the project's Xero contact mapping. Do not raise and do not create a contact: the user sets the Xero contact in Project settings (or you set it with update_project_details xeroContactId + xeroContactName, with their yes), then preview again."
+                                ? "STOP — blocked on the project's Xero contact mapping. Do not raise and do not create a contact: call list_xero_customers, propose the contact that matches the project's client/address, and on the user's yes set_project_xero_contact — then preview again."
                                 : "Blocked — resolve the blockers first, or issue_valuation_invoice (with xeroInvoiceNumber) if the invoice was raised in Xero by hand."
                     });
                 }
