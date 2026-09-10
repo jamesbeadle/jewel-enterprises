@@ -340,6 +340,28 @@ public sealed class AiConnectorTests
     }
 
     [Fact]
+    public void BidPackageContext_handsOverTheIdsItsActionsTake()
+    {
+        // The accountant's ask (2026-09-10): the tender list came back as company + status only,
+        // so decline_bid_package_recipient could never be given the recipientId it wants. Every
+        // list on the context now carries the id the matching action takes, and the actions'
+        // notes name the field rather than "the recipient list".
+        var context = AiToolCatalogue.ForConnector(UserWith(Role.QuantitySurveyor))
+            .Single(tool => tool.Name == "get_bid_package_context");
+        foreach (var handle in new[] { "recipientId", "subcontractorId", "quoteId", "lineItemId", "drawingId" })
+        {
+            Assert.Contains(handle, context.Description);
+        }
+
+        foreach (var name in new[] { "decline_bid_package_recipient", "remove_bid_package_recipient" })
+        {
+            Assert.Contains("tenderList[].recipientId", AiActionRegistry.Find(name)!.Notes);
+        }
+        Assert.Contains("tenderList[].subcontractorId", AiActionRegistry.Find("submit_quote_for_bid_package")!.Notes);
+        Assert.Contains("quotes[].quoteId", AiActionRegistry.Find("revise_quote")!.Notes);
+    }
+
+    [Fact]
     public void SaveSkillReference_isAWriteToolBehindTheSkillGate()
     {
         var admin = AiToolCatalogue.ForConnector(UserWith(Role.Admin));

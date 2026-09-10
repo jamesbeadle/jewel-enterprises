@@ -39,8 +39,9 @@ internal sealed partial class ProcurementActions
             EmailStamps: Array.Empty<string>(),
             NameStamps: Array.Empty<string>(),
             Notes: "Over HTTP both ids are route parameters: bidPackageId from list_bid_packages, "
-                + "recipientId from the package's recipient list (get_bid_package_context). Confirm "
-                + "with the user before calling."),
+                + "recipientId from the tender list's row (get_bid_package_context, "
+                + "tenderList[].recipientId — never the company name). Confirm with the user "
+                + "before calling."),
 
         new AiAction(
             Name: "decline_bid_package_recipient",
@@ -56,8 +57,8 @@ internal sealed partial class ProcurementActions
             VisibleTo: PackageAdministrators,
             EmailStamps: Array.Empty<string>(),
             NameStamps: Array.Empty<string>(),
-            Notes: "recipientId comes from the package's recipient list "
-                + "(get_bid_package_context)."),
+            Notes: "recipientId comes from the tender list's row (get_bid_package_context, "
+                + "tenderList[].recipientId — never the company name)."),
 
         new AiAction(
             Name: "prepare_bid_package_invite_draft",

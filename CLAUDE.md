@@ -314,6 +314,15 @@ finds drift.
   `search_directory` carries `complianceStanding` and the CIS fields). Pin each batch in
   `AiConnectorTests` (`…_reachTheConnector`) so a rename never drops one. A page-only feature
   is a gap the accountant finds first.
+- **A context read hands over the ids its actions take** (2026-09-10, the accountant's ask:
+  `get_bid_package_context` listed the tender list as company + status, so
+  `decline_bid_package_recipient` could never be given the `recipientId` it wants). Every list a
+  `get_*_context` tool returns carries the id the matching action takes — `tenderList[]` has
+  `recipientId` + `subcontractorId`, `quotes[]` has `quoteId`, `lineItems[]` has `lineItemId`,
+  `linkedDocuments[]` has `drawingId` — and the action's `Notes` name that field
+  (`tenderList[].recipientId — never the company name`), not "the recipient list". Code:
+  `AiRecordTools.BidPackageContext.cs` + `BidPackageContextReads.cs`; pinned by
+  `BidPackageContext_handsOverTheIdsItsActionsTake`.
 
 ## The sales invoice raised in Xero from the claim card (api + jpms)
 

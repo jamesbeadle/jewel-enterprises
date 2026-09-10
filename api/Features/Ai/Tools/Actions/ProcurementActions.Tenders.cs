@@ -96,9 +96,9 @@ internal sealed partial class ProcurementActions
             VisibleTo: QuoteWriters,
             EmailStamps: Array.Empty<string>(),
             NameStamps: Array.Empty<string>(),
-            Notes: "bidPackageId comes from list_bid_packages; subcontractorId from the package's "
-                + "recipient list. save_extracted_quote is the richer path when per-line pricing is "
-                + "known."),
+            Notes: "bidPackageId comes from list_bid_packages; subcontractorId from the tender "
+                + "list's row (get_bid_package_context, tenderList[].subcontractorId). "
+                + "save_extracted_quote is the richer path when per-line pricing is known."),
 
         new AiAction(
             Name: "revise_quote",
@@ -112,7 +112,8 @@ internal sealed partial class ProcurementActions
             VisibleTo: QuoteWriters,
             EmailStamps: Array.Empty<string>(),
             NameStamps: Array.Empty<string>(),
-            Notes: "quoteId comes from the bid package's quotes (get_bid_package_context)."),
+            Notes: "quoteId comes from the bid package's quotes (get_bid_package_context, "
+                + "quotes[].quoteId)."),
 
     };
 }
