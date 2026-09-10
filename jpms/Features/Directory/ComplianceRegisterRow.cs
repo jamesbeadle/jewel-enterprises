@@ -1,9 +1,8 @@
 namespace Jewel.JPMS.Features.Directory;
 
 /// <summary>One line of the compliance register: a company and one of its current documents —
-/// or the company alone, standing Missing, when it holds none. Rows read in
-/// <see cref="DirectoryComplianceFilter.ReadOrder"/> (Expired, Expiring soon, Current, then Missing),
-/// soonest expiry first within a standing, then by company.</summary>
+/// or the company alone, standing Missing, when it holds none. Rows read worst first (Expired,
+/// Expiring soon, Missing, Current), soonest expiry first within a standing, then by company.</summary>
 public sealed record ComplianceRegisterRow(Subcontractor Company, ComplianceDocument? Document, ComplianceStatus Status)
 {
     public string DocumentLabel => Document?.Kind ?? "No documents on file";
