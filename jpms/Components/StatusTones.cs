@@ -24,6 +24,7 @@ public static class StatusTones
     public static Tone ToTone(this WorkOrderMatchRule rule) => rule switch
     {
         WorkOrderMatchRule.ByReference or WorkOrderMatchRule.ByLineReference => Tone.Positive,
+        WorkOrderMatchRule.BySupplierOrders => Tone.Warning,
         _ => Tone.Info
     };
 
@@ -31,6 +32,7 @@ public static class StatusTones
     {
         WorkOrderMatchRule.ByReference => "Matched by reference",
         WorkOrderMatchRule.ByLineReference => "Matched line by line",
+        WorkOrderMatchRule.BySupplierOrders => "Supplier's orders — figures to set",
         _ => "Matched by supplier"
     };
 

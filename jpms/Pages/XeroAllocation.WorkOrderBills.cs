@@ -40,12 +40,14 @@ public partial class XeroAllocation
                .OrderByDescending(bill => bill.Max(line => line.Date))
                .Select(bill => (IReadOnlyList<XeroLedgerLine>)bill.ToList());
 
-    /// <summary>The bill's figure per open order, as magnitudes; the read's proposal seeds it.</summary>
+    /// <summary>The bill's figure per open order, as magnitudes; the read's proposal seeds it. A
+    /// proposal of nothing on an order (the supplier's-orders rule, 2026-09-10) is a blank
+    /// field, not a 0 — the accountant keys it.</summary>
     private List<WorkOrderBillSliceDraft> SlicesFor(IReadOnlyList<XeroLedgerLine> bill)
     {
         if (slicesByInvoiceId.TryGetValue(bill[0].XeroInvoiceId, out var slices)) return slices;
         slices = (bill[0].WorkOrderMatch?.ProposedSlices ?? Array.Empty<WorkOrderBillOrderSlice>())
-            .Select(slice => new WorkOrderBillSliceDraft { WorkOrderId = slice.WorkOrderId, Amount = Math.Abs(slice.Net) })
+            .Select(slice => new WorkOrderBillSliceDraft { WorkOrderId = slice.WorkOrderId, Amount = slice.Net == 0m ? null : Math.Abs(slice.Net) })
             .ToList();
         slicesByInvoiceId[bill[0].XeroInvoiceId] = slices;
         return slices;

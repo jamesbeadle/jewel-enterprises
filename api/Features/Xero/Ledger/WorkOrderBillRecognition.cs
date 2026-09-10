@@ -18,12 +18,13 @@ namespace Jewel.JPMS.Api.Features.Xero.Ledger;
 /// figure per order — each line's net on the order it names (ByLine, 2026-09-09); else a
 /// work-order number written on the bill picks the order — or, naming several, puts the whole
 /// bill on the first for the figures to be changed on the card — else a supplier with exactly
-/// one open order matches on that alone; finally each order's slice must fit inside what is
-/// left to invoice on it. The answer is BILL-level: a slice per order, the same match on every
+/// one open order matches on that alone, and a supplier with several (2026-09-10) sends the
+/// bill to the card with every order listed and nothing placed, for the split to be keyed;
+/// finally each order's slice must fit inside what is left to invoice on it. The answer is BILL-level: a slice per order, the same match on every
 /// line, never a coding of the Xero lines (the supplier's own CIS split, left as raised). An
 /// "open" order is Released with value still left to invoice (decision 2026-09-08). Anything
 /// that does not match cleanly stays in the queue — with the reason on the row when an order was
-/// in play, and silently when none was. One partial per concern: Rules (the whole-bill
+/// in play, and silently when none was. A wrong match has the card's "Not a work-order bill". One partial per concern: Rules (the whole-bill
 /// decision), ByLine (the per-line rule), Splits (the match shape and the pro rata coding).
 /// </summary>
 public sealed partial class WorkOrderBillRecognition

@@ -18,14 +18,17 @@ public sealed partial class WorkOrderBillRecognition
         IReadOnlyList<OpenOrder> SupplierOrders);
 
     /// <summary>One rule's answer: the order each line pays, or the reason none does. Pool is
-    /// set when the bill names several orders and is going to the card to be split across them —
-    /// the value gate then holds the bill against their combined remaining value.</summary>
+    /// set when the bill is going to the card to be split across several orders — the value gate
+    /// then holds the bill against their combined remaining value. Unplaced (2026-09-10) says the
+    /// bill names none of them, so the card proposes no figure at all: every pooled order is
+    /// listed at nothing and the accountant keys the split.</summary>
     private sealed record Assignment(
         IReadOnlyDictionary<string, OpenOrder>? OrderByLineId,
         WorkOrderMatchRule Rule,
         string? Detail,
         string? Reason,
-        IReadOnlyList<OpenOrder>? Pool = null)
+        IReadOnlyList<OpenOrder>? Pool = null,
+        bool Unplaced = false)
     {
         public static Assignment Refused(string reason) => new(null, default, null, reason);
     }

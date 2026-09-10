@@ -17,8 +17,11 @@ namespace Jewel.JPMS.Contracts.Xero;
 // checks they tie to the bill, and Approve spreads each order's slice over the bill's lines
 // and each line's portion over the order's cost codes, to the penny, portal-side only.
 
-/// <summary>Which rule matched a bill to its order(s) — the audit reads it back.</summary>
-public enum WorkOrderMatchRule { ByReference = 0, BySupplier = 1, ByLineReference = 2 }
+/// <summary>Which rule matched a bill to its order(s) — the audit reads it back. BySupplierOrders
+/// (2026-09-10, the accountant's ask): the bill names no order and the supplier has several open,
+/// so it reaches the card with every order listed and NO figure proposed — the accountant keys
+/// the split; nothing is guessed.</summary>
+public enum WorkOrderMatchRule { ByReference = 0, BySupplier = 1, ByLineReference = 2, BySupplierOrders = 3 }
 
 /// <summary>This much of the bill's net on this order — the figure the card takes per open order.</summary>
 public sealed record WorkOrderBillOrderSlice(string WorkOrderId, decimal Net);

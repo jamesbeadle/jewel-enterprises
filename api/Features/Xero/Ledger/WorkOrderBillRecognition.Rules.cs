@@ -20,7 +20,9 @@ public sealed partial class WorkOrderBillRecognition
         var assignment = ChooseByLine(orders, billLines, hintedProjectId) ?? ChooseForBill(orders, billLines, hintedProjectId);
         if (assignment.OrderByLineId is null) return Stays(assignment.Reason!, orders);
 
-        var slices = SlicesOf(assignment.OrderByLineId, billLines);
+        var slices = assignment.Unplaced
+            ? assignment.Pool!.Select(order => (order, 0m)).ToList()
+            : SlicesOf(assignment.OrderByLineId, billLines);
         var overValue = assignment.Pool is null ? FirstOrderOverValue(slices) : PoolOverValue(assignment.Pool, billLines);
         if (overValue is not null) return Stays(overValue, orders);
 
@@ -69,9 +71,8 @@ public sealed partial class WorkOrderBillRecognition
         var bill = billLines[0];
         var numbers = WorkOrderBillReference.NumbersOn(bill.Reference, billLines.Select(line => line.Description), bill.InvoiceNumber);
         if (numbers.Count > 1) return ChooseFirstOfSeveral(orders, numbers, hintedProjectId, billLines);
-        var chosen = numbers.Count == 0
-            ? ChooseBySupplier(orders, hintedProjectId)
-            : ChooseByReference(orders, numbers[0], hintedProjectId);
+        if (numbers.Count == 0) return ChooseBySupplier(orders, hintedProjectId, billLines);
+        var chosen = ChooseByReference(orders, numbers[0], hintedProjectId);
         if (chosen.Order is null) return Assignment.Refused(chosen.Reason!);
         return new Assignment(EveryLineOn(chosen.Order, billLines), chosen.Rule, chosen.Detail, null);
     }
@@ -126,23 +127,36 @@ public sealed partial class WorkOrderBillRecognition
         return null;
     }
 
-    /// <summary>No number on the bill: only a supplier with exactly one open order matches — on
-    /// the project the bill's site names when it names one, else anywhere.</summary>
-    private static (OpenOrder? Order, WorkOrderMatchRule Rule, string? Detail, string? Reason) ChooseBySupplier(
-        List<OpenOrder> orders, string? hintedProjectId)
+    /// <summary>No number on the bill: a supplier with exactly one open order matches on that
+    /// alone — on the project the bill's site names when it names one, else anywhere. A supplier
+    /// with several (2026-09-10, the accountant's ask — the Sussex Tiling bill against two By
+    /// France orders): the bill still reaches the card, every open order listed with NO figure
+    /// proposed, for the accountant to key the split — the same card a referenced bill gets, so
+    /// the work-order approval is never lost to the plain queue for want of a number on the bill.
+    /// Only a site the supplier has no order on refuses the bill.</summary>
+    private static Assignment ChooseBySupplier(List<OpenOrder> orders, string? hintedProjectId, IReadOnlyList<XeroLedgerLineEntity> billLines)
     {
         var onSite = hintedProjectId is null
             ? orders
             : orders.Where(order => order.ProjectId.Equals(hintedProjectId, StringComparison.OrdinalIgnoreCase)).ToList();
         if (onSite.Count == 1)
-            return (onSite[0], WorkOrderMatchRule.BySupplier,
+            return new Assignment(EveryLineOn(onSite[0], billLines), WorkOrderMatchRule.BySupplier,
                 $"Matched by supplier — {onSite[0].Reference} {onSite[0].Title} is their only open order"
                 + (hintedProjectId is null ? "." : $" on {onSite[0].ProjectName}, the site on the bill."), null);
+        if (onSite.Count > 1)
+        {
+            var listed = string.Join(", ", onSite.Select(order => order.Reference));
+            return new Assignment(EveryLineOn(onSite[0], billLines), WorkOrderMatchRule.BySupplierOrders,
+                $"The supplier has {onSite.Count} open orders ({listed})"
+                + (hintedProjectId is null ? "" : $" on {onSite[0].ProjectName}, the site on the bill,")
+                + " and the bill names none — set the figure on each order it pays.",
+                null, onSite, Unplaced: true);
+        }
         if (orders.Count == 1)
-            return (null, default, null, $"The supplier's only open order, {orders[0].Reference} on {orders[0].ProjectName}, "
-                                         + "is not on the site the bill names.");
-        return (null, default, null, $"The supplier has {orders.Count} open work orders "
-                                     + $"({string.Join(", ", orders.Select(order => $"{order.Reference} {order.ProjectName}"))}) "
-                                     + "and the bill carries no WO reference.");
+            return Assignment.Refused($"The supplier's only open order, {orders[0].Reference} on {orders[0].ProjectName}, "
+                                      + "is not on the site the bill names.");
+        return Assignment.Refused($"The supplier has {orders.Count} open work orders "
+                                  + $"({string.Join(", ", orders.Select(order => $"{order.Reference} {order.ProjectName}"))}), "
+                                  + "none on the site the bill names — set the project on the bill and re-check.");
     }
 }
