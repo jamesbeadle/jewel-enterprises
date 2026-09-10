@@ -121,19 +121,24 @@
                         }
                         else
                         {
-                            <div class="space-y-1">
+                            @* Each row is an explicit full-width flex row, not .btn-secondary: .btn is
+                               inline-flex + h-8 + justify-center, so a row sized itself to its longest
+                               line and ran off the right of the card — `truncate` never had an edge to
+                               clip at. Same border/hover look, but w-full + min-w-0 + overflow-hidden
+                               give the description a real width to truncate against. *@
+                            <div class="space-y-1 min-w-0">
                                 @foreach (var skill in agentSkills)
                                 {
                                     <a href="/admin/skills?skill=@Uri.EscapeDataString(skill.SkillKey)"
-                                       class="btn-secondary">
-                                        <span class="min-w-0">
-                                            <span class="block truncate text-xs text-content">@skill.DisplayName
+                                       class="flex w-full min-w-0 items-center justify-between gap-3 overflow-hidden rounded border border-line bg-transparent px-3 py-1.5 text-left text-content transition hover:border-line-strong hover:bg-surface-raised">
+                                        <span class="min-w-0 flex-1 overflow-hidden">
+                                            <span class="block truncate text-xs text-content" title="@skill.DisplayName">@skill.DisplayName
                                                 @if (skill.AgentKey == "shared")
                                                 {
                                                     <span class="text-content-faint"> · shared</span>
                                                 }
                                             </span>
-                                            <span class="block truncate text-xs text-content-subtle">@skill.Description</span>
+                                            <span class="block truncate text-xs text-content-subtle" title="@skill.Description">@skill.Description</span>
                                         </span>
                                         <span class="shrink-0 text-xs text-content-subtle whitespace-nowrap">
                                             @(skill.Pinned ? "Pinned" : "On demand") · v@(skill.Version)
