@@ -1,6 +1,6 @@
 ---
 name: jpms-connector-mechanics
-description: "Cross-cutting mechanics of writing through the connector — the rules that stop a well-meant edit erasing data. Load with any portal write. Encodes the full-record-write rule, read-before-write, absolute figures, complete lists, draft work orders having no number, and the confirm-first protocol's spirit."
+description: "Cross-cutting mechanics of writing through the connector — the rules that stop a well-meant edit erasing data. Load with any portal write. Encodes the full-record-write rule, read-before-write, absolute figures, complete lists, draft work orders having no number, and the confirm-first protocol's spirit: confirm, then do."
 ---
 
 # JPMS — Connector write mechanics
@@ -19,6 +19,9 @@ description: "Cross-cutting mechanics of writing through the connector — the r
   an existing record, show the user exactly what will happen — every value — and only send
   confirm true after their explicit yes in THIS conversation. The same spirit applies beyond the
   flag: anything financial, external-facing or irreversible gets stated first, performed second.
+  **Confirm-first means confirm, then DO.** Once the user has said yes, perform the action. It
+  never means handing the user a document, a markdown draft or a set of steps to do it themselves
+  — a draft the portal can create in the mailbox is created by the portal.
 - **Relay refusals verbatim.** Validation answers and guard messages are the portal telling you
   (and the user) what is really true — never summarise them into something softer, and never
   retry a refused call unchanged.

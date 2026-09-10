@@ -121,6 +121,19 @@ Two things not to do: do not write more project instructions on Jeremy's side to
 
 One thing to add afterwards: a replay check. Keep his three scenarios (invite an existing tender list, reply to a supplier's question, raise a valuation invoice with a mismatched contact) as a written test script, and run them through a fresh Claude connection after every skill or catalogue change. That is what would have caught all of this before he did.
 
+## 7b. Amendment after Nigel's reply (same evening)
+
+Nigel: "My skills are only client and contract related — mainly architect/CA. Never for tender,
+suppliers, staff or anyone outside my role. Need deleting for his role entirely." So the scoping
+rule is **role**, not situation, and it belongs in code, not prose. Done tonight (data only):
+the three commercial skills detached from all 16 areas that carried them; `jbb-second-brain`
+added to the four areas that lacked it; the five jpms-* skills rewritten and saved live (the
+second-brain now says plainly that Nigel's skills are Nigel's). Still to build: **skill
+visibility by role** — a `VisibleTo` on `SkillEntity` filtered in `list_skills`, `load_skill` and
+the `describe_action` guidance exactly as `AiToolCatalogue.ForConnector` filters tools; one
+additive column; Nigel's three get his role only. Also to decide with Nigel: who may WRITE skills
+(`SkillRoles.ManageSkills`) — mistake-prevention grew from 13 KB to 33 KB through `save_skill`.
+
 ## 8. What to tell Jeremy
 
 It was not him. Three of the six things came from a set of commercial-dispute instructions that were attached to the whole connector by mistake, so his Claude was told to hold information back and to write files instead of using the portal. The other three are real defects in two features, and all four of his Ravenswood points are correct and will be built as he described them (with a date on it). His project instruction is welcome; ask him to send it so it can be checked against the new second-brain rather than guessed at — most likely it is fine and was fighting the doctrine, not causing it.

@@ -1,6 +1,6 @@
 ---
 name: jpms-email-triage
-description: "How Jewel triages the projects mailbox — the Control Centre's procedure translated for the connector. Load before working the triage queue: listing untriaged mail, filing emails to records, raising records from emails, discarding, or replying. Encodes the apply ordering (file everything before any reply), the one-create-per-pass rule, attachments-before-body, the pane-choice-is-the-decision cross-filing rule, and when a thread counts as handled."
+description: "How Jewel triages the projects mailbox and replies to it — the Control Centre's procedure translated for the connector. Load before working the triage queue: listing untriaged mail, filing emails to records, raising records from emails, discarding, or drafting and sending any reply. Encodes the apply ordering (file everything before any reply), the one-create-per-pass rule, attachments-before-body, the pane-choice-is-the-decision cross-filing rule, when a thread counts as handled, and the reply rule: answer every question asked before asking your own."
 ---
 
 # JPMS — Email triage
@@ -43,6 +43,25 @@ by machinery, you must enforce by discipline.
    JPMS/Replied and it leaves the queue. saveAsDraftOnly true stages the reviewed draft in the
    mailbox's Drafts folder instead, for a person to send from Outlook; the prepare_*_draft actions
    do the same for record-anchored emails (a purchase order, a request's official document).
+
+## Writing a reply — answer first
+
+Most replies are to suppliers, subcontractors, consultants and architects asking something
+ordinary: which option, what date, is it a firm or budget quote, where is the boundary. The
+reply exists to answer them.
+
+1. **List the questions the email asks** — every one, in the sender's words — before writing a
+   line. Read the whole thread; an earlier message often holds the question the latest one is
+   chasing.
+2. **Answer each one, or park it explicitly** ("we will confirm the boundary by Friday"). Where
+   the answer is the user's decision, ask the USER for it before drafting — do not send them a
+   draft that leaves the sender's question unanswered.
+3. **Only then ask your own** — at most one or two, and only if they are needed to proceed.
+4. **The first paragraph is the answer.** Keep the sender's terms; do not rename what they
+   called something.
+5. Plain UK English, short, no reservation-of-rights language, no evidence held back — that is
+   Nigel's doctrine for his contractual correspondence, not this.
+6. Show the user the envelope and the body, get the yes, then send or stage as they choose.
 
 ## Decisions, not defaults
 
