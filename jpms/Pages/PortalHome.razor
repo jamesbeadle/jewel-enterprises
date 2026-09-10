@@ -163,6 +163,12 @@
                         <input type="date" class="field w-full" @bind="uploadExpiry" />
                         </FormField>
                     </div>
+                    <div>
+                        <FormField Label="Public liability cover (£)" Hint="For an insurance certificate: the public liability limit of indemnity, e.g. 5000000 for £5m.">
+                        <input type="number" min="0" step="1000" class="field w-full" placeholder="e.g. 5000000"
+                               @bind="uploadPublicLiabilityCover" />
+                        </FormField>
+                    </div>
                 </div>
                 <div class="mt-3">
                     <FormField Label="File" Required>

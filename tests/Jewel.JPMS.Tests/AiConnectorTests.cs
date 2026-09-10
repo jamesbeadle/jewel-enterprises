@@ -344,6 +344,23 @@ public sealed class AiConnectorTests
             Assert.DoesNotContain(name, subcontractor);
         }
 
+        // The accountant's 10 Sep evening ask: the public liability figure on the register. The
+        // read carries it per document and per company with the below-£5m flag and filter; the
+        // figure on a document already on file is corrected from the connector too, never by a
+        // re-upload; and search_directory says it beside the standing.
+        Assert.Contains("set_compliance_document_details", names);
+        var setDetails = AiActionRegistry.All.Single(a => a.Name == "set_compliance_document_details");
+        Assert.True(setDetails.VisibleTo.IncludesAny(UserWith(Role.FinanceDirector).Roles));
+        Assert.False(setDetails.VisibleTo.IncludesAny(UserWith(Role.Subcontractor).Roles));
+        var detailsSchema = System.Text.Json.JsonSerializer.Serialize(AiActionSchema.InputSchema(setDetails));
+        Assert.Contains("publicLiabilityCover", detailsSchema);
+        Assert.Contains("expiresAt", detailsSchema);
+        var register = AiToolCatalogue.ForConnector(UserWith(Role.FinanceDirector)).Single(t => t.Name == "list_compliance_register");
+        Assert.Contains("belowPublicLiabilityRequirement", System.Text.Json.JsonSerializer.Serialize(register.InputSchema));
+        Assert.Contains("£5m", register.Description);
+        var fileToSubcontractorSchema = System.Text.Json.JsonSerializer.Serialize(AiActionSchema.InputSchema(AiActionRegistry.Find("file_document_to_subcontractor")!));
+        Assert.Contains("publicLiabilityCover", fileToSubcontractorSchema);
+
         // Approve writes tracking to Xero and approves the bill there; undo clears the tracking.
         // Both confirm-first, and the FD's button, never the site's.
         foreach (var name in new[] { "approve_work_order_bill", "undo_work_order_bill_approval", "raise_valuation_invoice_in_xero" })

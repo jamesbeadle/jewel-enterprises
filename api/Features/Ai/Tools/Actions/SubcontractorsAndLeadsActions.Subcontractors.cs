@@ -77,6 +77,28 @@ internal sealed partial class SubcontractorsAndLeadsActions
                 + "user before calling; this is the whole result, not a partial edit."),
 
         new AiAction(
+            Name: "set_compliance_document_details",
+            Area: "Subcontractors",
+            Description: "Corrects the facts recorded against the CURRENT version of a compliance "
+                + "document without re-uploading it: expiresAt (the certificate's expiry, or null "
+                + "for a document that does not expire) and publicLiabilityCover — the public "
+                + "liability limit of indemnity in pounds (5000000 for £5m; null = not recorded). "
+                + "Jewel's insurer requires £5m of every subcontractor on a big job, so this is how "
+                + "an insurance document already on file gets its figure. Both values are the whole "
+                + "new reading. A superseded version is refused.",
+            CommandType: typeof(SetComplianceDocumentDetails),
+            ResultType: typeof(ComplianceDocument),
+            AuthorisationType: typeof(SetComplianceDocumentDetailsAuthorisation),
+            ValidationType: typeof(SetComplianceDocumentDetailsValidation),
+            VisibleTo: ComplianceDocumentEditors,
+            EmailStamps: Array.Empty<string>(),
+            NameStamps: Array.Empty<string>(),
+            Notes: "complianceDocumentId and subcontractorId come from list_compliance_register "
+                + "(documents[].complianceDocumentId, never the file name). Read the current expiresAt "
+                + "and publicLiabilityCover back to the user before calling — a null you did not "
+                + "mean clears the figure."),
+
+        new AiAction(
             Name: "promote_subcontractor_to_directory",
             Area: "Subcontractors",
             Description: "Promotes a tender-only prospect record into the Directory proper — the "

@@ -1,5 +1,6 @@
 using Jewel.JPMS.Api.Features.Subcontractors;
 using Jewel.JPMS.Api.Features.Subcontractors.Storage;
+using Jewel.JPMS.Api.Features.Subcontractors.Commands;
 using Jewel.JPMS.Contracts.Subcontractors;
 
 namespace Jewel.JPMS.Api.Features.Portal.Commands;
@@ -67,6 +68,10 @@ public sealed class UploadMyComplianceDocumentEndpoint
             expiresAt = parsed;
         }
 
+        // Optional: the certificate's public liability limit of indemnity, in pounds.
+        if (!PublicLiabilityCoverField.TryRead(form, out var publicLiabilityCover, out var coverError))
+            return new BadRequestObjectResult(coverError);
+
         // Clamp to the column widths so an over-long browser filename can't fail the row insert
         // after the blob is already stored (which would orphan the blob).
         var fileName = Path.GetFileName(string.IsNullOrWhiteSpace(file.FileName) ? "document" : file.FileName);
@@ -93,7 +98,7 @@ public sealed class UploadMyComplianceDocumentEndpoint
         }
 
         var document = await handler.HandleAsync(
-            new AddComplianceDocumentVersion(documentId, subcontractorId, kind, fileName, expiresAt, blobPath, contentType, file.Length),
+            new AddComplianceDocumentVersion(documentId, subcontractorId, kind, fileName, expiresAt, blobPath, contentType, file.Length, publicLiabilityCover),
             cancellationToken);
         return new OkObjectResult(document);
     }

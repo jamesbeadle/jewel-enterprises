@@ -19,7 +19,8 @@ internal static class SubcontractorEntityMapping
 
     public static ComplianceDocument ToModel(this ComplianceDocumentEntity entity) =>
         new(entity.ComplianceDocumentId, entity.SubcontractorId, entity.Kind, entity.FileName, entity.ExpiresAt, entity.UploadedAt,
-            entity.Version, entity.SupersededAt, HasFile: !string.IsNullOrEmpty(entity.BlobPath), entity.FileSize);
+            entity.Version, entity.SupersededAt, HasFile: !string.IsNullOrEmpty(entity.BlobPath), entity.FileSize,
+            entity.PublicLiabilityCover);
 
     public static CompanyContact ToModel(this CompanyContactEntity entity) =>
         new(entity.CompanyContactId, entity.SubcontractorId, entity.Name, entity.Email, entity.Phone, entity.CreatedAt);

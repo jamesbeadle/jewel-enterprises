@@ -35,9 +35,9 @@ public sealed class HttpDocumentControlStore : IDocumentControlStore
 
     public Task<DocumentControlItem> FileToSubcontractorAsync(
         string documentControlItemId, string subcontractorId, string kind, DateTimeOffset? expiresAt,
-        CancellationToken cancellationToken = default) =>
+        decimal? publicLiabilityCover = null, CancellationToken cancellationToken = default) =>
         commands.SendAsync(
-            new FileDocumentToSubcontractor(documentControlItemId, subcontractorId, kind, expiresAt),
+            new FileDocumentToSubcontractor(documentControlItemId, subcontractorId, kind, expiresAt, publicLiabilityCover),
             cancellationToken);
 
     public Task<DocumentControlItem> DiscardAsync(string documentControlItemId, CancellationToken cancellationToken = default) =>

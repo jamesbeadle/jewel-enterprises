@@ -22,6 +22,6 @@ public sealed class UploadComplianceDocumentHandler
             new AddComplianceDocumentVersion(
                 SubcontractorIdentifierFactory.NextComplianceDocumentId(),
                 command.SubcontractorId, command.Kind, command.FileName, command.ExpiresAt,
-                BlobPath: "", ContentType: "", FileSize: 0),
+                BlobPath: "", ContentType: "", FileSize: 0, command.PublicLiabilityCover),
             cancellationToken);
 }

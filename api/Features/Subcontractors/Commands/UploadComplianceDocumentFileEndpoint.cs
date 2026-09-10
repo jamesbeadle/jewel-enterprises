@@ -72,6 +72,10 @@ public sealed class UploadComplianceDocumentFileEndpoint
             expiresAt = parsed;
         }
 
+        // Optional: the certificate's public liability limit of indemnity, in pounds.
+        if (!PublicLiabilityCoverField.TryRead(form, out var publicLiabilityCover, out var coverError))
+            return new BadRequestObjectResult(coverError);
+
         // Clamp to the column widths so an over-long browser filename can't fail the row insert
         // after the blob is already stored (which would orphan the blob).
         var fileName = Path.GetFileName(string.IsNullOrWhiteSpace(file.FileName) ? "document" : file.FileName);
@@ -98,7 +102,7 @@ public sealed class UploadComplianceDocumentFileEndpoint
         }
 
         var document = await handler.HandleAsync(
-            new AddComplianceDocumentVersion(documentId, subcontractorId, kind, fileName, expiresAt, blobPath, contentType, file.Length),
+            new AddComplianceDocumentVersion(documentId, subcontractorId, kind, fileName, expiresAt, blobPath, contentType, file.Length, publicLiabilityCover),
             cancellationToken);
         return new OkObjectResult(document);
     }

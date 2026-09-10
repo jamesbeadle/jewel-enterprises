@@ -108,6 +108,11 @@ public sealed class ComplianceDocumentEntity
     // a Kind has SupersededAt == null and drives its expiry status.
     public int Version { get; set; } = 1;
     public DateTimeOffset? SupersededAt { get; set; }
+
+    // The public liability limit of indemnity the certificate states, in pounds (2026-09-10, the
+    // accountant's ask — £5m required on big jobs). Null = not recorded, never nil cover; normal
+    // on a non-insurance document. decimal(18,4) by the context's convention.
+    public decimal? PublicLiabilityCover { get; set; }
 }
 
 public sealed class HsRecordEntity

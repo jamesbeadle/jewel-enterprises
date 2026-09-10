@@ -59,6 +59,10 @@ public static class SubcontractorsFeatureRegistration
 
         services.AddScoped<ICommandHandler<AddComplianceDocumentVersion, ComplianceDocument>, AddComplianceDocumentVersionHandler>();
 
+        services.AddScoped<ICommandHandler<SetComplianceDocumentDetails, ComplianceDocument>, SetComplianceDocumentDetailsHandler>();
+        services.AddScoped<SetComplianceDocumentDetailsAuthorisation>();
+        services.AddScoped<SetComplianceDocumentDetailsValidation>();
+
         // Xero import + link/unlink on an existing record + consolidation (the duplicate-resolution
         // flow) + company contacts.
         services.AddScoped<XeroSupplierLookup>();

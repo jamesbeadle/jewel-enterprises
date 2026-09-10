@@ -7,4 +7,5 @@ public sealed record UploadComplianceDocument(
     string SubcontractorId,
     string Kind,
     string FileName,
-    DateTimeOffset? ExpiresAt) : ICommand<ComplianceDocument>;
+    DateTimeOffset? ExpiresAt,
+    decimal? PublicLiabilityCover = null) : ICommand<ComplianceDocument>;

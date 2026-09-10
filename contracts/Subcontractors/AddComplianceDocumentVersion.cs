@@ -16,4 +16,5 @@ public sealed record AddComplianceDocumentVersion(
     DateTimeOffset? ExpiresAt,
     string BlobPath,
     string ContentType,
-    long FileSize) : ICommand<ComplianceDocument>;
+    long FileSize,
+    decimal? PublicLiabilityCover = null) : ICommand<ComplianceDocument>;

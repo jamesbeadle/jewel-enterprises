@@ -60,7 +60,8 @@ public sealed class FileDocumentToSubcontractorHandler
         var document = await addVersion.HandleAsync(
             new AddComplianceDocumentVersion(
                 complianceDocumentId, command.SubcontractorId, kind,
-                item.FileName, command.ExpiresAt, blobPath, item.ContentType, item.FileSizeBytes),
+                item.FileName, command.ExpiresAt, blobPath, item.ContentType, item.FileSizeBytes,
+                command.PublicLiabilityCover),
             cancellationToken);
 
         item.Status = (int)DocumentControlStatus.Filed;

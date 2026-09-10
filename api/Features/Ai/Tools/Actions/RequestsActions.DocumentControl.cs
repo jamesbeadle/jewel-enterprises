@@ -76,6 +76,8 @@ internal sealed partial class RequestsActions
             NameStamps: Array.Empty<string>(),
             Notes: "documentControlItemId comes from the Document Control queue. kind is the "
                 + "compliance document kind as the portal names it; expiresAt sets the new version's "
-                + "expiry where the kind carries one."),
+                + "expiry where the kind carries one. publicLiabilityCover is the certificate's public "
+                + "liability limit of indemnity in pounds (5000000 for £5m) — read it off the document "
+                + "for an insurance filing, leave it null for anything else or when it is not stated."),
     };
 }

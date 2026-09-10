@@ -32,7 +32,7 @@ public interface IDocumentControlStore
     /// (RAMS, Insurance, Drawings / Specifications…).</summary>
     Task<DocumentControlItem> FileToSubcontractorAsync(
         string documentControlItemId, string subcontractorId, string kind, DateTimeOffset? expiresAt,
-        CancellationToken cancellationToken = default);
+        decimal? publicLiabilityCover = null, CancellationToken cancellationToken = default);
 
     Task<DocumentControlItem> DiscardAsync(string documentControlItemId, CancellationToken cancellationToken = default);
 

@@ -119,15 +119,58 @@ public sealed record ComplianceDocument(
     int Version = 1,
     DateTimeOffset? SupersededAt = null,
     bool HasFile = false,
-    long FileSize = 0)
+    long FileSize = 0,
+    // The public liability limit of indemnity this certificate carries, in pounds (2026-09-10,
+    // the accountant's ask: Jewel's own insurer wants every subcontractor on a big job covered to
+    // £5m, and the register showed only that an insurance document existed). Null means the
+    // figure was never recorded — NOT nil cover — and is normal on a non-insurance document. It
+    // lives on the document, not the company, because the certificate is what states it and a
+    // renewal at a different limit is then history for free. Named for what it is: employers'
+    // liability, when wanted, is a sibling column, not a second meaning of this one.
+    decimal? PublicLiabilityCover = null)
 {
     /// <summary>The live version of its Kind. Superseded versions are audit history and should
     /// not drive expiry banners or status pills.</summary>
     public bool IsCurrentVersion => SupersededAt is null;
+
+    /// <summary>A recorded public liability figure that falls short of what Jewel's insurer
+    /// requires on a big job. False when no figure is recorded — an unknown is a gap to fill,
+    /// not a shortfall to alarm on. Never part of the compliance standing: the £5m rule applies
+    /// to big jobs only, so a smaller policy is a flag for the person placing the work, not an
+    /// expired document.</summary>
+    public bool IsBelowPublicLiabilityRequirement =>
+        PublicLiabilityCover is { } cover && cover < ComplianceDocumentExtensions.PublicLiabilityRequirement;
 }
 
 public static class ComplianceDocumentExtensions
 {
+    /// <summary>The public liability cover Jewel's insurer requires of a subcontractor on a big
+    /// job (2026-09-10, the accountant: "£5 mil for our sub contractors on all big jobs").</summary>
+    public const decimal PublicLiabilityRequirement = 5_000_000m;
+
+    /// <summary>How a public liability figure reads in a table cell: "£5m", "£2.5m", "£750k",
+    /// "£10,000" — short enough for a column, exact enough to compare with the requirement.
+    /// Empty for a document with none recorded.</summary>
+    public static string PublicLiabilityCoverText(decimal? cover)
+    {
+        if (cover is not { } amount) return "";
+        var invariant = System.Globalization.CultureInfo.InvariantCulture;
+        if (amount >= 1_000_000m)
+        {
+            var millions = amount / 1_000_000m;
+            return "£" + (millions == decimal.Truncate(millions) ? millions.ToString("0", invariant) : millions.ToString("0.##", invariant)) + "m";
+        }
+        if (amount >= 1_000m && amount % 1_000m == 0) return "£" + (amount / 1_000m).ToString("0", invariant) + "k";
+        return "£" + amount.ToString("#,##0.##", invariant);
+    }
+
+    /// <summary>The company's public liability figure: the one on its current document that
+    /// records one — the highest, should two current documents both carry a figure.</summary>
+    public static decimal? PublicLiabilityCover(this IEnumerable<ComplianceDocument> documents) =>
+        documents.Where(document => document.IsCurrentVersion && document.PublicLiabilityCover is not null)
+            .Select(document => document.PublicLiabilityCover)
+            .Max();
+
     public static ComplianceStatus Status(this ComplianceDocument document)
     {
         if (document.ExpiresAt is null) return ComplianceStatus.Current;

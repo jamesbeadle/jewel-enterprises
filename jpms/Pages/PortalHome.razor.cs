@@ -129,6 +129,7 @@ public partial class PortalHome
     private string? uploadNote;
     private string uploadKind = "";
     private DateTime? uploadExpiry;
+    private decimal? uploadPublicLiabilityCover;
     private IBrowserFile? uploadFile;
 
     private void OnUploadFileSelected(InputFileChangeEventArgs e)
@@ -149,10 +150,12 @@ public partial class PortalHome
             DateTimeOffset? expiresAt = uploadExpiry is null
                 ? null
                 : new DateTimeOffset(DateTime.SpecifyKind(uploadExpiry.Value.Date, DateTimeKind.Utc));
-            await PortalStore.UploadDocumentAsync(uploadKind.Trim(), expiresAt, uploadFile, CancellationToken.None);
+            await PortalStore.UploadDocumentAsync(uploadKind.Trim(), expiresAt, uploadFile, CancellationToken.None,
+                uploadPublicLiabilityCover);
             uploadNote = $"{uploadKind.Trim()} uploaded.";
             uploadKind = "";
             uploadExpiry = null;
+            uploadPublicLiabilityCover = null;
             uploadFile = null;
         }
         catch (Exception ex)

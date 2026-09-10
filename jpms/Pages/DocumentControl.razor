@@ -307,7 +307,7 @@
                                     Lands on the subcontractor's record as the current version of its kind —
                                     superseding, never replacing, exactly like a portal upload.
                                 </p>
-                                <div class="grid grid-cols-1 sm:grid-cols-3 gap-3">
+                                <div class="grid grid-cols-1 sm:grid-cols-4 gap-3">
                                     <div>
                                         <FormField Label="Subcontractor" Required>
                                         <SearchSelect Options="SubcontractorOptions" Value="@subcontractorId"
@@ -335,6 +335,12 @@
                                     <div>
                                         <FormField Label="Expiry date">
                                         <input type="date" class="field" @bind="subcontractorExpiry" />
+                                        </FormField>
+                                    </div>
+                                    <div>
+                                        <FormField Label="Public liability cover (£)" Hint="Insurance only — the limit of indemnity, e.g. 5000000.">
+                                        <input type="number" min="0" step="1000" class="field" placeholder="e.g. 5000000"
+                                               @bind="subcontractorPublicLiabilityCover" />
                                         </FormField>
                                     </div>
                                 </div>

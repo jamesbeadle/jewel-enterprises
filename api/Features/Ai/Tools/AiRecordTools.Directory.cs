@@ -23,7 +23,9 @@ internal static partial class AiRecordTools
                 + "whether it is linked to a Xero contact (and which — xeroLinks carries the Xero "
                 + "ContactID and name), its compliance standing (complianceStanding: Expired, "
                 + "ExpiringSoon, Missing or Current — list_compliance_register has the documents "
-                + "behind it), and whether it is still a tender-only prospect "
+                + "behind it), its recorded public liability cover in pounds (publicLiabilityCover, "
+                + "null when never recorded; Jewel's insurer requires £5m on big jobs), and whether "
+                + "it is still a tender-only prospect "
                 + "(promote_subcontractor_to_directory makes those permanent). Call this "
                 + "BEFORE update_subcontractor or add_subcontractor_to_directory — never guess an "
                 + "id, and never create a record before checking it isn't already here.",
@@ -98,6 +100,7 @@ internal static partial class AiRecordTools
                         cisVerificationNumber = row.CisVerificationNumber,
                         cisVerifiedOn = row.CisVerifiedOn,
                         complianceStanding = complianceByCompany[row.SubcontractorId].Standing().ToString(),
+                        publicLiabilityCover = complianceByCompany[row.SubcontractorId].PublicLiabilityCover(),
                         paymentTermsDays = row.PaymentTermsDays,
                         xeroLinked = xeroLinks.ContainsKey(row.SubcontractorId),
                         xeroLinks = xeroLinks.TryGetValue(row.SubcontractorId, out var links)

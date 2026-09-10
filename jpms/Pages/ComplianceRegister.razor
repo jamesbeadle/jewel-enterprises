@@ -17,7 +17,11 @@
     her second ask) the companies with nothing on file — a Missing company is a row too, Missing
     being a standing rather than an absence, but there are hundreds of them and they sit below the
     documents that exist. Rows open the company's record, where the renewal is filed. Same gate as
-    the Directory; same whole-company read as its Compliance column.
+    the Directory; same whole-company read as its Compliance column. The PL cover column (the
+    third ask, that evening) is the public liability limit the document records — Jewel's insurer
+    requires £5m of every subcontractor on a big job, so a smaller figure reads in warning and the
+    "Below £5m PL" chip lists those companies; a blank is "not recorded", never nil cover, and is
+    filled from the record page's Edit details without a re-upload.
 *@
 
 <Page>
@@ -68,6 +72,7 @@
                         <th class="hidden md:table-cell">Trade</th>
                         <th>Document</th>
                         <th class="text-right">Expires</th>
+                        <th class="text-right" title="Public liability cover recorded on the document — £5m required on big jobs">PL cover</th>
                         <th>Compliance</th>
                     </tr>
                 </thead>
@@ -79,6 +84,8 @@
                             <td class="hidden md:table-cell">@row.Company.TradesLabel</td>
                             <td>@row.DocumentLabel</td>
                             <td class="text-right whitespace-nowrap">@DateText(row.ExpiresAt)</td>
+                            <td class="text-right whitespace-nowrap @(row.IsBelowPublicLiabilityRequirement ? "text-warning font-medium" : "")"
+                                title="@(row.IsBelowPublicLiabilityRequirement ? DirectoryComplianceFilter.BelowPublicLiabilityRequirementTitle : null)">@row.PublicLiabilityCoverText</td>
                             <td><ComplianceStatusPill Status="@row.Status" /></td>
                         </tr>
                     }

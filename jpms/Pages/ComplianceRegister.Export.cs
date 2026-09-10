@@ -13,6 +13,8 @@ public partial class ComplianceRegister
             new ExcelColumn("Trade"),
             new ExcelColumn("Document"),
             new ExcelColumn("Expires", ExcelFormat.Date),
+            new ExcelColumn("PL cover (£)", ExcelFormat.Currency),
+            new ExcelColumn("Below £5m PL"),
             new ExcelColumn("Compliance"));
 
         foreach (var row in rows)
@@ -22,6 +24,8 @@ public partial class ComplianceRegister
                 row.Company.TradesLabel,
                 row.DocumentLabel,
                 row.ExpiresAt,
+                row.PublicLiabilityCover,
+                row.IsBelowPublicLiabilityRequirement ? "Yes" : "",
                 row.Status.DisplayName());
         }
         return workbook;

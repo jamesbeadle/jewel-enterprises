@@ -101,5 +101,9 @@ public static class SubcontractorsRouteRegistration
         commands.Register<UploadComplianceDocument, ComplianceDocument>(
             new CommandRoute("POST", "/api/subcontractors/{subcontractorId}/compliance",
                 command => $"/api/subcontractors/{((UploadComplianceDocument)command).SubcontractorId}/compliance"));
+
+        commands.Register<SetComplianceDocumentDetails, ComplianceDocument>(
+            new CommandRoute("PUT", "/api/subcontractors/{subcontractorId}/compliance/{complianceDocumentId}/details",
+                command => $"/api/subcontractors/{((SetComplianceDocumentDetails)command).SubcontractorId}/compliance/{((SetComplianceDocumentDetails)command).ComplianceDocumentId}/details"));
     }
 }

@@ -29,7 +29,9 @@ public partial class ComplianceRegister
         allRows.Where(PassesStatusFilter).Where(MatchesSearch).ToList();
 
     private IReadOnlyList<TabItem> StatusChips =>
-        DirectoryComplianceFilter.Chips(status => IsLoaded ? allRows.Count(row => row.Status == status) : null);
+        DirectoryComplianceFilter.Chips(
+            status => IsLoaded ? allRows.Count(row => row.Status == status) : null,
+            () => IsLoaded ? allRows.Count(row => row.IsBelowPublicLiabilityRequirement) : null);
 
     private string Summary
     {
@@ -37,11 +39,14 @@ public partial class ComplianceRegister
         {
             var companies = DirectoryCompanies().Count;
             var lapsing = allRows.Count(row => row.Status is ComplianceStatus.Expired or ComplianceStatus.ExpiringSoon);
-            return $"{companies} companies · {lapsing} document{(lapsing == 1 ? "" : "s")} expired or due within 30 days.";
+            var below = allRows.Count(row => row.IsBelowPublicLiabilityRequirement);
+            var summary = $"{companies} companies · {lapsing} document{(lapsing == 1 ? "" : "s")} expired or due within 30 days.";
+            return below == 0 ? summary : $"{summary} {below} insured under £5m public liability.";
         }
     }
 
-    private bool PassesStatusFilter(ComplianceRegisterRow row) => DirectoryComplianceFilter.Passes(row.Status, statusFilter);
+    private bool PassesStatusFilter(ComplianceRegisterRow row) =>
+        DirectoryComplianceFilter.Passes(row.Status, row.IsBelowPublicLiabilityRequirement, statusFilter);
 
     private bool MatchesSearch(ComplianceRegisterRow row)
     {
@@ -49,7 +54,8 @@ public partial class ComplianceRegister
         if (query.Length == 0) return true;
         return row.Company.CompanyName.Contains(query, StringComparison.OrdinalIgnoreCase)
             || row.Company.TradesLabel.Contains(query, StringComparison.OrdinalIgnoreCase)
-            || row.DocumentLabel.Contains(query, StringComparison.OrdinalIgnoreCase);
+            || row.DocumentLabel.Contains(query, StringComparison.OrdinalIgnoreCase)
+            || row.PublicLiabilityCoverText.Contains(query, StringComparison.OrdinalIgnoreCase);
     }
 
     // Tender-only prospects stay out, exactly as on the Directory page.

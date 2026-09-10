@@ -302,15 +302,28 @@ finds drift.
   `DirectoryViewTabs` (a `TabRow`), and the dashboard's "Documents expiring" tile lands on the
   register. `CisVerificationPanel` sits directly above `SubcontractorComplianceList` on the
   record page — the two together are the record's standing to be paid.
+- **The public liability figure lives on the document, and £5m is a flag, never a status**
+  (2026-09-10 evening, the accountant's third ask: Jewel's insurer requires £5m PL of every
+  subcontractor on a big job). `ComplianceDocument.PublicLiabilityCover` (nullable pounds,
+  `ComplianceDocuments.PublicLiabilityCover`, migration `AddComplianceDocumentPublicLiabilityCover`)
+  is the limit of indemnity the certificate states — null is "not recorded", never nil cover,
+  and normal on a non-insurance document; it is named for what it is, so employers' liability
+  would be a sibling column, not a second meaning. The dead `Subcontractors.Pli`/`PliExpiry`
+  strings from the master-sheet import are NOT its home — leave them. All three filing routes
+  take it (`publicLiabilityCover` form field on the office and portal multipart uploads, read by
+  `PublicLiabilityCoverField`; the `FileDocumentToSubcontractor` command), and
+  `SetComplianceDocumentDetails` (the record page's "Edit details…", connector
+  `set_compliance_document_details`) corrects expiry + figure on the CURRENT version without a
+  re-upload — a superseded version is refused. `ComplianceDocumentExtensions.PublicLiabilityRequirement`
+  (5,000,000) and `document.IsBelowPublicLiabilityRequirement` are the one rule: the register's
+  "PL cover" column reads in `text-warning` and the `DirectoryComplianceFilter.BelowPublicLiabilityRequirement`
+  chip ("Below £5m PL", after the standings on both the Directory and the register) lists the
+  companies, but the standing and the pill never change for it — the £5m rule is for big jobs
+  only, so a smaller policy is a fact for whoever places the work, not an expired document.
+  `PublicLiabilityCoverText` ("£5m", "£2.5m", "£750k") is how the figure reads in a cell.
 
 ## The connector mirrors the page — every button the accountant gets, the assistant gets (api)
 
-- **"The assistant" IS the Jewel_Portal MCP connector used from Claude** — the in-site chat panel
-  was retired (2026-08-27) and removed; there is no chat in jpms. Claude renders (tables,
-  dashboards, artifacts) and the api's job is the READ that makes the answer consistent and the
-  confirm-first ACTION that makes it doable. Never propose an in-portal chat widget, a "render
-  type", or page-side AI; an assistant feature is a connector tool in `api/Features/Ai/Tools`
-  plus, where the team's judgement matters, a portal skill (`save_skill`).
 - **A feature is not done until the MCP connector can do it too** (2026-09-09, the coverage
   audit). Every command that gains an endpoint gains an `AiAction` in the same commit
   (`api/Features/Ai/Tools/Actions`, one partial per area — `CommercialActions.WorkOrderBills`
@@ -331,29 +344,6 @@ finds drift.
   (`tenderList[].recipientId — never the company name`), not "the recipient list". Code:
   `AiRecordTools.BidPackageContext.cs` + `BidPackageContextReads.cs`; pinned by
   `BidPackageContext_handsOverTheIdsItsActionsTake`.
-
-## The to-do brief (api)
-
-- **`get_todo_brief` is the To-do board joined to what clears each item** (2026-09-10, the
-  accountant's ask: "show me the to-do for Ravenswood" should come back as a table of what is
-  open WITH the action needed to clear it, not a list of titles). `list_todos` stays the
-  register; the brief (`AiToolCatalogue.TodoBrief.cs`) is the same open items joined
-  server-side to the project's records — three readings in order of trust, all in
-  `Features/Todos/TodoBrief.cs`, pure and tested (`TodoBriefTests`): what the item is **about**
-  (`AboutRecord`, a fact someone set), what it **names** (a reference in its own words, the
-  `RecordReferenceScan` grammar the completion tagger files by), and what it **concerns** (an
-  inference: `ReadIntent` reads the verb and the kind of record the wording should produce —
-  "raise … variation", "chase … quote", "order …" = work order — and `Relate` matches the
-  title's distinctive words against the project's variations, bid packages, work orders,
-  requests and defects; one short shared word is never a match, the newer record wins a tie).
-  Every item carries `daysOverdue`, `signals` (calendar → ownership → conditional wording →
-  links → same-subject items → mail → quiet days) and ONE deterministic `nextStep`
-  (`TodoBrief.NextStep`: a Draft bid package under a "chase quote" item reads "nothing has been
-  asked for through the portal yet"; an approved variation under a "raise variation" item reads
-  "looks done"; nothing matching reads "raise it"). Inferred matches are LABELLED inferred in
-  the output and the step. Tagged mail is read per item through `RecordEmailReader`, best
-  effort, capped at 30 items. The tool's description tells the model to answer as a table and
-  render `nextStep`, never re-derive it; same gate as the To-do tab (`AllInternal`).
 
 ## The sales invoice raised in Xero from the claim card (api + jpms)
 

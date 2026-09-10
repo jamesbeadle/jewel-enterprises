@@ -80,7 +80,8 @@ public sealed class HttpPortalStore : IPortalStore
 
     public Task Refresh() => FetchAsync();
 
-    public async Task UploadDocumentAsync(string kind, DateTimeOffset? expiresAt, IBrowserFile file, CancellationToken cancellationToken)
+    public async Task UploadDocumentAsync(string kind, DateTimeOffset? expiresAt, IBrowserFile file, CancellationToken cancellationToken,
+        decimal? publicLiabilityCover = null)
     {
         using var content = new MultipartFormDataContent();
 
@@ -90,6 +91,8 @@ public sealed class HttpPortalStore : IPortalStore
         content.Add(fileContent, "file", file.Name);
         content.Add(new StringContent(kind), "kind");
         if (expiresAt is not null) content.Add(new StringContent(expiresAt.Value.ToString("O")), "expiresAt");
+        if (publicLiabilityCover is not null)
+            content.Add(new StringContent(publicLiabilityCover.Value.ToString(System.Globalization.CultureInfo.InvariantCulture)), "publicLiabilityCover");
 
         var response = await httpClient.PostAsync("api/portal/my/documents", content, cancellationToken);
         if (!response.IsSuccessStatusCode)

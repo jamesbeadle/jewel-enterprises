@@ -28,6 +28,12 @@ internal sealed partial class SubcontractorsAndLeadsActions : IAiActionSource
     private static readonly RoleSet DirectoryRecordEditors =
         RoleSet.Of(JpmsRoles.Director, JpmsRoles.FinanceDirector, JpmsRoles.ProjectManager);
 
+    // SetComplianceDocumentDetailsAuthorisation — the office circle that files compliance documents
+    // (UploadComplianceDocumentFileAuthorisation).
+    private static readonly RoleSet ComplianceDocumentEditors =
+        RoleSet.Of(JpmsRoles.Director, JpmsRoles.FinanceDirector, JpmsRoles.ProjectManager, JpmsRoles.Estimator,
+            JpmsRoles.OfficeComplianceCoordinator, JpmsRoles.OfficeAdmin, JpmsRoles.SalesMarketing);
+
     private static readonly RoleSet PartyContactManagers =
         RoleSet.Of(Role.Admin, JpmsRoles.Director, JpmsRoles.ProjectManager);
 

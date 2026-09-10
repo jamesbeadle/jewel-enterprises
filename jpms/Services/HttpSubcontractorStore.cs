@@ -115,7 +115,7 @@ public sealed class HttpSubcontractorStore : ISubcontractorStore
 
     public async Task UploadComplianceFileAsync(
         string subcontractorId, string kind, DateTimeOffset? expiresAt, IBrowserFile file,
-        CancellationToken cancellationToken)
+        CancellationToken cancellationToken, decimal? publicLiabilityCover = null)
     {
         using var content = new MultipartFormDataContent();
 
@@ -125,6 +125,8 @@ public sealed class HttpSubcontractorStore : ISubcontractorStore
         content.Add(fileContent, "file", file.Name);
         content.Add(new StringContent(kind), "kind");
         if (expiresAt is not null) content.Add(new StringContent(expiresAt.Value.ToString("O")), "expiresAt");
+        if (publicLiabilityCover is not null)
+            content.Add(new StringContent(publicLiabilityCover.Value.ToString(System.Globalization.CultureInfo.InvariantCulture)), "publicLiabilityCover");
 
         var response = await httpClient.PostAsync(
             $"api/subcontractors/{subcontractorId}/compliance/file", content, cancellationToken);
@@ -160,6 +162,13 @@ public sealed class HttpSubcontractorStore : ISubcontractorStore
     {
         await commands.SendAsync(command, CancellationToken.None);
         await readModel.RefreshAsync(CancellationToken.None);
+    }
+
+    public async Task SetComplianceDocumentDetailsAsync(SetComplianceDocumentDetails command, CancellationToken cancellationToken)
+    {
+        await commands.SendAsync(command, cancellationToken);
+        // Committed — invalidate so the record page's list re-reads the corrected version.
+        compliance.Invalidate(command.SubcontractorId);
     }
 
     // ---- Xero import + consolidation ----

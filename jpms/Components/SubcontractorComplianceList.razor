@@ -1,3 +1,4 @@
+@using Jewel.JPMS.Contracts.Subcontractors
 @inject ISubcontractorStore SubcontractorStore
 @implements IDisposable
 
@@ -43,8 +44,18 @@
                         {
                             <p class="text-xs text-content-subtle">Expires @DateText(document.ExpiresAt.Value)</p>
                         }
+                        @if (document.PublicLiabilityCover is not null)
+                        {
+                            <p class="text-xs @(document.IsBelowPublicLiabilityRequirement ? "text-warning" : "text-content-subtle")"
+                               title="@(document.IsBelowPublicLiabilityRequirement ? BelowRequirementTitle : null)">
+                                Public liability cover @ComplianceDocumentExtensions.PublicLiabilityCoverText(document.PublicLiabilityCover)@(document.IsBelowPublicLiabilityRequirement ? " · below the £5m required on big jobs" : "")
+                            </p>
+                        }
                     </div>
-                    <ComplianceStatusPill Status="document.Status()" />
+                    <div class="flex items-center gap-3 shrink-0">
+                        <button type="button" class="btn-secondary" @onclick="() => OpenEdit(document)">Edit details…</button>
+                        <ComplianceStatusPill Status="document.Status()" />
+                    </div>
                 </li>
             }
         </ul>
@@ -107,6 +118,9 @@
                 </FormField>
             </div>
         </div>
+        <FormField Label="Public liability cover (£)" Hint="For an insurance certificate: the public liability limit of indemnity, e.g. 5000000 for £5m. Jewel's insurer requires £5m on big jobs.">
+        <input type="number" min="0" step="1000" class="field w-full" placeholder="e.g. 5000000" @bind="addPublicLiabilityCover" />
+        </FormField>
         <div>
             <FormField Label="File" Required>
             <InputFile OnChange="OnAddFileSelected" class="w-full text-sm text-content-muted" />
@@ -120,6 +134,37 @@
             Adding an existing type again supersedes the current version — the old file stays
             downloadable under Previous versions.
         </p>
+    </div>
+</Modal>
+
+@* Edit details (2026-09-10, the accountant's ask): the facts recorded against the CURRENT version
+   — expiry and the public liability figure — corrected in place. The file, kind and version stay;
+   a different certificate is a new version through Add document. This is how the insurance
+   documents already on file get their £ figure without being uploaded again. *@
+<Modal IsOpen="editOpen" Title="@($"Edit details — {editDocument?.Kind}")" ShowFooter="true"
+       ConfirmLabel="@(editBusy ? "Saving…" : "Save details")" CancelLabel="Cancel"
+       ConfirmDisabled="@editBusy" OnCancel="CloseEdit" OnConfirm="ConfirmEdit" Class="max-w-lg w-full">
+    @if (editError is not null)
+    {
+        <Notice Tone="Tone.Negative" Class="mb-3">@editError</Notice>
+    }
+    <div class="space-y-3">
+        @if (editDocument is not null)
+        {
+            <p class="text-xs text-content-subtle">@editDocument.FileName · v@(editDocument.Version) · uploaded @DateText(editDocument.UploadedAt)</p>
+        }
+        <div class="grid gap-3 sm:grid-cols-2">
+            <div>
+                <FormField Label="Expiry date" Hint="Blank for a document that does not expire.">
+                <input type="date" class="field w-full" @bind="editExpiry" />
+                </FormField>
+            </div>
+            <div>
+                <FormField Label="Public liability cover (£)" Hint="The limit of indemnity on the certificate, e.g. 5000000 for £5m.">
+                <input type="number" min="0" step="1000" class="field w-full" placeholder="e.g. 5000000" @bind="editPublicLiabilityCover" />
+                </FormField>
+            </div>
+        </div>
     </div>
 </Modal>
 
@@ -155,17 +200,21 @@
         "RAMS", "Method statement", "Training certificate", "Waste carrier licence"
     };
 
+    private const string BelowRequirementTitle = "Jewel's insurer requires £5m public liability cover of every subcontractor on a big job";
+
     private bool addOpen;
     private bool addBusy;
     private string? addError;
     private string addKind = "";
     private DateTime? addExpiry;
+    private decimal? addPublicLiabilityCover;
     private IBrowserFile? addFile;
 
     private void OpenAdd()
     {
         addKind = "";
         addExpiry = null;
+        addPublicLiabilityCover = null;
         addFile = null;
         addError = null;
         addOpen = true;
@@ -194,7 +243,7 @@
                 ? null
                 : new DateTimeOffset(DateTime.SpecifyKind(addExpiry.Value.Date, DateTimeKind.Utc));
             await SubcontractorStore.UploadComplianceFileAsync(
-                SubcontractorId, addKind.Trim(), expiresAt, addFile, CancellationToken.None);
+                SubcontractorId, addKind.Trim(), expiresAt, addFile, CancellationToken.None, addPublicLiabilityCover);
             addOpen = false;
         }
         catch (Exception ex)
@@ -204,6 +253,54 @@
         finally
         {
             addBusy = false;
+        }
+    }
+
+    // ---- Edit details ----
+
+    private bool editOpen;
+    private bool editBusy;
+    private string? editError;
+    private ComplianceDocument? editDocument;
+    private DateTime? editExpiry;
+    private decimal? editPublicLiabilityCover;
+
+    private void OpenEdit(ComplianceDocument document)
+    {
+        editDocument = document;
+        editExpiry = document.ExpiresAt?.UtcDateTime.Date;
+        editPublicLiabilityCover = document.PublicLiabilityCover;
+        editError = null;
+        editOpen = true;
+    }
+
+    private void CloseEdit()
+    {
+        if (editBusy) return;
+        editOpen = false;
+    }
+
+    private async Task ConfirmEdit()
+    {
+        if (editBusy || editDocument is null) return;
+        editError = null;
+        try
+        {
+            editBusy = true;
+            // Date-only, pinned to UTC — the same conversion Add document applies to its expiry.
+            DateTimeOffset? expiresAt = editExpiry is null
+                ? null
+                : new DateTimeOffset(DateTime.SpecifyKind(editExpiry.Value.Date, DateTimeKind.Utc));
+            await SubcontractorStore.SetComplianceDocumentDetailsAsync(
+                new SetComplianceDocumentDetails(SubcontractorId, editDocument.ComplianceDocumentId, expiresAt, editPublicLiabilityCover),
+                CancellationToken.None);
+            editOpen = false;
+        }
+        catch (CommandFailedException ex) { editError = $"Couldn't save: {ex.Message}"; }
+        catch { editError = "Couldn't save the details. Please try again."; }
+        finally
+        {
+            editBusy = false;
         }
     }
 

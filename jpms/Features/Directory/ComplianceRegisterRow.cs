@@ -10,6 +10,16 @@ public sealed record ComplianceRegisterRow(Subcontractor Company, ComplianceDocu
 
     public DateTimeOffset? ExpiresAt => Document?.ExpiresAt;
 
+    /// <summary>The public liability figure the document records, in pounds (2026-09-10, the
+    /// accountant's ask) — null on a Missing row or a document with none recorded.</summary>
+    public decimal? PublicLiabilityCover => Document?.PublicLiabilityCover;
+
+    public string PublicLiabilityCoverText => ComplianceDocumentExtensions.PublicLiabilityCoverText(PublicLiabilityCover);
+
+    /// <summary>A recorded figure under the £5m Jewel's insurer requires on big jobs. A flag on
+    /// the row, never a status — see ComplianceDocument.IsBelowPublicLiabilityRequirement.</summary>
+    public bool IsBelowPublicLiabilityRequirement => Document?.IsBelowPublicLiabilityRequirement == true;
+
     public static IReadOnlyList<ComplianceRegisterRow> Build(
         IReadOnlyList<Subcontractor> companies, IReadOnlyList<ComplianceDocument> currentDocuments)
     {

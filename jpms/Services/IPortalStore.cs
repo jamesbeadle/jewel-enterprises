@@ -23,7 +23,8 @@ public interface IPortalStore
     /// <summary>Uploads a compliance document to the caller's own record. Re-uploading a kind
     /// creates a new version (the old one is kept as history). Throws with a user-showable
     /// message on failure; refreshes the record on success.</summary>
-    Task UploadDocumentAsync(string kind, DateTimeOffset? expiresAt, IBrowserFile file, CancellationToken cancellationToken);
+    Task UploadDocumentAsync(string kind, DateTimeOffset? expiresAt, IBrowserFile file, CancellationToken cancellationToken,
+        decimal? publicLiabilityCover = null);
 
     /// <summary>The caller's variation requests, newest first. Render-time read with the same
     /// fetch-once semantics as MyRecord(). Null until fetched at least once.</summary>

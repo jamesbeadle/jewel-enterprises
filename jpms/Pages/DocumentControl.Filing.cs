@@ -20,6 +20,7 @@ public partial class DocumentControl
     private string subcontractorId = "";
     private string subcontractorKind = "";
     private DateTime? subcontractorExpiry;
+    private decimal? subcontractorPublicLiabilityCover;
 
 
     // ---- Project filter: narrows every view (Queue / Filed / Discarded) and the header count
@@ -182,6 +183,7 @@ public partial class DocumentControl
         subcontractorId = "";
         subcontractorKind = "";
         subcontractorExpiry = null;
+        subcontractorPublicLiabilityCover = null;
         // The email's triage project is the hint; the drawing fields prefill from the file name
         // ("PRO-064-(WD)-P-800 Rev I Site set out.pdf" → code / revision / title).
         filingProjectId = item?.ProjectIdHint ?? "";
@@ -332,7 +334,8 @@ public partial class DocumentControl
             ? null
             : new DateTimeOffset(DateTime.SpecifyKind(subcontractorExpiry.Value.Date, DateTimeKind.Utc));
         await RunFiling("Filing to subcontractor", () =>
-            Store.FileToSubcontractorAsync(item.DocumentControlItemId, subcontractorId, subcontractorKind, expires));
+            Store.FileToSubcontractorAsync(item.DocumentControlItemId, subcontractorId, subcontractorKind, expires,
+                subcontractorPublicLiabilityCover));
     }
 
     private Task DoDiscard()

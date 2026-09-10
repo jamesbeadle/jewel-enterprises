@@ -38,6 +38,7 @@ public sealed class AddComplianceDocumentVersionHandler
             BlobPath = command.BlobPath,
             ContentType = command.ContentType,
             FileSize = command.FileSize,
+            PublicLiabilityCover = command.PublicLiabilityCover,
             Version = siblings.Count == 0 ? 1 : siblings.Max(row => row.Version) + 1
         };
         context.ComplianceDocuments.Add(entity);

@@ -22,7 +22,19 @@ public sealed class ComplianceOverviewReadModel : IReadModelStore<IReadOnlyList<
     /// <summary>The listed subcontractor's overall standing: the worst status among its current
     /// documents, or Missing when it has none on record.</summary>
     public ComplianceStatus WorstStatusFor(string subcontractorId) =>
+        DocumentsFor(subcontractorId).Standing();
+
+    /// <summary>The listed subcontractor's recorded public liability cover, in pounds — null when
+    /// no current document records one (2026-09-10, the accountant's ask).</summary>
+    public decimal? PublicLiabilityCoverFor(string subcontractorId) =>
+        DocumentsFor(subcontractorId).PublicLiabilityCover();
+
+    /// <summary>True when a current document records a public liability figure under the £5m
+    /// Jewel's insurer requires on big jobs. Never true for an unrecorded figure.</summary>
+    public bool IsBelowPublicLiabilityRequirementFor(string subcontractorId) =>
+        DocumentsFor(subcontractorId).Any(document => document.IsCurrentVersion && document.IsBelowPublicLiabilityRequirement);
+
+    private IEnumerable<ComplianceDocument> DocumentsFor(string subcontractorId) =>
         (Current ?? Array.Empty<ComplianceDocument>())
-            .Where(document => string.Equals(document.SubcontractorId, subcontractorId, StringComparison.OrdinalIgnoreCase))
-            .Standing();
+            .Where(document => string.Equals(document.SubcontractorId, subcontractorId, StringComparison.OrdinalIgnoreCase));
 }

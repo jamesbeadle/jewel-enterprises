@@ -29,13 +29,21 @@ internal static partial class AiRecordTools
             + "excluded) with its standing — Expired (a current document has passed its expiry), "
             + "ExpiringSoon (expires within 30 days), Missing (no compliance documents on file) or "
             + "Current — and its current documents (kind, file, expiry, status), expired and expiring "
-            + "first, then current, then the companies with nothing on file. Pass "
-            + "a status to read only the companies standing there; a search narrows to a company. "
+            + "first, then current, then the companies with nothing on file. Each document carries "
+            + "publicLiabilityCover — the public liability limit of indemnity in pounds the "
+            + "certificate states (null = never recorded) — and each company its "
+            + "publicLiabilityCover and belowPublicLiabilityRequirement: Jewel's insurer requires "
+            + "£5m of every subcontractor on a big job (publicLiabilityRequirement), a smaller "
+            + "recorded figure is flagged, an unrecorded one is a gap to fill, not a shortfall. Pass "
+            + "a status to read only the companies standing there; belowPublicLiabilityRequirement "
+            + "true lists only the companies flagged; a search narrows to a company. "
             + "This is the data behind the Directory's compliance chips and /directory/compliance — "
-            + "call it for anything about who can be paid, whose insurance has lapsed, or what "
-            + "needs chasing.",
+            + "call it for anything about who can be paid, whose insurance has lapsed, who is "
+            + "insured for less than £5m, or what needs chasing. set_compliance_document_details "
+            + "records a figure on a document already on file.",
             AiToolSchema.Object(
                 ("status", "string", "Expired, ExpiringSoon, Missing or Current — the company standing to list; omit for all.", false),
+                ("belowPublicLiabilityRequirement", "boolean", "true = only companies whose recorded public liability cover is under the £5m requirement.", false),
                 ("search", "string", "Optional text matched against the company name.", false)),
             AiToolKind.Read,
             ComplianceReaders,
@@ -50,6 +58,7 @@ internal static partial class AiRecordTools
                     wanted = parsed;
                 }
                 var search = AiToolSchema.Text(input, "search");
+                var belowOnly = AiToolSchema.Flag(input, "belowPublicLiabilityRequirement") == true;
 
                 var documents = await context.Services
                     .GetRequiredService<IQueryHandler<ListCurrentComplianceDocuments, IReadOnlyList<ComplianceDocument>>>()
@@ -68,6 +77,8 @@ internal static partial class AiRecordTools
                         companyName = company.CompanyName,
                         category = ((DirectoryCategory)company.Category).ToString(),
                         standing = byCompany[company.SubcontractorId].Standing(),
+                        publicLiabilityCover = byCompany[company.SubcontractorId].PublicLiabilityCover(),
+                        belowPublicLiabilityRequirement = byCompany[company.SubcontractorId].Any(document => document.IsCurrentVersion && document.IsBelowPublicLiabilityRequirement),
                         documents = byCompany[company.SubcontractorId]
                             .OrderBy(document => document.ExpiresAt ?? DateTimeOffset.MaxValue)
                             .Select(document => new
@@ -77,26 +88,38 @@ internal static partial class AiRecordTools
                                 document.FileName,
                                 document.ExpiresAt,
                                 status = document.Status().ToString(),
+                                document.PublicLiabilityCover,
+                                belowPublicLiabilityRequirement = document.IsBelowPublicLiabilityRequirement,
                                 document.UploadedAt
                             }).ToList()
                     })
                     .Where(row => wanted is null || row.standing == wanted)
+                    .Where(row => !belowOnly || row.belowPublicLiabilityRequirement)
                     .OrderBy(row => row.standing.ReadingRank())
                     .ThenBy(row => row.documents.Select(document => document.ExpiresAt).Min() ?? DateTimeOffset.MaxValue)
                     .ThenBy(row => row.companyName)
-                    .Select(row => new { row.subcontractorId, row.companyName, row.category, standing = row.standing.ToString(), row.documents })
+                    .Select(row => new
+                    {
+                        row.subcontractorId, row.companyName, row.category, standing = row.standing.ToString(),
+                        row.publicLiabilityCover, row.belowPublicLiabilityRequirement, row.documents
+                    })
                     .ToList();
 
                 return Serialise(new
                 {
                     ok = true,
                     count = rows.Count,
+                    publicLiabilityRequirement = ComplianceDocumentExtensions.PublicLiabilityRequirement,
+                    belowPublicLiabilityRequirementCount = companies.Count(company =>
+                        byCompany[company.SubcontractorId].Any(document => document.IsCurrentVersion && document.IsBelowPublicLiabilityRequirement)),
                     counts = ComplianceStatusExtensions.ReadingOrder.ToDictionary(status => status.ToString(),
                         status => companies.Count(company => byCompany[company.SubcontractorId].Standing() == status)),
                     companies = rows,
                     note = "A company's standing is the worst of its current documents; superseded "
-                           + "versions never count. list_sources with record_type subcontractor lists "
-                           + "the files themselves; read_source opens one."
+                           + "versions never count. publicLiabilityCover is in pounds and is the figure "
+                           + "recorded when the document was filed or corrected — null means nobody has "
+                           + "recorded one yet, not that there is no cover. list_sources with record_type "
+                           + "subcontractor lists the files themselves; read_source opens one."
                 });
             })
     };

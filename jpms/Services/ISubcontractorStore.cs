@@ -45,7 +45,12 @@ public interface ISubcontractorStore
     /// the previous version, exactly like the portal self-upload and a Document Triage filing.
     /// Throws with the server's message on failure so the caller can show it.</summary>
     Task UploadComplianceFileAsync(string subcontractorId, string kind, DateTimeOffset? expiresAt,
-        IBrowserFile file, CancellationToken cancellationToken);
+        IBrowserFile file, CancellationToken cancellationToken, decimal? publicLiabilityCover = null);
+
+    /// <summary>Corrects the expiry and public liability figure on the CURRENT version of a
+    /// compliance document — no re-upload (the record page's "Edit details…"). Throws with the
+    /// server's message on refusal (a superseded version, a wrong company).</summary>
+    Task SetComplianceDocumentDetailsAsync(SetComplianceDocumentDetails command, CancellationToken cancellationToken);
 
     /// <summary>The suppliers held in Xero, for the directory's "Import from Xero" modal. Not
     /// cached client-side — the API already caches the Xero read; force bypasses that cache for
