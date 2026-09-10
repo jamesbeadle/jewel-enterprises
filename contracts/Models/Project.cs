@@ -31,4 +31,10 @@ public sealed record Project(
     // left-to-claim evenly to practical completion; set, it claims at this rate until the money
     // runs out. Set via SetExpectedMonthlyValuation (the Cash Forecast page's inline editor);
     // forecasting only — it never touches valuations or invoices.
-    decimal? ExpectedMonthlyValuation = null);
+    decimal? ExpectedMonthlyValuation = null,
+    // The Xero customer the project's sales invoices are raised on (2026-09-10, the accountant's
+    // ask: the raise matched the client by NAME and created a duplicate contact on a miss). An
+    // explicit mapping like XeroSiteName — Xero's ContactID and the name as Xero holds it — set
+    // from the Xero contacts list in Project settings; Raise in Xero is blocked until it is set.
+    string? XeroContactId = null,
+    string? XeroContactName = null);

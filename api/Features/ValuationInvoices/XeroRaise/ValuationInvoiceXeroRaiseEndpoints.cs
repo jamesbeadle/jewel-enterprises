@@ -2,7 +2,7 @@ using Jewel.JPMS.Contracts.ValuationInvoices;
 
 namespace Jewel.JPMS.Api.Features.ValuationInvoices.XeroRaise;
 
-/// <summary>GET /api/valuation-invoices/{id}/xero-raise — what raising would do; nothing is written.</summary>
+/// <summary>GET /api/valuation-invoices/{id}/xero-raise?invoiceDate=yyyy-MM-dd&amp;dueDate=yyyy-MM-dd — what raising would do; nothing is written.</summary>
 public sealed class PreviewValuationInvoiceXeroRaiseEndpoint
 {
     private readonly SignedInUserResolver users;
@@ -21,18 +21,28 @@ public sealed class PreviewValuationInvoiceXeroRaiseEndpoint
         var signedInUser = await users.ResolveAsync(request, request.HttpContext.RequestAborted);
         if (signedInUser is null) return new UnauthorizedResult();
         if (!ValuationInvoiceRoles.AllowedToManageValuationInvoices.IncludesAny(signedInUser.Roles)) return new StatusCodeResult(403);
+        // The user's own dates for this call; blank means today / the certificate rule.
+        var invoiceDate = DateOf(request.Query["invoiceDate"]);
+        var dueDate = DateOf(request.Query["dueDate"]);
         try
         {
-            return new OkObjectResult(await handler.HandleAsync(new PreviewValuationInvoiceXeroRaise(valuationInvoiceId), request.HttpContext.RequestAborted));
+            return new OkObjectResult(await handler.HandleAsync(
+                new PreviewValuationInvoiceXeroRaise(valuationInvoiceId, invoiceDate, dueDate), request.HttpContext.RequestAborted));
         }
         catch (InvalidOperationException ex)
         {
             return new BadRequestObjectResult(ex.Message);
         }
     }
+
+    private static DateTime? DateOf(string? raw) =>
+        !string.IsNullOrWhiteSpace(raw) && DateTime.TryParse(raw, System.Globalization.CultureInfo.InvariantCulture,
+            System.Globalization.DateTimeStyles.AssumeUniversal | System.Globalization.DateTimeStyles.AdjustToUniversal, out var parsed)
+            ? parsed.Date
+            : null;
 }
 
-/// <summary>POST /api/valuation-invoices/{id}/xero-raise — raise the AUTHORISED sales invoice in Xero and issue.</summary>
+/// <summary>POST /api/valuation-invoices/{id}/xero-raise — raise the AUTHORISED sales invoice in Xero and issue. Body: { invoiceDate?, dueDate? }.</summary>
 public sealed class RaiseValuationInvoiceInXeroEndpoint
 {
     private readonly SignedInUserResolver users;
@@ -64,8 +74,15 @@ public sealed class RaiseValuationInvoiceInXeroEndpoint
         if (signedInUser is null) return new UnauthorizedResult();
         auditActor.Email = signedInUser.Email;
 
+        // The body carries the user's dates (optional — an empty body is a raise on the defaults);
         // RaisedBy is stamped server-side — never trusted from the client.
-        var command = new RaiseValuationInvoiceInXero(valuationInvoiceId, signedInUser.Email);
+        RaiseValuationInvoiceInXero? body = null;
+        if (request.ContentLength is not 0)
+        {
+            try { body = await request.ReadFromJsonAsync<RaiseValuationInvoiceInXero>(); }
+            catch (JsonException) { body = null; } // an empty or non-JSON body is "no options", not an error
+        }
+        var command = new RaiseValuationInvoiceInXero(valuationInvoiceId, signedInUser.Email, body?.InvoiceDate, body?.DueDate);
         if (!authorisation.Allows(signedInUser, command)) return new StatusCodeResult(403);
 
         var validationOutcome = validation.Check(command);

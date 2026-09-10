@@ -28,6 +28,11 @@ public static class ValuationInvoicesFeatureRegistration
         services.AddScoped<RaiseValuationInvoiceInXeroAuthorisation>();
         services.AddScoped<RaiseValuationInvoiceInXeroValidation>();
 
+        // The number of a sales invoice raised in Xero by hand, recorded after the fact (2026-09-10).
+        services.AddScoped<ICommandHandler<RecordValuationInvoiceXeroNumber, ValuationInvoice>, RecordValuationInvoiceXeroNumberHandler>();
+        services.AddScoped<RecordValuationInvoiceXeroNumberAuthorisation>();
+        services.AddScoped<RecordValuationInvoiceXeroNumberValidation>();
+
         services.AddScoped<ICommandHandler<RecordValuationInvoicePayment, ValuationInvoice>, RecordValuationInvoicePaymentHandler>();
         services.AddScoped<RecordValuationInvoicePaymentAuthorisation>();
         services.AddScoped<RecordValuationInvoicePaymentValidation>();

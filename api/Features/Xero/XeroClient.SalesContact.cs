@@ -3,55 +3,48 @@ namespace Jewel.JPMS.Api.Features.Xero;
 public sealed partial class XeroClient
 {
     /// <summary>
-    /// The client as Xero holds it — by ContactID when the directory's link supplies one, else
-    /// by exact name — and the tax type to raise their sales invoice with: (ContactID or null,
-    /// TaxType or null, a sentence saying where the tax type came from). The sales-side mirror
-    /// of ResolveContactTaxTypeAsync: AccountsReceivableTaxType, then the most recent ACCREC
-    /// invoice, then Xero's account default — said, never assumed.
+    /// The mapped contact as Xero holds it — by ContactID only, never by name (2026-09-10: a name
+    /// match created a duplicate contact) — and the tax type to raise their sales invoice with:
+    /// (Found / NotFound / Unavailable, Xero's name for the contact, TaxType or null, a sentence
+    /// saying where the tax type came from). The sales-side mirror of ResolveContactTaxTypeAsync:
+    /// AccountsReceivableTaxType, then the most recent ACCREC invoice, then Xero's account default
+    /// — said, never assumed.
     /// </summary>
-    private async Task<(string? ContactId, string? TaxType, string Note)> ResolveSalesContactAsync(
-        string token, string? contactId, string contactName, CancellationToken ct)
+    private async Task<(XeroSalesContactStatus Status, string? XeroName, string? TaxType, string Note)> ResolveSalesContactAsync(
+        string token, string contactId, CancellationToken ct)
     {
         try
         {
-            var contact = contactId is null
-                ? await FindContactByNameAsync(token, contactName, ct)
-                : await FindContactByIdAsync(token, contactId, ct);
+            var contact = await FindContactByIdAsync(token, contactId, ct);
             if (contact is null)
-                return (null, null,
-                    $"Xero has no contact named \"{contactName}\" — one is created with the invoice, and "
-                    + "Xero's account default sales tax type applies: check the VAT on the invoice and set "
-                    + "the contact's default sales tax type.");
+                return (XeroSalesContactStatus.NotFound, null, null,
+                    "Xero has no contact with the id mapped on the project — it may have been merged or "
+                    + "archived in Xero. Re-map the Xero contact in Project settings.");
 
-            var foundId = StringOf(contact.Value, "ContactID");
+            var xeroName = StringOf(contact.Value, "Name") ?? "";
             var contactDefault = StringOf(contact.Value, "AccountsReceivableTaxType");
             if (!string.IsNullOrWhiteSpace(contactDefault))
-                return (foundId, contactDefault, $"Tax type {contactDefault} from the contact's default sales tax type.");
-            if (foundId is not null && await LastSalesInvoiceTaxTypeAsync(token, foundId, ct) is { } last)
-                return (foundId, last.TaxType, last.Note);
-            return (foundId, null,
+                return (XeroSalesContactStatus.Found, xeroName, contactDefault, $"Tax type {contactDefault} from the contact's default sales tax type.");
+            if (await LastSalesInvoiceTaxTypeAsync(token, contactId, ct) is { } last)
+                return (XeroSalesContactStatus.Found, xeroName, last.TaxType, last.Note);
+            return (XeroSalesContactStatus.Found, xeroName, null,
                 "The contact has no default sales tax type and no previous sales invoice — Xero's "
                 + "account default applies: check the VAT on the invoice and set the contact's default.");
         }
         catch (XeroCallFailedException failure)
         {
-            return (contactId, null,
+            return (XeroSalesContactStatus.Unavailable, null, null,
                 $"Couldn't read the contact's tax type ({failure.Message}) — Xero's account default "
                 + "applies: check the VAT on the invoice.");
         }
     }
 
-    private async Task<JsonElement?> FindContactByNameAsync(string token, string contactName, CancellationToken ct)
-    {
-        var escapedName = contactName.Replace("\\", "\\\\").Replace("\"", "\\\"");
-        var url = $"{ContactsUrl}?where={Uri.EscapeDataString($"Name==\"{escapedName}\"")}";
-        using var doc = await GetJsonAsync(token, url, "contacts", ct);
-        return FirstOf(doc, "Contacts") is { } contact ? contact.Clone() : null;
-    }
-
+    /// <summary>The contact by id as a filtered list read — an unknown or archived id comes back
+    /// as an empty list (a "not found" the caller can name), where GET /Contacts/{id} is a 404.</summary>
     private async Task<JsonElement?> FindContactByIdAsync(string token, string contactId, CancellationToken ct)
     {
-        using var doc = await GetJsonAsync(token, $"{ContactsUrl}/{contactId}", "contacts", ct);
+        var url = $"{ContactsUrl}?where={Uri.EscapeDataString($"ContactID==Guid(\"{contactId}\")")}";
+        using var doc = await GetJsonAsync(token, url, "contacts", ct);
         return FirstOf(doc, "Contacts") is { } contact ? contact.Clone() : null;
     }
 

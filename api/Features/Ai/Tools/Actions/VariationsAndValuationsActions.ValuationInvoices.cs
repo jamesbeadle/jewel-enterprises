@@ -113,16 +113,23 @@ internal sealed partial class VariationsAndValuationsActions
             Name: "raise_valuation_invoice_in_xero",
             Area: "Valuation invoices",
             Description: "WRITES TO XERO: raises the AUTHORISED sales invoice for a valuation invoice "
-                + "on the project's client — one line for the invoice's net on the sales account "
-                + "with the project's Sites tracking, VAT per Xero's own reading of the contact "
-                + "(never assumed), the payment certificate PDF attached when the register holds "
-                + "one — stamps Xero's invoice id and number on the valuation invoice, then ISSUES "
-                + "it (Approved → Issued, or Raised/Submitted → Issued on the skip path): certified "
-                + "to date moves. The certificate attachment is best effort — the invoice stands "
-                + "without it and the outcome says so (attachmentError). Refused when the invoice is "
-                + "already raised in Xero, is Rejected/Cancelled/Issued/Paid, or when the project has "
-                + "no Xero site mapping. An invoice in Xero cannot be un-raised from here — void it "
-                + "in Xero if it was wrong.",
+                + "on the Xero contact MAPPED ON THE PROJECT (Project settings → Xero contact; never "
+                + "matched by name, never created) — one line for the invoice's net on the sales "
+                + "account with the project's Sites tracking, Xero reference \"Valuation NN\" and "
+                + "description \"Valuation NN - Payment due as per <month> valuation report (ex VAT)\" "
+                + "numbered from the INVOICE, VAT per Xero's own reading of the contact (never "
+                + "assumed), the payment certificate PDF attached when the register holds one — "
+                + "stamps Xero's invoice id and number on the valuation invoice, then ISSUES it "
+                + "(Approved → Issued, or Raised/Submitted → Issued on the skip path): certified to "
+                + "date moves. invoiceDate and dueDate (yyyy-MM-dd) are the user's dates for this "
+                + "call: blank invoiceDate is today; blank dueDate is the certificate's issue date + "
+                + "the contract's final date for payment days, else Xero's sales default. The "
+                + "certificate attachment is best effort — the invoice stands without it and the "
+                + "outcome says so (attachmentError). Refused when the invoice already carries a Xero "
+                + "id or number, is Rejected/Cancelled/Issued/Paid, when the project has no Xero "
+                + "contact mapped or the mapped contact is not found in Xero, or when the project has "
+                + "no Xero site mapping. An invoice in Xero cannot be un-raised from here — void it in "
+                + "Xero if it was wrong.",
             CommandType: typeof(RaiseValuationInvoiceInXero),
             ResultType: typeof(ValuationInvoiceXeroRaiseOutcome),
             AuthorisationType: typeof(RaiseValuationInvoiceInXeroAuthorisation),
@@ -131,23 +138,33 @@ internal sealed partial class VariationsAndValuationsActions
             EmailStamps: new[] { nameof(RaiseValuationInvoiceInXero.RaisedBy) },
             NameStamps: Array.Empty<string>(),
             RequiresConfirmation: true,
-            Notes: "Call preview_valuation_invoice_xero_raise first and show the user everything it "
-                + "returns — client, net, VAT reading, Sites option, due date, the certificate to be "
-                + "attached — and its blockers; raise only when canRaise is true and the user has said "
-                + "yes. Never invoice off Jewel's own valuation figure when a certificate says "
-                + "otherwise: the valuation invoice's amount must already be the certified figure "
-                + "(update_valuation_invoice fixes it first). issue_valuation_invoice is the route for "
-                + "an invoice someone raised in Xero by hand."),
+            Notes: "Call preview_valuation_invoice_xero_raise first (with the same invoiceDate/dueDate) "
+                + "and show the user everything it returns — the mapped contact and whether Xero holds "
+                + "it, net, VAT reading, Sites option, reference and description, invoice date, due "
+                + "date, the certificate to be attached — and its blockers; raise only when canRaise "
+                + "is true and the user has said yes. If a blocker says no Xero contact is mapped on "
+                + "the project, STOP: never raise, and never create a contact — tell the user to set "
+                + "the Xero contact in Project settings (or, with their yes, set it with "
+                + "update_project_details xeroContactId + xeroContactName from the Xero contacts list "
+                + "in Project settings), then preview again. Ask the user for the invoice date and due "
+                + "date if they did not give them; the preview shows the defaults that would apply. "
+                + "Never invoice off Jewel's own valuation figure when a certificate says otherwise: "
+                + "the valuation invoice's amount must already be the certified figure "
+                + "(update_valuation_invoice fixes it first). issue_valuation_invoice with "
+                + "xeroInvoiceNumber is the route for an invoice someone raised in Xero by hand."),
 
         new AiAction(
             Name: "issue_valuation_invoice",
             Area: "Valuation invoices",
             Description: "ISSUES a valuation invoice WITHOUT raising it in Xero — marks the client "
                 + "invoice as sent (Approved → Issued, or Raised → Issued for projects that skip the "
-                + "approval loop) for an invoice someone raised in Xero by hand. A real financial "
-                + "action: from this point the amount counts toward Certified to date. The skip path "
-                + "freezes a report snapshot if none is linked. To raise it in Xero from here as well, "
-                + "use raise_valuation_invoice_in_xero instead.",
+                + "approval loop) for an invoice someone raised in Xero by hand. xeroInvoiceNumber "
+                + "(optional) records that hand-raised invoice's Xero number (INV-0227) on the "
+                + "valuation invoice so it reads as raised and cannot be raised again; nothing is "
+                + "written to Xero. A real financial action: from this point the amount counts "
+                + "toward Certified to date. The skip path freezes a report snapshot if none is "
+                + "linked. To raise it in Xero from here as well, use raise_valuation_invoice_in_xero "
+                + "instead.",
             CommandType: typeof(IssueValuationInvoice),
             ResultType: typeof(ValuationInvoice),
             AuthorisationType: typeof(IssueValuationInvoiceAuthorisation),
@@ -155,7 +172,32 @@ internal sealed partial class VariationsAndValuationsActions
             VisibleTo: ValuationInvoiceRoles.AllowedToManageValuationInvoices,
             EmailStamps: Array.Empty<string>(),
             NameStamps: Array.Empty<string>(),
-            Notes: "Confirm with the user before calling — certified totals move."),
+            Notes: "Confirm with the user before calling — certified totals move. Pass "
+                + "xeroInvoiceNumber when the user raised the invoice in Xero themselves and gave you "
+                + "its number; for an invoice already Issued or Paid use "
+                + "record_valuation_invoice_xero_number instead."),
+
+        new AiAction(
+            Name: "record_valuation_invoice_xero_number",
+            Area: "Valuation invoices",
+            Description: "RECORDS the Xero invoice number of a sales invoice raised in Xero BY HAND "
+                + "against a valuation invoice that is already Issued or Paid (or any status but "
+                + "Cancelled) — the back-fill for rows whose Xero number is blank. Stamps the number "
+                + "(and the raised-at time when blank); nothing is written to Xero and no status "
+                + "moves. Refused on an invoice the portal itself raised in Xero (it already carries "
+                + "Xero's id) and on a Cancelled one.",
+            CommandType: typeof(RecordValuationInvoiceXeroNumber),
+            ResultType: typeof(ValuationInvoice),
+            AuthorisationType: typeof(RecordValuationInvoiceXeroNumberAuthorisation),
+            ValidationType: typeof(RecordValuationInvoiceXeroNumberValidation),
+            VisibleTo: ValuationInvoiceRoles.AllowedToManageValuationInvoices,
+            EmailStamps: new[] { nameof(RecordValuationInvoiceXeroNumber.RecordedBy) },
+            NameStamps: Array.Empty<string>(),
+            Notes: "valuationInvoiceId from list_valuation_invoices (rows with a blank "
+                + "xeroInvoiceNumber are the ones to back-fill); xeroInvoiceNumber exactly as Xero "
+                + "shows it (INV-0227). Confirm the pairing with the user before calling. For an "
+                + "invoice not yet issued, issue_valuation_invoice with xeroInvoiceNumber does both "
+                + "in one move."),
 
         new AiAction(
             Name: "record_valuation_invoice_payment",

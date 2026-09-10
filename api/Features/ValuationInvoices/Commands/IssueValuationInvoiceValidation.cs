@@ -8,6 +8,8 @@ public sealed class IssueValuationInvoiceValidation
     {
         if (string.IsNullOrWhiteSpace(command.ValuationInvoiceId))
             return new ValidationOutcome(new[] { "ValuationInvoiceId is required." });
+        if (command.XeroInvoiceNumber is { } number && number.Trim().Length > 64)
+            return new ValidationOutcome(new[] { "XeroInvoiceNumber must be 64 characters or fewer." });
         return ValidationOutcome.Passed;
     }
 }

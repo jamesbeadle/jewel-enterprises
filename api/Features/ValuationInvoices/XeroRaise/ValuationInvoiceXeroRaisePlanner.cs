@@ -7,8 +7,10 @@ namespace Jewel.JPMS.Api.Features.ValuationInvoices.XeroRaise;
 /// <summary>
 /// One rule for what a valuation invoice becomes in Xero — the preview a person confirms and the
 /// write that follows both read it, so what was shown is what is raised. Loads the invoice, its
-/// project, claim, client and the certificate the register holds for the claim, asks Xero how it
-/// knows the client, and names every blocker rather than the first.
+/// project, the contract and the certificate the register holds for the claim, asks Xero for the
+/// contact MAPPED ON THE PROJECT (by id only — never the client's name, never created;
+/// 2026-09-10), takes the user's invoice and due dates when given (today and the certificate rule
+/// otherwise), and names every blocker rather than the first.
 /// </summary>
 internal sealed class ValuationInvoiceXeroRaisePlanner
 {
@@ -23,7 +25,8 @@ internal sealed class ValuationInvoiceXeroRaisePlanner
         this.options = options;
     }
 
-    public async Task<ValuationInvoiceXeroRaisePlan> PlanAsync(string valuationInvoiceId, CancellationToken ct)
+    public async Task<ValuationInvoiceXeroRaisePlan> PlanAsync(
+        string valuationInvoiceId, DateTime? invoiceDate, DateTime? dueDate, CancellationToken ct)
     {
         var invoice = await context.ValuationInvoices.AsNoTracking()
             .SingleOrDefaultAsync(row => row.ValuationInvoiceId == valuationInvoiceId, ct)
@@ -31,47 +34,52 @@ internal sealed class ValuationInvoiceXeroRaisePlanner
         var project = await context.Projects.AsNoTracking()
             .SingleOrDefaultAsync(row => row.ProjectId == invoice.ProjectId, ct)
             ?? throw new InvalidOperationException("The invoice's project no longer exists.");
-        var claim = invoice.ValuationClaimId is null ? null
-            : await context.ValuationClaims.AsNoTracking().SingleOrDefaultAsync(row => row.ValuationClaimId == invoice.ValuationClaimId, ct);
         var certificate = await ValuationInvoiceXeroRaiseSources.CertificateForAsync(context, invoice, ct);
         var contract = await context.ProjectContracts.AsNoTracking().FirstOrDefaultAsync(row => row.ProjectId == project.ProjectId, ct);
 
-        var clientName = await ValuationInvoiceXeroRaiseSources.ClientNameAsync(context, project, ct);
-        var linkedContactId = await ValuationInvoiceXeroRaiseSources.LinkedXeroContactIdAsync(context, clientName, ct);
-        var lookup = await xero.LookupSalesContactAsync(linkedContactId, clientName, ct);
+        var (contactId, contactName) = ValuationInvoiceXeroRaiseSources.MappedContactOf(project);
+        var lookup = contactId is null
+            ? XeroSalesContactLookup.NotFound("No Xero contact is mapped on the project, so nothing was read from Xero.")
+            : await xero.LookupSalesContactAsync(contactId, ct);
 
-        var date = DateTime.UtcNow.Date;
-        var (dueDate, dueNote) = DueDateFor(certificate, contract, date);
+        var date = invoiceDate?.Date ?? DateTime.UtcNow.Date;
+        var (due, dueNote) = DueDateFor(dueDate, certificate, contract);
         var request = new XeroSalesInvoiceRequest(
-            lookup.ContactId ?? linkedContactId, clientName, date, dueDate, invoice.Reference,
-            DescriptionFor(project, claim, invoice, certificate), invoice.Amount, options.SalesAccountCode, project.XeroSiteName ?? "");
+            contactId ?? "", contactName, date, due, ReferenceFor(invoice),
+            DescriptionFor(invoice), invoice.Amount, options.SalesAccountCode, project.XeroSiteName ?? "");
 
         return new ValuationInvoiceXeroRaisePlan(invoice, project, certificate, request, lookup, dueNote,
-            Blockers(invoice, project));
+            Blockers(invoice, project, contactId, lookup));
     }
 
-    private static string DescriptionFor(ProjectEntity project, ValuationClaimEntity? claim, ValuationInvoiceEntity invoice, PaymentCertificateEntity? certificate)
-    {
-        var valuation = claim is null ? invoice.Reference : $"Valuation {claim.ClaimNumber} ({claim.Name})";
-        var certified = certificate is null ? "" : $" — payment certificate {certificate.CertificateNumber} of {certificate.IssuedDate:dd MMM yyyy}";
-        return $"{project.Name} — {valuation}{certified}. Period {invoice.PeriodMonth:MMMM yyyy}.";
-    }
+    /// <summary>Xero's Reference: the INVOICE's number, two digits — "Valuation 05" (2026-09-10).</summary>
+    internal static string ReferenceFor(ValuationInvoiceEntity invoice) => $"Valuation {invoice.Number:00}";
 
-    /// <summary>The final date for payment when the certificate and the contract give it (the
-    /// certificate's issue date plus the contract's days); otherwise Xero's own sales default.</summary>
-    private static (DateTime? DueDate, string Note) DueDateFor(PaymentCertificateEntity? certificate, ProjectContractEntity? contract, DateTime today)
+    /// <summary>The one line's text, numbered from the INVOICE (never the claim) and naming the
+    /// period's valuation report — the certificate is attached, not described (2026-09-10).</summary>
+    internal static string DescriptionFor(ValuationInvoiceEntity invoice) =>
+        $"Valuation {invoice.Number:00} - Payment due as per {invoice.PeriodMonth:MMMM yyyy} valuation report (ex VAT)";
+
+    /// <summary>The user's due date when given; else the final date for payment when the
+    /// certificate and the contract give it (the certificate's issue date plus the contract's
+    /// days); otherwise Xero's own sales default. The note says which applied.</summary>
+    private static (DateTime? DueDate, string Note) DueDateFor(DateTime? requested, PaymentCertificateEntity? certificate, ProjectContractEntity? contract)
     {
+        if (requested is { } chosen)
+            return (chosen.Date, $"Due {chosen:dd MMM yyyy} — the date you gave.");
         if (certificate is not null && contract is { FinalDateForPaymentDays: > 0 })
             return (certificate.IssuedDate.UtcDateTime.Date.AddDays(contract.FinalDateForPaymentDays),
-                $"Due {contract.FinalDateForPaymentDays} days after the certificate's {certificate.IssuedDate:dd MMM yyyy} — the contract's final date for payment.");
-        return (null, "No certificate date and contract terms to work from — Xero's default sales due date applies.");
+                $"Due {contract.FinalDateForPaymentDays} days after the certificate's {certificate.IssuedDate:dd MMM yyyy} — the contract's final date for payment. Give a due date to override it.");
+        return (null, "No certificate date and contract terms to work from — Xero's default sales due date applies unless you give one.");
     }
 
-    private static IReadOnlyList<string> Blockers(ValuationInvoiceEntity invoice, ProjectEntity project)
+    private static IReadOnlyList<string> Blockers(ValuationInvoiceEntity invoice, ProjectEntity project, string? contactId, XeroSalesContactLookup lookup)
     {
         var blockers = new List<string>();
-        if (!string.IsNullOrWhiteSpace(invoice.XeroInvoiceId))
-            blockers.Add($"Already raised in Xero as {invoice.XeroInvoiceNumber ?? invoice.XeroInvoiceId} on {invoice.XeroRaisedAt:dd MMM yyyy}.");
+        // A number recorded by hand counts as raised exactly as the portal's own raise does.
+        if (!string.IsNullOrWhiteSpace(invoice.XeroInvoiceId) || !string.IsNullOrWhiteSpace(invoice.XeroInvoiceNumber))
+            blockers.Add($"Already raised in Xero as {(string.IsNullOrWhiteSpace(invoice.XeroInvoiceNumber) ? invoice.XeroInvoiceId : invoice.XeroInvoiceNumber)}"
+                + (invoice.XeroRaisedAt is { } raisedAt ? $" on {raisedAt:dd MMM yyyy}." : "."));
         switch ((ValuationInvoiceStatus)invoice.Status)
         {
             case ValuationInvoiceStatus.Raised or ValuationInvoiceStatus.Submitted or ValuationInvoiceStatus.Approved: break;
@@ -80,6 +88,10 @@ internal sealed class ValuationInvoiceXeroRaisePlanner
             default: blockers.Add($"The invoice is already {(ValuationInvoiceStatus)invoice.Status} — raise in Xero happens at issue."); break;
         }
         if (invoice.Amount <= 0m) blockers.Add("The invoice amount must be greater than zero.");
+        if (contactId is null)
+            blockers.Add($"No Xero contact is mapped on {project.Name} — set it in Project settings (Xero contact).");
+        else if (lookup.Status == XeroSalesContactStatus.NotFound)
+            blockers.Add("The mapped Xero contact was not found in Xero — re-map it in Project settings.");
         if (string.IsNullOrWhiteSpace(project.XeroSiteName))
             blockers.Add($"{project.Name} has no Xero site mapping — set it on the project (Xero mappings) so the invoice carries its Sites tracking.");
         return blockers;
@@ -96,16 +108,24 @@ internal sealed record ValuationInvoiceXeroRaisePlan(
     string DueDateNote,
     IReadOnlyList<string> Blockers)
 {
-    public string ContactStatus => Contact.ContactId is null
-        ? "Not in Xero — a contact is created with the invoice"
-        : "Matched in Xero";
+    public string ContactStatus => string.IsNullOrWhiteSpace(Request.ContactId)
+        ? "No Xero contact mapped on the project — Raise in Xero is blocked until it is set in Project settings"
+        : Contact.Status switch
+        {
+            XeroSalesContactStatus.Found => string.IsNullOrWhiteSpace(Contact.XeroName) || Contact.XeroName == Request.ContactName
+                ? "Mapped on the project and found in Xero"
+                : $"Mapped on the project and found in Xero as \"{Contact.XeroName}\"",
+            XeroSalesContactStatus.NotFound => "Mapped on the project but NOT found in Xero — re-map it in Project settings",
+            _ => "Mapped on the project; Xero could not be read to confirm it"
+        };
 
     public string CertificateNote => Certificate is null
         ? "No payment certificate is filed against this claim — nothing to attach. File it from Document Triage first if you want it on the invoice."
         : $"Certificate {Certificate.CertificateNumber} ({Certificate.FileName}) will be attached.";
 
     public ValuationInvoiceXeroRaisePreview ToPreview() => new(
-        Invoice.ValuationInvoiceId, Invoice.Reference, Request.ContactName, Request.ContactId, ContactStatus,
+        Invoice.ValuationInvoiceId, Invoice.Reference, Request.Reference, Request.ContactName,
+        string.IsNullOrWhiteSpace(Request.ContactId) ? null : Request.ContactId, ContactStatus,
         Request.Net, Request.Description, Request.AccountCode,
         string.IsNullOrWhiteSpace(Request.SiteOption) ? null : Request.SiteOption,
         Request.Date, Request.DueDate, DueDateNote, Contact.TaxNote,

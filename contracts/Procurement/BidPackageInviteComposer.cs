@@ -27,13 +27,23 @@ public sealed record SendBidPackageInvite(
     string Cc = "",
     string Bcc = "") : ICommand<BidPackageInviteSendOutcome>;
 
+/// <summary>What the in-app send did. <see cref="AttachedFiles"/> is the truth about what travelled
+/// ON the email; <see cref="LinkedFiles"/> is ONLY the overflow — an empty LinkedFiles never means
+/// "no attachments".</summary>
 public sealed record BidPackageInviteSendOutcome(
     BidPackage Package,
     bool Sent,
     string? WebLink,
     int RecipientCount,
+    // ONLY the overflow download links: the files too large to attach (the ~25 MB Exchange
+    // ceiling) that travel in the body as 7-day download links instead — empty when everything
+    // fitted, which is usual. Never read this as the attachment list; that is AttachedFiles.
     IReadOnlyList<string> LinkedFiles,
-    string? FailureNote = null);
+    string? FailureNote = null,
+    // The file names attached to the email, in attachment order: the generated pricing schedule,
+    // the company T&Cs (when uploaded), the package's tender documents, then its linked drawings.
+    // Null only on legacy payloads.
+    IReadOnlyList<string>? AttachedFiles = null);
 
 /// <summary>The composer's persisted working state — saved on the PACKAGE, so anyone on the team
 /// can pick the draft up later from any browser. Null Subject/Body/recipients = never saved.</summary>

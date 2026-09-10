@@ -34,19 +34,23 @@ Before preparing any invite:
    and do not prepare it again unless they say so.
 
 Then:
-- **First invite, everyone on the list should get it** → `prepare_bid_package_invite_draft`.
-  Know exactly what it does: it BCCs EVERY row on the tender list that has a directory email,
-  whatever the row's status — Declined rows included — and it attaches the pricing schedule,
-  the company T&Cs, the package's tender documents and its linked drawings. Say this to the user
-  before calling it, with the names.
-- **Some of the list already had it, or someone has declined** → do NOT use
-  prepare_bid_package_invite_draft (it would re-invite them all). Say which firms should and
-  should not receive it, and hand the user to the package page's own Invite composer, where the
-  BCC box is editable. (A recipient filter on the connector action is being added.)
-- **Reporting the draft**: the action's result lists `linkedFiles` (only the files too large to
-  attach, which became download links — usually empty) and does NOT list the attachments. Never
-  read an empty `linkedFiles` as "no attachments". Report the attachments from what the package
-  holds: "attached: the pricing schedule, T&Cs, and the 11 documents linked to the package".
+- **First invite, everyone on the list should get it** → `prepare_bid_package_invite_draft` with
+  no `recipientIds`. Know exactly what it does: it BCCs every tender-list row still in the
+  running — status Invited (on the list) or Responded — that has a directory email; Declined and
+  Won rows are skipped. It attaches the pricing schedule, the company T&Cs, the package's tender
+  documents and its linked drawings. Say this to the user before calling it, with the names.
+- **Some of the list already had it, or someone has declined** → `prepare_bid_package_invite_draft`
+  with `recipientIds` for exactly those who should get it — the `tenderList[].recipientId` values
+  from get_bid_package_context, never company names. Work the set out from the sent copy's `bcc`
+  in read_record_emails against the tender list, and say who is in and who is out (and why:
+  already had it / declined) before calling.
+- **Confirm-first.** The action refuses its first call. In that turn show the user who will be
+  BCC'd (company and email) and what will attach, get their yes, then call again with
+  `confirm: true` and the same arguments.
+- **Reporting the draft**: the result's `attachedFiles` is the truth about attachments — report
+  them from it by name. `linkedFiles` is ONLY the overflow (files too large to attach, which
+  became download links) and is usually empty; never read an empty `linkedFiles` as "no
+  attachments".
 - The draft sits in the shared mailbox's Drafts, tagged to the package, for a person to send
   from Outlook. Replies file themselves under the tag.
 

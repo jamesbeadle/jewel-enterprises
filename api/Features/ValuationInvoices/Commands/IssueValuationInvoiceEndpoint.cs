@@ -2,7 +2,7 @@ using Jewel.JPMS.Contracts.ValuationInvoices;
 
 namespace Jewel.JPMS.Api.Features.ValuationInvoices.Commands;
 
-/// <summary>POST /api/valuation-invoices/{valuationInvoiceId}/issue — mark the client invoice as prepared.</summary>
+/// <summary>POST /api/valuation-invoices/{valuationInvoiceId}/issue — mark the client invoice as sent. Body: { xeroInvoiceNumber? } for one raised in Xero by hand.</summary>
 public sealed class IssueValuationInvoiceEndpoint
 {
     private readonly SignedInUserResolver users;
@@ -32,7 +32,14 @@ public sealed class IssueValuationInvoiceEndpoint
         var signedInUser = await users.ResolveAsync(request, cancellationToken);
         if (signedInUser is null) return new UnauthorizedResult();
 
-        var command = new IssueValuationInvoice(valuationInvoiceId);
+        // The body is optional: a hand-raised Xero number travels in it (2026-09-10); the id is the route's.
+        IssueValuationInvoice? body = null;
+        if (request.ContentLength is not 0)
+        {
+            try { body = await request.ReadFromJsonAsync<IssueValuationInvoice>(); }
+            catch (JsonException) { body = null; } // an empty or non-JSON body is "no options", not an error
+        }
+        var command = new IssueValuationInvoice(valuationInvoiceId, body?.XeroInvoiceNumber);
 
         if (!authorisation.Allows(signedInUser, command)) return new StatusCodeResult(403);
 

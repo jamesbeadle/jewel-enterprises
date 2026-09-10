@@ -178,9 +178,10 @@ public interface IXeroClient
     /// </summary>
     Task<XeroSalesInvoiceResult> CreateSalesInvoiceAsync(XeroSalesInvoiceRequest request, CancellationToken ct);
 
-    /// <summary>The client as Xero holds it (by ContactID, else exact name) and where its sales
-    /// tax type would come from — the preview's reading, no write.</summary>
-    Task<XeroSalesContactLookup> LookupSalesContactAsync(string? contactId, string contactName, CancellationToken ct);
+    /// <summary>The project's mapped contact as Xero holds it — by ContactID only, never by name
+    /// (2026-09-10) — and where its sales tax type would come from: the preview's reading, no
+    /// write. NotFound when Xero has no contact with that id.</summary>
+    Task<XeroSalesContactLookup> LookupSalesContactAsync(string contactId, CancellationToken ct);
 
     /// <summary>
     /// Attaches one file to an invoice (the certificate PDF on a raised sales invoice). Needs the

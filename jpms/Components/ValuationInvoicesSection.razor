@@ -106,7 +106,7 @@
                                     <Pill Tone="@invoice.Status.ToTone()" Title="@StatusTitle(invoice)">@StatusLabel(invoice.Status)</Pill>
                                     @if (invoice.IsRaisedInXero)
                                     {
-                                        <span class="ml-1 text-xs text-content-subtle" title="@($"Raised in Xero {DateText(invoice.XeroRaisedAt)} as {invoice.XeroInvoiceNumber}")">Xero @invoice.XeroInvoiceNumber</span>
+                                        <span class="ml-1 text-xs text-content-subtle" title="@(invoice.IsRaisedInXeroByPortal ? $"Raised in Xero {DateText(invoice.XeroRaisedAt)} as {invoice.XeroInvoiceNumber}" : $"Raised in Xero by hand as {invoice.XeroInvoiceNumber}, recorded {DateText(invoice.XeroRaisedAt)}")">Xero @invoice.XeroInvoiceNumber</span>
                                     }
                                 </td>
                                 <td class="text-right whitespace-nowrap">@(invoice.AmountPaid > 0 ? Money(invoice.AmountPaid) : "—")</td>
@@ -264,6 +264,25 @@
             </p>
         }
         <FormField Label="Amount received (£)" Value="@paymentAmount" OnChange="v => paymentAmount = v" InputType="number" />
+    </div>
+</Modal>
+
+<Modal IsOpen="xeroNumberInvoice is not null"
+       Title="Record Xero invoice number"
+       ConfirmLabel="@(busy ? "Saving…" : "Record number")"
+       OnCancel="() => xeroNumberInvoice = null"
+       OnConfirm="RecordXeroNumberAsync"
+       Class="max-w-md">
+    <div class="space-y-3">
+        @if (xeroNumberInvoice is not null)
+        {
+            <p class="text-sm text-content">
+                The sales invoice raised in Xero by hand for <span class="font-mono">@xeroNumberInvoice.DisplayNumber</span>
+                (@Money(xeroNumberInvoice.Amount)). Recorded here only — nothing is written to Xero, and the
+                invoice then reads as raised.
+            </p>
+        }
+        <FormField Label="Xero invoice number" Value="@xeroNumberText" OnChange="v => xeroNumberText = v" Placeholder="INV-0227" Required="true" />
     </div>
 </Modal>
 

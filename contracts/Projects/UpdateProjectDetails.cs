@@ -22,4 +22,9 @@ public sealed record UpdateProjectDetails(
     string Town = "",
     string Postcode = "",
     // The project's option in Xero's "Sites" tracking category (exact name). Null/blank clears it.
-    string? XeroSiteName = null) : ICommand<Project>;
+    string? XeroSiteName = null,
+    // The Xero customer the project's sales invoices are raised on — Xero's ContactID and the
+    // name as Xero holds it (2026-09-10). Same full-record convention as XeroSiteName: null/blank
+    // clears the mapping, so carry the current values forward when they should not change.
+    string? XeroContactId = null,
+    string? XeroContactName = null) : ICommand<Project>;

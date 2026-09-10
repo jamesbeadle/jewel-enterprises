@@ -48,7 +48,11 @@ public static class ValuationInvoicesRouteRegistration
 
         queries.Register<PreviewValuationInvoiceXeroRaise, ValuationInvoiceXeroRaisePreview>(
             new QueryRoute("/api/valuation-invoices/{valuationInvoiceId}/xero-raise",
-                query => $"/api/valuation-invoices/{((PreviewValuationInvoiceXeroRaise)query).ValuationInvoiceId}/xero-raise"));
+                query => XeroRaisePreviewUrl((PreviewValuationInvoiceXeroRaise)query)));
+
+        commands.Register<RecordValuationInvoiceXeroNumber, ValuationInvoice>(
+            new CommandRoute("POST", "/api/valuation-invoices/{valuationInvoiceId}/xero-number",
+                command => $"/api/valuation-invoices/{((RecordValuationInvoiceXeroNumber)command).ValuationInvoiceId}/xero-number"));
 
         commands.Register<RaiseValuationInvoiceInXero, ValuationInvoiceXeroRaiseOutcome>(
             new CommandRoute("POST", "/api/valuation-invoices/{valuationInvoiceId}/xero-raise",
@@ -61,5 +65,15 @@ public static class ValuationInvoicesRouteRegistration
         commands.Register<DeleteValuationInvoice, Acknowledgement>(
             new CommandRoute("DELETE", "/api/valuation-invoices/{valuationInvoiceId}",
                 command => $"/api/valuation-invoices/{((DeleteValuationInvoice)command).ValuationInvoiceId}"));
+    }
+
+    // The user's dates ride the query string (yyyy-MM-dd); blank means today / the certificate rule.
+    private static string XeroRaisePreviewUrl(PreviewValuationInvoiceXeroRaise query)
+    {
+        var parameters = new List<string>();
+        if (query.InvoiceDate is { } invoiceDate) parameters.Add($"invoiceDate={invoiceDate:yyyy-MM-dd}");
+        if (query.DueDate is { } dueDate) parameters.Add($"dueDate={dueDate:yyyy-MM-dd}");
+        var url = $"/api/valuation-invoices/{query.ValuationInvoiceId}/xero-raise";
+        return parameters.Count == 0 ? url : $"{url}?{string.Join("&", parameters)}";
     }
 }

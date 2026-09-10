@@ -39,10 +39,12 @@ internal sealed partial class ProjectsAndTendersActions
             Name: "update_project_details",
             Area: "Projects",
             Description: "Overwrites a project's details wholesale — reference, name, client, "
-                + "organisation, stage, project manager, correspondent party, site address and Xero "
-                + "site name. Fields omitted are not kept: read the project first and carry forward "
-                + "everything that should not change. The party assignment decides where project "
-                + "emails (RFIs and other request documents) are addressed.",
+                + "organisation, stage, project manager, correspondent party, site address, Xero "
+                + "site name and the Xero contact mapping (xeroContactId + xeroContactName: the Xero "
+                + "customer the project's sales invoices are raised on). Fields omitted are not kept: "
+                + "read the project first and carry forward everything that should not change. The "
+                + "party assignment decides where project emails (RFIs and other request documents) "
+                + "are addressed.",
             CommandType: typeof(UpdateProjectDetails),
             ResultType: typeof(Project),
             AuthorisationType: typeof(UpdateProjectDetailsAuthorisation),
@@ -51,7 +53,11 @@ internal sealed partial class ProjectsAndTendersActions
             EmailStamps: Array.Empty<string>(),
             NameStamps: Array.Empty<string>(),
             Notes: "projectId comes from list_projects. Echo current values for anything unchanged — "
-                + "a null partyId clears the party assignment."),
+                + "a null partyId clears the party assignment, and a null xeroContactId clears the Xero "
+                + "contact mapping (raise_valuation_invoice_in_xero is blocked until it is set). "
+                + "xeroContactId is Xero's ContactID and xeroContactName the name as Xero holds it, "
+                + "from the Xero contacts list in Project settings — never guess an id; set them only "
+                + "when the user has named the contact and said yes."),
 
         new AiAction(
             Name: "delete_project",

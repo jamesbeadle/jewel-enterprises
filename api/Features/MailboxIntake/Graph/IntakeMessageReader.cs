@@ -24,7 +24,11 @@ public sealed record IntakeMessageContent(
     // Every Outlook category on the message, unfiltered, read in the same direct GET as the body —
     // so a caller that opens an email sees its tags as they are NOW, not as the list page had them.
     // Null from readers that don't select categories.
-    IReadOnlyList<string>? Categories = null);
+    IReadOnlyList<string>? Categories = null,
+    // Graph fills bccRecipients only on the mailbox's OWN sent copies (a received message never
+    // reveals its Bcc), so this is how a sent invite says who it went to. Null from readers that
+    // don't select it; empty on an inbound message.
+    IReadOnlyList<string>? Bcc = null);
 
 // Id is the Graph attachment id, used to download the attachment's bytes on demand (e.g. saving a
 // drawing out of a triaged email). Optional so existing metadata-only callers are unchanged.
@@ -102,7 +106,7 @@ public sealed class GraphIntakeMessageReader : IIntakeMessageReader
         // Pull the full body, the envelope (for the composer's reply prefill) and non-inline
         // attachment metadata in a single round trip.
         var url = $"{GraphBase}/users/{Mailbox}/messages/{Uri.EscapeDataString(graphMessageId)}"
-            + "?$select=body,hasAttachments,subject,from,toRecipients,ccRecipients,replyTo,categories"
+            + "?$select=body,hasAttachments,subject,from,toRecipients,ccRecipients,bccRecipients,replyTo,categories"
             // NB: contentId cannot join this $select — it lives on the fileAttachment subtype and
             // Graph rejects derived-type properties here. The full per-attachment fetch carries it.
             + "&$expand=attachments($select=id,name,size,contentType,isInline)";
@@ -186,6 +190,7 @@ public sealed class GraphIntakeMessageReader : IIntakeMessageReader
 
             var to = Addresses(root, "toRecipients");
             var cc = Addresses(root, "ccRecipients");
+            var bcc = Addresses(root, "bccRecipients");
             var replyTo = Addresses(root, "replyTo").FirstOrDefault();
             var subject = root.TryGetProperty("subject", out var subj) ? subj.GetString() : null;
 
@@ -195,7 +200,7 @@ public sealed class GraphIntakeMessageReader : IIntakeMessageReader
                     if (categoryElement.GetString() is { Length: > 0 } category)
                         categories.Add(category);
 
-            return new IntakeMessageContent(body, isHtml, attachments, fromEmail, fromName, to, cc, replyTo, subject, inlineImages, categories);
+            return new IntakeMessageContent(body, isHtml, attachments, fromEmail, fromName, to, cc, replyTo, subject, inlineImages, categories, bcc);
         }
         catch (Exception ex)
         {

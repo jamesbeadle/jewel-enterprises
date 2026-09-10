@@ -30,6 +30,10 @@ public partial class ValuationInvoicesSection
 
     private ValuationInvoice? paymentInvoice;
     private string paymentAmount = "";
+
+    // "Record Xero number…" (2026-09-10): the invoice whose hand-raised Xero number is being recorded.
+    private ValuationInvoice? xeroNumberInvoice;
+    private string xeroNumberText = "";
     private string? pendingDeleteId;
 
     // The invoice whose Actions menu is currently open — while set, the table's overflow cap is

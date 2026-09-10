@@ -185,14 +185,15 @@ public sealed record XeroApprovalResult(
 // -- The sales invoice raised from the portal (2026-09-09) ----------------------------------
 
 /// <summary>
-/// One AUTHORISED ACCREC invoice: the client (Xero's ContactID when the portal knows it, else the
-/// name — Xero matches an existing contact by name or creates one), one line on the sales
-/// account with the project's Sites tracking, the tax type left to Xero's own answer (contact
-/// default, else their last sales invoice, else the account default — never assumed). DueDate
-/// null lets the organisation's sales default apply.
+/// One AUTHORISED ACCREC invoice: the client by Xero's ContactID — the contact mapped on the
+/// project, never matched by name and never created (2026-09-10; ContactName is the name as the
+/// portal holds it, for the preview and the audit only) — one line on the sales account with the
+/// project's Sites tracking, the tax type left to Xero's own answer (contact default, else their
+/// last sales invoice, else the account default — never assumed). DueDate null lets the
+/// organisation's sales default apply.
 /// </summary>
 public sealed record XeroSalesInvoiceRequest(
-    string? ContactId,
+    string ContactId,
     string ContactName,
     DateTime Date,
     DateTime? DueDate,
@@ -216,5 +217,17 @@ public sealed record XeroSalesInvoiceResult(
     public static XeroSalesInvoiceResult Failed(string error) => new(false, null, null, 0m, 0m, 0m, "", error);
 }
 
-/// <summary>The client as Xero holds it, for the preview: (ContactID or null, the tax note).</summary>
-public sealed record XeroSalesContactLookup(string? ContactId, string TaxNote);
+/// <summary>
+/// The mapped contact as Xero holds it, for the preview: Found with Xero's name for the contact,
+/// NotFound when Xero has no contact with that id (re-map it — the raise is blocked), or
+/// Unavailable when Xero could not be read at all (not connected, or the call failed — the tax
+/// note says why). The tax note says where the VAT treatment would come from.
+/// </summary>
+public sealed record XeroSalesContactLookup(XeroSalesContactStatus Status, string? XeroName, string TaxNote)
+{
+    public static XeroSalesContactLookup Found(string xeroName, string taxNote) => new(XeroSalesContactStatus.Found, xeroName, taxNote);
+    public static XeroSalesContactLookup NotFound(string taxNote) => new(XeroSalesContactStatus.NotFound, null, taxNote);
+    public static XeroSalesContactLookup Unavailable(string taxNote) => new(XeroSalesContactStatus.Unavailable, null, taxNote);
+}
+
+public enum XeroSalesContactStatus { Found, NotFound, Unavailable }

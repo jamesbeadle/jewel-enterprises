@@ -3,11 +3,14 @@
 
 @* What Xero will hold, one fact per row — the same reading the connector's preview returns. *@
 <dl class="grid grid-cols-[10rem_1fr] gap-x-4 gap-y-2 text-sm">
-    <dt class="text-content-subtle">Client</dt>
-    <dd class="text-content">
+    <dt class="text-content-subtle">Xero contact</dt>
+    <dd class="@(Preview.XeroContactId is null ? "text-negative" : "text-content")">
         <span class="font-medium">@Preview.ContactName</span>
         <span class="text-content-muted"> — @Preview.ContactStatus</span>
     </dd>
+
+    <dt class="text-content-subtle">Reference</dt>
+    <dd class="text-content">@Preview.XeroReference</dd>
 
     <dt class="text-content-subtle">Net</dt>
     <dd class="text-content font-medium">@Money(Preview.Net)</dd>

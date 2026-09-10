@@ -46,4 +46,12 @@ public sealed class ProjectEntity
     // Xero write-back stamps this on every line allocated to the project and fails loudly
     // when it's missing, rather than guessing and writing a wrong site into the accounts.
     [MaxLength(128)]     public string? XeroSiteName { get; set; }
+
+    // The Xero customer the project's sales invoices are raised on (2026-09-10, the accountant's
+    // ask: the raise matched the client by NAME and created a duplicate contact on a miss).
+    // Xero's ContactID and the name as Xero holds it, mapped explicitly in Project settings like
+    // XeroSiteName. Raise in Xero is blocked until the id is set — it never matches by name and
+    // never creates a contact.
+    [MaxLength(64)]      public string? XeroContactId { get; set; }
+    [MaxLength(256)]     public string? XeroContactName { get; set; }
 }

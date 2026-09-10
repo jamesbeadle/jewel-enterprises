@@ -65,6 +65,7 @@ public sealed class SendBidPackageInviteHandler : ICommandHandler<SendBidPackage
                 "The invite couldn't be staged in the shared mailbox. Check the mailbox connection and try again — nothing was sent.");
 
         var recipientCount = to.Count + cc.Count + bcc.Count;
+        var attachedFiles = plan.Attach.Select(file => file.FileName).ToList();
 
         var sent = await mailbox.SendDraftAsync(draft.Id, cancellationToken);
         if (!sent)
@@ -73,7 +74,8 @@ public sealed class SendBidPackageInviteHandler : ICommandHandler<SendBidPackage
             return new BidPackageInviteSendOutcome(
                 package.ToModel(), Sent: false, draft.WebLink, recipientCount, plan.LinkedFiles,
                 FailureNote: "The send didn't go through — the invite is saved as a draft in the projects mailbox. "
-                    + "Open it there to send, or try again here.");
+                    + "Open it there to send, or try again here.",
+                AttachedFiles: attachedFiles);
         }
 
         // The composer draft has served its purpose; the sent copy (tagged to the package) is the
@@ -88,7 +90,7 @@ public sealed class SendBidPackageInviteHandler : ICommandHandler<SendBidPackage
 
         var webLink = await mailbox.GetWebLinkAsync(draft.Id, cancellationToken) ?? draft.WebLink;
         return new BidPackageInviteSendOutcome(
-            package.ToModel(), Sent: true, webLink, recipientCount, plan.LinkedFiles);
+            package.ToModel(), Sent: true, webLink, recipientCount, plan.LinkedFiles, AttachedFiles: attachedFiles);
     }
 
     private static List<MailboxDraftRecipient> ParseRecipients(string? raw) =>

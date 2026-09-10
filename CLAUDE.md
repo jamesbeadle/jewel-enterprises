@@ -330,27 +330,37 @@ finds drift.
   had its PDF attached by hand). The claim card's "Raise in Xero & issue…" and the invoices
   section's menu open `ValuationInvoiceXeroRaiseModal`, which shows the plan first
   (`PreviewValuationInvoiceXeroRaise`) and then runs `RaiseValuationInvoiceInXero`: one
-  AUTHORISED ACCREC invoice on the project's client (the Client account's name, else the
-  project's `ClientName`; Xero's ContactID from a Client-category directory record's Xero link,
-  else Xero's contact by exact name, else created with the invoice), one line for the invoice's
-  cash `Amount` on `XeroOptions.SalesAccountCode` ("200" unless `Xero__SalesAccountCode`), the
-  project's `XeroSiteName` as Sites tracking (no cost code on income), due date = certificate
-  issue date + the contract's `FinalDateForPaymentDays` else Xero's sales default. **The VAT
-  treatment is never assumed**: `XeroClient.ResolveSalesContactAsync` — the contact's
-  `AccountsReceivableTaxType`, else their most recent ACCREC invoice, else Xero's account
-  default — and the note says which, in the preview, the outcome and the audit event.
+  AUTHORISED ACCREC invoice on **the Xero contact mapped on the project** (`Projects.XeroContactId`
+  / `XeroContactName`, picked from Xero's contacts in Project settings → Edit details, beside the
+  Sites option; 2026-09-10, after a by-name match created a duplicate contact — the raise never
+  matches by name and never creates a contact, and an unmapped or not-found contact is a
+  blocker), one line for the invoice's cash `Amount` on `XeroOptions.SalesAccountCode` ("200"
+  unless `Xero__SalesAccountCode`), the project's `XeroSiteName` as Sites tracking (no cost code
+  on income), Xero reference `Valuation NN` and description `Valuation NN - Payment due as per
+  <Month yyyy> valuation report (ex VAT)` numbered from the INVOICE (never the claim), and the
+  dates the user gives per call (`InvoiceDate` / `DueDate` on the preview and the command; blank
+  = today, and certificate issue date + the contract's `FinalDateForPaymentDays` else Xero's
+  sales default — `DueDateNote` says which applied). **The VAT treatment is never assumed**:
+  `XeroClient.ResolveSalesContactAsync` — the contact's `AccountsReceivableTaxType`, else their
+  most recent ACCREC invoice, else Xero's account default — and the note says which, in the
+  preview, the outcome and the audit event.
 - **Nothing is lost between Xero and the portal.** `RaiseValuationInvoiceInXeroHandler` plans
   (every blocker named before anything is touched), raises, stamps `XeroInvoiceId` /
   `XeroInvoiceNumber` / `XeroRaisedAt` and SAVES, then attaches the register's newest
   certificate for the claim (`IXeroClient.AttachToInvoiceAsync`, best effort — the outcome's
   `AttachmentError` and a `RaisedInXero` audit event say when it did not), then calls the
   existing `IssueValuationInvoice` handler so the issue rules, snapshot re-freeze and certified
-  totals are the one implementation. An invoice carrying a Xero id is refused a second raise;
-  "Issue without raising in Xero" (the old `IssueValuationInvoice`) stays for one raised by
-  hand. Xero never un-raises — a wrong invoice is voided in Xero. Connector:
+  totals are the one implementation. An invoice carrying a Xero id OR number is refused a
+  second raise; "Issue without raising in Xero" (`IssueValuationInvoice`, now with an optional
+  `XeroInvoiceNumber`) stays for one raised by hand — the number is stamped with `XeroRaisedAt`
+  and `XeroInvoiceId` stays null (`ValuationInvoice.IsRaisedInXeroByPortal`) — and
+  `RecordValuationInvoiceXeroNumber` (`record_valuation_invoice_xero_number`, "Record Xero
+  number…" on the invoice row) back-fills the number on an Issued/Paid row; it refuses one the
+  portal raised. Xero never un-raises — a wrong invoice is voided in Xero. Connector:
   `preview_valuation_invoice_xero_raise` + `raise_valuation_invoice_in_xero` (confirm-first,
-  `RaisedBy` stamped). Needs the Cost Integration app's `accounting.attachments` scope for the
-  PDF.
+  `RaisedBy` stamped); the preview tells the model to STOP on a missing contact mapping and to
+  fix it in Project settings (or `update_project_details` with the user's yes). Needs the Cost
+  Integration app's `accounting.attachments` scope for the PDF.
 
 ## Reading scans — the assistant's document reader (api)
 

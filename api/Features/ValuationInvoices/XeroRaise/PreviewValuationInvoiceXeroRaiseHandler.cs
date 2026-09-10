@@ -18,5 +18,5 @@ public sealed class PreviewValuationInvoiceXeroRaiseHandler : IQueryHandler<Prev
     }
 
     public async Task<ValuationInvoiceXeroRaisePreview> HandleAsync(PreviewValuationInvoiceXeroRaise query, CancellationToken cancellationToken) =>
-        (await new ValuationInvoiceXeroRaisePlanner(context, xero, options).PlanAsync(query.ValuationInvoiceId, cancellationToken)).ToPreview();
+        (await new ValuationInvoiceXeroRaisePlanner(context, xero, options).PlanAsync(query.ValuationInvoiceId, query.InvoiceDate, query.DueDate, cancellationToken)).ToPreview();
 }

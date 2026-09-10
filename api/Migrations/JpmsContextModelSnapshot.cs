@@ -4595,6 +4595,14 @@ namespace Jewel.JPMS.Api.Migrations
                         .HasPrecision(18, 4)
                         .HasColumnType("decimal(18,4)");
 
+                    b.Property<string>("XeroContactId")
+                        .HasMaxLength(64)
+                        .HasColumnType("nvarchar(64)");
+
+                    b.Property<string>("XeroContactName")
+                        .HasMaxLength(256)
+                        .HasColumnType("nvarchar(256)");
+
                     b.Property<string>("XeroSiteName")
                         .HasMaxLength(128)
                         .HasColumnType("nvarchar(128)");

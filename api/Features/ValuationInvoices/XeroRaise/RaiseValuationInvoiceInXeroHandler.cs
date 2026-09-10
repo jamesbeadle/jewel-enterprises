@@ -31,7 +31,7 @@ public sealed class RaiseValuationInvoiceInXeroHandler : ICommandHandler<RaiseVa
 
     public async Task<ValuationInvoiceXeroRaiseOutcome> HandleAsync(RaiseValuationInvoiceInXero command, CancellationToken cancellationToken)
     {
-        var plan = await new ValuationInvoiceXeroRaisePlanner(context, xero, options).PlanAsync(command.ValuationInvoiceId, cancellationToken);
+        var plan = await new ValuationInvoiceXeroRaisePlanner(context, xero, options).PlanAsync(command.ValuationInvoiceId, command.InvoiceDate, command.DueDate, cancellationToken);
         if (!plan.ToPreview().CanRaise)
             throw new InvalidOperationException(string.Join(" ", plan.Blockers));
 
@@ -39,7 +39,7 @@ public sealed class RaiseValuationInvoiceInXeroHandler : ICommandHandler<RaiseVa
         if (!raised.Succeeded || string.IsNullOrWhiteSpace(raised.InvoiceId))
             throw new InvalidOperationException(raised.Error ?? "Xero did not raise the invoice.");
 
-        await StampAsync(command, raised, cancellationToken);
+        await StampAsync(command, plan, raised, cancellationToken);
         var (attached, attachmentError) = await AttachCertificateAsync(plan, raised.InvoiceId, cancellationToken);
         var invoice = await issue.HandleAsync(new IssueValuationInvoice(command.ValuationInvoiceId), cancellationToken);
 
@@ -48,14 +48,17 @@ public sealed class RaiseValuationInvoiceInXeroHandler : ICommandHandler<RaiseVa
             raised.Note, attached, attachmentError, invoice);
     }
 
-    private async Task StampAsync(RaiseValuationInvoiceInXero command, XeroSalesInvoiceResult raised, CancellationToken cancellationToken)
+    private async Task StampAsync(RaiseValuationInvoiceInXero command, ValuationInvoiceXeroRaisePlan plan, XeroSalesInvoiceResult raised, CancellationToken cancellationToken)
     {
         var entity = await context.ValuationInvoices.SingleAsync(row => row.ValuationInvoiceId == command.ValuationInvoiceId, cancellationToken);
         entity.XeroInvoiceId = raised.InvoiceId;
         entity.XeroInvoiceNumber = raised.InvoiceNumber;
         entity.XeroRaisedAt = DateTimeOffset.UtcNow;
         ValuationInvoiceAuditTrail.Append(context, entity.ValuationInvoiceId, ValuationInvoiceEventType.RaisedInXero,
-            $"Raised in Xero as {raised.InvoiceNumber} by {command.RaisedBy ?? "the portal"} — total £{raised.Total:N2}. {raised.Note}",
+            $"Raised in Xero as {raised.InvoiceNumber} by {command.RaisedBy ?? "the portal"} on contact {plan.Request.ContactName} "
+            + $"({plan.Request.ContactId}), dated {plan.Request.Date:dd MMM yyyy}"
+            + (plan.Request.DueDate is { } due ? $", due {due:dd MMM yyyy}" : "")
+            + $" — total £{raised.Total:N2}. {raised.Note}",
             amountAfter: entity.Amount);
         await context.SaveChangesAsync(cancellationToken);
     }

@@ -2,35 +2,56 @@
 @inject IValuationInvoiceStore Invoices
 
 @* Raise in Xero (2026-09-09, the accountant's ask): the claim card's Issue step, showing what Xero
-   will hold BEFORE it is raised — client, net, VAT reading, Sites option, due date, the certificate
-   to attach — and every reason it would be refused. One press raises the AUTHORISED sales invoice
-   in Xero and issues the valuation invoice. "Issue without Xero" is the old move, for an invoice
-   someone raised in Xero by hand. *@
+   will hold BEFORE it is raised — the contact mapped on the project, net, VAT reading, Sites option,
+   the dates, the certificate to attach — and every reason it would be refused. The invoice date and
+   due date are the user's (2026-09-10): blank means today / the certificate rule, and changing one
+   re-reads the preview. One press raises the AUTHORISED sales invoice in Xero and issues the
+   valuation invoice. "Issue without Xero" is the old move, for an invoice someone raised in Xero by
+   hand — its Xero number goes in the field beside it. *@
 <Modal IsOpen="open" Title="@($"Raise {reference} in Xero")" ShowFooter="true"
        ConfirmLabel="@(raising ? "Raising…" : "Raise in Xero and issue")" CancelLabel="Cancel"
-       ConfirmDisabled="@(raising || issuing || preview is null || !preview.CanRaise)"
+       ConfirmDisabled="@(raising || issuing || previewing || preview is null || !preview.CanRaise)"
        OnCancel="Close" OnConfirm="RaiseAsync" Class="max-w-2xl w-full">
     @if (error is not null)
     {
         <Notice Tone="Tone.Negative" Class="mb-3">@error</Notice>
     }
+    <div class="grid grid-cols-1 sm:grid-cols-2 gap-4 mb-4">
+        <FormField Label="Invoice date" Hint="Blank = today.">
+            <input type="date" class="field" value="@invoiceDate" disabled="@(raising || issuing)" @onchange="OnInvoiceDateChanged" />
+        </FormField>
+        <FormField Label="Due date" Hint="Blank = the certificate's date plus the contract's payment days, else Xero's default.">
+            <input type="date" class="field" value="@dueDate" disabled="@(raising || issuing)" @onchange="OnDueDateChanged" />
+        </FormField>
+    </div>
     <LoadGate IsLoading="@(preview is null && error is null)" Prominent="true" Label="Reading Xero">
         @if (preview is not null)
         {
-            @foreach (var blocker in preview.Blockers)
-            {
-                <Notice Tone="Tone.Negative" Class="mb-3">@blocker</Notice>
-            }
-            <ValuationInvoiceXeroRaiseSummary Preview="preview" />
+            <LoadGate Overlay="true" IsLoading="@previewing">
+                @foreach (var blocker in preview.Blockers)
+                {
+                    <Notice Tone="Tone.Negative" Class="mb-3">@blocker</Notice>
+                }
+                <ValuationInvoiceXeroRaiseSummary Preview="preview" />
+            </LoadGate>
             <p class="text-sm text-content-subtle mt-4">
                 Raising creates the invoice in Xero as authorised (awaiting payment) and issues @reference here —
                 certified to date moves. Xero cannot un-raise it from the portal; a wrong invoice is voided in Xero.
             </p>
-            <div class="mt-3">
-                <button type="button" class="btn-secondary" disabled="@(raising || issuing)" @onclick="IssueWithoutXeroAsync"
-                        title="For an invoice already raised in Xero by hand — records it as issued and raises nothing">
-                    @(issuing ? "Issuing…" : "Issue without raising in Xero")
-                </button>
+            <div class="mt-4 pt-4 border-t border-line">
+                <p class="text-sm text-content-subtle mb-2">
+                    Already raised this in Xero by hand? Record its Xero number and issue @reference here without raising anything.
+                </p>
+                <div class="grid grid-cols-1 sm:grid-cols-2 gap-4 items-end">
+                    <FormField Label="Xero invoice number" Value="@handRaisedNumber" OnChange="v => handRaisedNumber = v"
+                               Placeholder="INV-0227" Hint="Optional — the number Xero gave the invoice." />
+                    <div>
+                        <button type="button" class="btn-secondary" disabled="@(raising || issuing)" @onclick="IssueWithoutXeroAsync"
+                                title="For an invoice already raised in Xero by hand — records it as issued and raises nothing">
+                            @(issuing ? "Issuing…" : "Issue without raising in Xero")
+                        </button>
+                    </div>
+                </div>
             </div>
         }
     </LoadGate>

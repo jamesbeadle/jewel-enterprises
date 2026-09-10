@@ -76,19 +76,26 @@ public sealed class HttpValuationInvoiceStore : IValuationInvoiceStore
         return invoice;
     }
 
-    public async Task<ValuationInvoice> IssueAsync(string valuationInvoiceId, CancellationToken cancellationToken = default)
+    public async Task<ValuationInvoice> IssueAsync(string valuationInvoiceId, string? xeroInvoiceNumber = null, CancellationToken cancellationToken = default)
     {
-        var call = await commands.SendAsync(new IssueValuationInvoice(valuationInvoiceId), cancellationToken);
+        var call = await commands.SendAsync(new IssueValuationInvoice(valuationInvoiceId, xeroInvoiceNumber), cancellationToken);
         OnChange?.Invoke();
         return call;
     }
 
-    public Task<ValuationInvoiceXeroRaisePreview> PreviewXeroRaiseAsync(string valuationInvoiceId, CancellationToken cancellationToken = default) =>
-        queries.AskAsync(new PreviewValuationInvoiceXeroRaise(valuationInvoiceId), cancellationToken);
-
-    public async Task<ValuationInvoiceXeroRaiseOutcome> RaiseInXeroAsync(string valuationInvoiceId, CancellationToken cancellationToken = default)
+    public async Task<ValuationInvoice> RecordXeroNumberAsync(string valuationInvoiceId, string xeroInvoiceNumber, CancellationToken cancellationToken = default)
     {
-        var outcome = await commands.SendAsync(new RaiseValuationInvoiceInXero(valuationInvoiceId), cancellationToken);
+        var call = await commands.SendAsync(new RecordValuationInvoiceXeroNumber(valuationInvoiceId, xeroInvoiceNumber), cancellationToken);
+        OnChange?.Invoke();
+        return call;
+    }
+
+    public Task<ValuationInvoiceXeroRaisePreview> PreviewXeroRaiseAsync(string valuationInvoiceId, DateTime? invoiceDate = null, DateTime? dueDate = null, CancellationToken cancellationToken = default) =>
+        queries.AskAsync(new PreviewValuationInvoiceXeroRaise(valuationInvoiceId, invoiceDate, dueDate), cancellationToken);
+
+    public async Task<ValuationInvoiceXeroRaiseOutcome> RaiseInXeroAsync(string valuationInvoiceId, DateTime? invoiceDate = null, DateTime? dueDate = null, CancellationToken cancellationToken = default)
+    {
+        var outcome = await commands.SendAsync(new RaiseValuationInvoiceInXero(valuationInvoiceId, InvoiceDate: invoiceDate, DueDate: dueDate), cancellationToken);
         OnChange?.Invoke();
         return outcome;
     }

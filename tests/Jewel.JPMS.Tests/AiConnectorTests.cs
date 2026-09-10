@@ -3,6 +3,7 @@ using Jewel.JPMS.Api.Features.Ai.Tools.Actions;
 using Jewel.JPMS.Api.Features.Ai.Tools;
 using Jewel.JPMS.Api.Features.Connect;
 using Jewel.JPMS.Api.Gates;
+using Jewel.JPMS.Contracts.ValuationInvoices;
 using Jewel.JPMS.Models;
 using Xunit;
 
@@ -313,6 +314,27 @@ public sealed class AiConnectorTests
         {
             Assert.Contains(name, names);
         }
+
+        // The Xero raise's 10 Sep follow-ups (Ravenswood Valuation 05): the number of a hand-raised
+        // invoice is recorded from the connector too, the raise and issue take their new arguments,
+        // and the preview tells the model to STOP on a missing contact mapping — never to create one.
+        Assert.Contains("record_valuation_invoice_xero_number", names);
+        var recordNumber = AiActionRegistry.All.Single(a => a.Name == "record_valuation_invoice_xero_number");
+        Assert.Contains(nameof(RecordValuationInvoiceXeroNumber.RecordedBy), recordNumber.EmailStamps);
+        Assert.True(recordNumber.VisibleTo.IncludesAny(UserWith(Role.FinanceDirector).Roles));
+        Assert.False(recordNumber.VisibleTo.IncludesAny(UserWith(Role.Foreman).Roles));
+        var issueSchema = System.Text.Json.JsonSerializer.Serialize(AiActionSchema.InputSchema(AiActionRegistry.Find("issue_valuation_invoice")!));
+        Assert.Contains("xeroInvoiceNumber", issueSchema);
+        var raiseSchema = System.Text.Json.JsonSerializer.Serialize(AiActionSchema.InputSchema(AiActionRegistry.Find("raise_valuation_invoice_in_xero")!));
+        Assert.Contains("invoiceDate", raiseSchema);
+        Assert.Contains("dueDate", raiseSchema);
+        Assert.DoesNotContain("raisedBy", raiseSchema);
+        var projectSchema = System.Text.Json.JsonSerializer.Serialize(AiActionSchema.InputSchema(AiActionRegistry.Find("update_project_details")!));
+        Assert.Contains("xeroContactId", projectSchema);
+        var preview = AiToolCatalogue.ForConnector(UserWith(Role.FinanceDirector)).Single(t => t.Name == "preview_valuation_invoice_xero_raise");
+        Assert.Contains("STOP", preview.Description);
+        Assert.DoesNotContain("created with the invoice", preview.Description);
+        Assert.DoesNotContain("created with the invoice", AiActionRegistry.Find("raise_valuation_invoice_in_xero")!.Description);
 
         var financeDirector = AiToolCatalogue.ForConnector(UserWith(Role.FinanceDirector)).Select(t => t.Name).ToList();
         var subcontractor = AiToolCatalogue.ForConnector(UserWith(Role.Subcontractor)).Select(t => t.Name).ToList();

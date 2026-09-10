@@ -24,6 +24,12 @@ public sealed class UpdateProjectDetailsHandler
         entity.Town = (command.Town ?? "").Trim();
         entity.Postcode = (command.Postcode ?? "").Trim();
         entity.XeroSiteName = string.IsNullOrWhiteSpace(command.XeroSiteName) ? null : command.XeroSiteName.Trim();
+        // The Xero contact mapping travels as a pair: no id, no mapping (a name without an id is
+        // exactly the by-name matching the raise no longer does).
+        entity.XeroContactId = string.IsNullOrWhiteSpace(command.XeroContactId) ? null : command.XeroContactId.Trim();
+        entity.XeroContactName = entity.XeroContactId is null || string.IsNullOrWhiteSpace(command.XeroContactName)
+            ? null
+            : command.XeroContactName.Trim();
 
         // The party this project corresponds with (client directly, or architect on a client's
         // behalf). A null/empty PartyId clears the assignment.

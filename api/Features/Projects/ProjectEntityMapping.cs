@@ -21,5 +21,7 @@ internal static class ProjectEntityMapping
         Postcode: entity.Postcode,
         XeroSiteName: entity.XeroSiteName,
         NextExpectedValuationDate: entity.NextExpectedValuationDate,
-        ExpectedMonthlyValuation: entity.ExpectedMonthlyValuation);
+        ExpectedMonthlyValuation: entity.ExpectedMonthlyValuation,
+        XeroContactId: entity.XeroContactId,
+        XeroContactName: entity.XeroContactName);
 }

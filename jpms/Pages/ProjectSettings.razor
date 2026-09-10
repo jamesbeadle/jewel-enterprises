@@ -40,6 +40,7 @@
                         <StatTile Label="Client"          Value="@Project.ClientName" />
                         <StatTile Label="Site address"    Value="@SiteAddress(Project)" />
                         <StatTile Label="Xero site"       Value="@XeroSite(Project)" />
+                        <StatTile Label="Xero contact"    Value="@XeroContact(Project)" />
                     </div>
                     @* Created is the system's own stamp — a secondary fact here, never a lead date. *@
                     <p class="text-xs text-content-subtle mb-6">Created @DateText(Project.CreatedAt)</p>
@@ -89,6 +90,12 @@
     // because the Xero write-back refuses to run until it is mapped.
     private static string XeroSite(Project project) =>
         string.IsNullOrWhiteSpace(project.XeroSiteName) ? "Not set" : project.XeroSiteName;
+
+    // The Xero customer the project's sales invoices are raised on — "Not mapped" is worth
+    // surfacing because Raise in Xero is blocked until it is.
+    private static string XeroContact(Project project) =>
+        string.IsNullOrWhiteSpace(project.XeroContactId) ? "Not mapped"
+            : string.IsNullOrWhiteSpace(project.XeroContactName) ? project.XeroContactId : project.XeroContactName;
 
     private string PaneClass(string pane) =>
         pane == activePane

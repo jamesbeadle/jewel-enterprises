@@ -33,29 +33,31 @@ an outside event. None sends.
 ## Raising in Xero — preview, then stop or go
 
 1. Always `preview_valuation_invoice_xero_raise` first and show the user everything it returns:
-   the client as Xero knows them, net, VAT reading, Sites tracking, invoice date, due date, the
-   certificate.
-2. **If the preview says the contact is "not in Xero" or "created with the invoice" — STOP.**
-   That would create a duplicate Xero contact and lose the real contact's VAT default. Do not
-   raise. Tell the user the portal could not match the client to an existing Xero contact, name
-   the client as the project holds it, and give the way through: for now, raise the invoice by
-   hand in Xero on the right contact, then record it here with issue_valuation_invoice ("Issue
-   without raising in Xero"). A stored Xero-contact mapping on the project, with the raise
-   blocked until it is set, is being built — until then this is the route, and it is not the
-   user's fault.
-3. **Dates**: today the raise stamps today's date and takes the due date from the certificate +
-   the contract's payment days, else Xero's default. If the user needs a specific invoice date
-   or due date, say so plainly, and use the by-hand route above rather than raising with the
-   wrong date. (Dates on the raise are being added.)
-4. **Numbering**: Xero's reference is the portal's invoice reference (VI-0005); the line
-   description currently names the CLAIM number. Read the numbers back to the user from the
-   preview before the yes, and do not promise a description the raise cannot yet produce.
-5. Take the user's explicit yes, then raise_valuation_invoice_in_xero with confirm true. An
-   invoice already carrying a Xero id is refused a second raise; a wrong invoice is voided in
-   Xero, never un-raised.
-6. A hand-raised Xero number cannot yet be recorded on Issue. Say so once, note the number in the
-   conversation for the user, and carry on — do not write a specification instead of finishing
-   the job.
+   the Xero contact mapped on the project and whether Xero still holds it, net, VAT reading,
+   Sites tracking, reference and description, invoice date, due date, the certificate.
+2. **The contact is the one MAPPED ON THE PROJECT** (Project settings → Xero contact). The raise
+   never matches the client by name and never creates a contact. If the preview's blockers say no
+   Xero contact is mapped (or the mapped one is not found in Xero) — STOP. Do not raise. Tell the
+   user the one thing that unblocks it: set the Xero contact in Project settings, or — with their
+   yes and the contact named — set it yourself with `update_project_details` (`xeroContactId` +
+   `xeroContactName`, from the Xero contacts list in Project settings; echo every other field as
+   it is). Then preview again.
+3. **Dates come from the user.** `invoiceDate` and `dueDate` (yyyy-MM-dd) go on the preview and
+   on the raise. If the user did not say, ask; the defaults are today and the certificate's issue
+   date + the contract's final date for payment days (else Xero's sales default), and the preview
+   shows exactly which applied. Never raise with a date the user has not seen.
+4. **Numbering comes from the INVOICE.** Xero's reference is `Valuation NN` (the valuation
+   invoice's number, two digits — VI-0005 → "Valuation 05") and the line reads
+   `Valuation NN - Payment due as per <Month yyyy> valuation report (ex VAT)`. Read both back
+   from the preview before the yes; the certificate is attached, not described.
+5. Take the user's explicit yes, then `raise_valuation_invoice_in_xero` with confirm true and the
+   SAME invoiceDate/dueDate the preview showed. An invoice already carrying a Xero id or number is
+   refused a second raise; a wrong invoice is voided in Xero, never un-raised.
+6. **A Xero invoice raised by hand is recorded, not re-raised.** If the user has already keyed
+   the invoice into Xero, issue it here with `issue_valuation_invoice` and its `xeroInvoiceNumber`
+   (INV-0227); for one already Issued or Paid whose Xero number is blank (VI-0002 to VI-0005
+   were), `record_valuation_invoice_xero_number`. Nothing is written to Xero either way, and the
+   row then reads as raised.
 
 ## Non-negotiables
 

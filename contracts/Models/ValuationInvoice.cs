@@ -71,15 +71,20 @@ public sealed record ValuationInvoice(
     string? ValuationReportSnapshotId = null,  // latest snapshot backing this invoice
     decimal DepositCredited = 0m,              // deposit credit embedded in Amount; gross certificate = Amount + DepositCredited
     // The AUTHORISED sales invoice this raised in Xero (2026-09-09, the accountant's ask): Xero's
-    // InvoiceID, its number (INV-0123) and when. Null on invoices issued without a Xero raise —
-    // one raised in Xero by hand, or issued before the portal could raise them.
+    // InvoiceID, its number (INV-0123) and when. XeroInvoiceId is set only when the PORTAL raised
+    // it; an invoice raised in Xero by hand carries its number alone (recorded on Issue or with
+    // RecordValuationInvoiceXeroNumber, 2026-09-10) and XeroRaisedAt is when that was recorded.
     string? XeroInvoiceId = null,
     string? XeroInvoiceNumber = null,
     DateTimeOffset? XeroRaisedAt = null)
 {
     public string DisplayNumber => Number > 0 ? $"VI-{Number:0000}" : "";
 
-    public bool IsRaisedInXero => !string.IsNullOrWhiteSpace(XeroInvoiceId);
+    // Raised in Xero — by the portal (id) or by hand (number only). Either refuses a second raise.
+    public bool IsRaisedInXero => !string.IsNullOrWhiteSpace(XeroInvoiceId) || !string.IsNullOrWhiteSpace(XeroInvoiceNumber);
+
+    // Raised by the portal itself: Xero's id is held, so the number is Xero's answer and cannot be recorded over.
+    public bool IsRaisedInXeroByPortal => !string.IsNullOrWhiteSpace(XeroInvoiceId);
 
     // The gross certificate this invoice represents (works certified before the deposit credit).
     public decimal CertifiedAmount => Amount + DepositCredited;

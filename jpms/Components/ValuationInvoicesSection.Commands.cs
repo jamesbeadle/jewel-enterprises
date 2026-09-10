@@ -88,6 +88,32 @@ public partial class ValuationInvoicesSection
         await OnCertifiedChanged.InvokeAsync();
     }
 
+    private void OpenXeroNumber(ValuationInvoice invoice)
+    {
+        if (busy) return;
+        error = null;
+        xeroNumberInvoice = invoice;
+        xeroNumberText = invoice.XeroInvoiceNumber ?? "";
+    }
+
+    private async Task RecordXeroNumberAsync()
+    {
+        if (busy || xeroNumberInvoice is null) return;
+        error = null;
+        var number = xeroNumberText.Trim();
+        if (number.Length == 0) { error = "Enter the number Xero gave the invoice (e.g. INV-0227)."; return; }
+        try
+        {
+            busy = true;
+            await Invoices.RecordXeroNumberAsync(xeroNumberInvoice.ValuationInvoiceId, number);
+            xeroNumberInvoice = null;
+            await ReloadAsync();
+        }
+        catch (CommandFailedException ex) { error = ex.Message; }
+        catch { error = "Couldn't record the Xero number. Please try again."; }
+        finally { busy = false; }
+    }
+
     private async Task RecordPaymentAsync()
     {
         if (busy || paymentInvoice is null) return;

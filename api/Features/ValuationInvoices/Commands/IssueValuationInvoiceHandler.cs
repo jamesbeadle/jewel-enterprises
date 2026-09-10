@@ -9,7 +9,9 @@ namespace Jewel.JPMS.Api.Features.ValuationInvoices.Commands;
 /// survives for drafts and legacy rows). From here the amount counts toward "Certified to date".
 /// A report snapshot is normally frozen at raise; issuing re-freezes only when no live one backs
 /// the invoice (amended since raise, or pre-dating raise-time capture), so even one-click
-/// invoices keep the report behind them.
+/// invoices keep the report behind them. A XeroInvoiceNumber on the command is an invoice raised
+/// in Xero BY HAND (2026-09-10): the number and the time it was recorded are stamped, XeroInvoiceId
+/// stays null (the portal did not raise it), and the row reads as raised from then on.
 /// </summary>
 public sealed class IssueValuationInvoiceHandler : ICommandHandler<IssueValuationInvoice, ValuationInvoice>
 {
@@ -55,6 +57,16 @@ public sealed class IssueValuationInvoiceHandler : ICommandHandler<IssueValuatio
         var note = entity.Status == (int)ValuationInvoiceStatus.Submitted
             ? "Issued without a recorded approval."
             : "";
+
+        var handRaisedNumber = string.IsNullOrWhiteSpace(command.XeroInvoiceNumber) ? null : command.XeroInvoiceNumber.Trim();
+        if (handRaisedNumber is not null)
+        {
+            if (!string.IsNullOrWhiteSpace(entity.XeroInvoiceId))
+                throw new InvalidOperationException($"This valuation invoice was raised in Xero by the portal as {entity.XeroInvoiceNumber} — its number cannot be replaced.");
+            entity.XeroInvoiceNumber = handRaisedNumber;
+            entity.XeroRaisedAt ??= DateTimeOffset.UtcNow;
+            note = $"{note} Raised in Xero by hand as {handRaisedNumber}.".Trim();
+        }
 
         entity.Status = (int)ValuationInvoiceStatus.Issued;
         entity.IssuedAt = DateTimeOffset.UtcNow;

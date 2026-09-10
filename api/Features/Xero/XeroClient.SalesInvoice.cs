@@ -5,8 +5,9 @@ namespace Jewel.JPMS.Api.Features.Xero;
 // The sales invoice raised from the portal (2026-09-09, the accountant's ask). Mirrors the staged
 // draft bill's rules on the other side of the ledger: the tax type is never assumed (the contact's
 // default SALES tax type, else their most recent sales invoice, else Xero's account default — the
-// note says which), the Sites option must already exist in Xero, and the invoice lands AUTHORISED
-// because raising it IS the issue step.
+// note says which), the Sites option must already exist in Xero, the contact is the one mapped on
+// the project by ContactID (never matched by name, never created — 2026-09-10), and the invoice
+// lands AUTHORISED because raising it IS the issue step.
 public sealed partial class XeroClient
 {
     public async Task<XeroSalesInvoiceResult> CreateSalesInvoiceAsync(XeroSalesInvoiceRequest request, CancellationToken ct)
@@ -19,8 +20,10 @@ public sealed partial class XeroClient
             if (MissingSitesError(new[] { request.SiteOption }, categories, "project's Xero site mapping") is { } missingSite)
                 return XeroSalesInvoiceResult.Failed(missingSite);
 
-            var (contactId, taxType, taxNote) = await ResolveSalesContactAsync(token, request.ContactId, request.ContactName, ct);
-            var payload = SalesInvoicePayload(request, contactId, SalesLineItem(request, taxType, categories));
+            var (contactStatus, _, taxType, taxNote) = await ResolveSalesContactAsync(token, request.ContactId, ct);
+            if (contactStatus == XeroSalesContactStatus.NotFound)
+                return XeroSalesInvoiceResult.Failed($"The Xero contact mapped on the project was not found in Xero — re-map it in Project settings. {taxNote}");
+            var payload = SalesInvoicePayload(request, SalesLineItem(request, taxType, categories));
             using var response = await SendJsonAsync(HttpMethod.Put, token, InvoicesUrl, payload, "raise sales invoice", ct);
 
             if (FirstOf(response, "Invoices") is not { } created)
@@ -37,29 +40,33 @@ public sealed partial class XeroClient
         }
     }
 
-    public async Task<XeroSalesContactLookup> LookupSalesContactAsync(string? contactId, string contactName, CancellationToken ct)
+    public async Task<XeroSalesContactLookup> LookupSalesContactAsync(string contactId, CancellationToken ct)
     {
-        if (!_options.IsConfigured) return new XeroSalesContactLookup(null, NotConnected);
+        if (!_options.IsConfigured) return XeroSalesContactLookup.Unavailable(NotConnected);
         try
         {
             var token = await GetAccessTokenAsync(ct);
-            var (foundId, _, taxNote) = await ResolveSalesContactAsync(token, contactId, contactName, ct);
-            return new XeroSalesContactLookup(foundId, taxNote);
+            var (status, xeroName, _, taxNote) = await ResolveSalesContactAsync(token, contactId, ct);
+            return status switch
+            {
+                XeroSalesContactStatus.Found => XeroSalesContactLookup.Found(xeroName ?? "", taxNote),
+                XeroSalesContactStatus.NotFound => XeroSalesContactLookup.NotFound(taxNote),
+                _ => XeroSalesContactLookup.Unavailable(taxNote)
+            };
         }
         catch (XeroCallFailedException failure)
         {
-            return new XeroSalesContactLookup(null, $"Couldn't read the contact from Xero ({failure.Message}).");
+            return XeroSalesContactLookup.Unavailable($"Couldn't read the contact from Xero ({failure.Message}).");
         }
     }
 
-    private static JsonObject SalesInvoicePayload(XeroSalesInvoiceRequest request, string? contactId, JsonObject lineItem)
+    /// <summary>Always by ContactID — the payload never carries a name, so Xero can never create a contact from it.</summary>
+    private static JsonObject SalesInvoicePayload(XeroSalesInvoiceRequest request, JsonObject lineItem)
     {
         var payload = new JsonObject
         {
             ["Type"] = "ACCREC",
-            ["Contact"] = contactId is null
-                ? new JsonObject { ["Name"] = request.ContactName }
-                : new JsonObject { ["ContactID"] = contactId },
+            ["Contact"] = new JsonObject { ["ContactID"] = request.ContactId },
             ["Date"] = request.Date.ToString("yyyy-MM-dd"),
             ["Reference"] = request.Reference,
             ["Status"] = "AUTHORISED",

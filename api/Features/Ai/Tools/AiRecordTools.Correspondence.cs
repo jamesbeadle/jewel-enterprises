@@ -96,7 +96,8 @@ internal static partial class AiRecordTools
                 + "attachment's name and id. Works for ANY record type: bid packages, variations, "
                 + "requests, work orders, defects, to-dos. This is the tool when the user says \"read "
                 + "the emails\": tender line items, what a subcontractor quoted, who said what — it "
-                + "all lives here. Defaults to the record on the page in view; nothing else needs "
+                + "all lives here. Each email carries its envelope (to, cc, bcc), so a SENT invite "
+                + "shows who received it (bcc). Defaults to the record on the page in view; nothing else needs "
                 + "calling first. Not for requests you are drafting a variation from — "
                 + "get_request_context is richer there.",
                 AiToolSchema.Object(
@@ -192,6 +193,12 @@ internal static partial class AiRecordTools
                             body = clipped
                                 ? text[..take] + "\n[… this email was longer and has been cut here.]"
                                 : text,
+                            // The envelope, so an OUTBOUND copy (the sent invite, the PO email)
+                            // says who received it. Graph only fills bcc on the mailbox's own
+                            // sent copies — which is exactly where a mass invite's recipients live.
+                            to = content.To ?? Array.Empty<string>(),
+                            cc = content.Cc ?? Array.Empty<string>(),
+                            bcc = content.Bcc ?? Array.Empty<string>(),
                             attachments = content.Attachments
                                 .Select(file => new { file.Id, file.Name, file.Size, file.ContentType })
                                 .ToList()
@@ -244,7 +251,9 @@ internal static partial class AiRecordTools
                                 received = reply.ReceivedAt,
                                 preview = reply.BodyPreview
                             }).ToList<object>(),
-                        note = "Oldest first. Attachment ids feed read_email_attachment. Nothing here "
+                        note = "Oldest first. Each email's detail carries its envelope (to, cc, bcc — bcc is "
+                               + "filled only on the mailbox's own sent copies, so a sent tender invite lists "
+                               + "who it went to there). Attachment ids feed read_email_attachment. Nothing here "
                                + "extracts figures for you — read the bodies and quote only what they say."
                                + (unfiled.Count == 0
                                    ? ""

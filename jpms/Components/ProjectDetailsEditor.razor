@@ -5,6 +5,7 @@
 @inject ProjectListReadModel Projects
 @inject IClientStore ClientStore
 @inject IArchitectStore ArchitectStore
+@inject ISubcontractorStore Subcontractors
 @inject NavigationManager Nav
 
 @*
@@ -117,6 +118,35 @@
                 and approved back into Xero from the cost allocation screen.
             </p>
 
+            @* The Xero customer the project's sales invoices are raised on (2026-09-10): picked from
+               Xero's own contacts so the id is always Xero's — never typed, never matched by name.
+               Disabled with a "Loading…" option until the list lands (never gate a control); a
+               mapped contact missing from the fetched list is still offered so saving cannot lose it. *@
+            <FormField Label="Xero contact"
+                       Hint="The Xero customer the project's sales invoices are raised on. Raise in Xero is blocked until this is set."
+                       Error="@xeroContactsError">
+                @if (xeroContacts is null)
+                {
+                    <select class="field" disabled>
+                        <option value="">Loading…</option>
+                    </select>
+                }
+                else
+                {
+                    <select class="field" value="@xeroContactId" @onchange="OnXeroContactChanged">
+                        <option value="">Not mapped</option>
+                        @if (xeroContactId.Length > 0 && xeroContacts.All(contact => contact.ContactId != xeroContactId))
+                        {
+                            <option value="@xeroContactId">@(xeroContactName.Length > 0 ? xeroContactName : xeroContactId) (not in the Xero list)</option>
+                        }
+                        @foreach (var contact in xeroContacts)
+                        {
+                            <option value="@contact.ContactId">@contact.Name</option>
+                        }
+                    </select>
+                }
+            </FormField>
+
             @if (CanDelete)
             {
                 <div class="mt-4 pt-4 border-t border-line">
@@ -184,6 +214,13 @@
     private string postcode = "";
     private string xeroSiteName = "";
 
+    // The Xero contact mapping as held: Xero's ContactID + the name as Xero holds it ("" = not
+    // mapped). xeroContacts is null until Xero has been read — the select stays disabled until then.
+    private string xeroContactId = "";
+    private string xeroContactName = "";
+    private IReadOnlyList<XeroSupplier>? xeroContacts;
+    private string? xeroContactsError;
+
     // The party this project corresponds with — "client:{id}" / "architect:{id}" / "" — plus the
     // optional client an architect acts for.
     private string partySelection = "";
@@ -226,6 +263,10 @@
         town = project.Town;
         postcode = project.Postcode;
         xeroSiteName = project.XeroSiteName ?? "";
+        xeroContactId = project.XeroContactId ?? "";
+        xeroContactName = project.XeroContactName ?? "";
+        xeroContacts = null;
+        xeroContactsError = null;
         partySelection = string.IsNullOrEmpty(project.PartyId)
             ? ""
             : (project.PartyKind == PartyKind.Architect ? ArchitectPrefix : ClientPrefix) + project.PartyId;
@@ -236,6 +277,7 @@
         error = null;
         open = true;
         _ = LoadPartiesAsync();
+        _ = LoadXeroContactsAsync();
     }
 
     private async Task LoadPartiesAsync()
@@ -243,6 +285,41 @@
         try { clients = await ClientStore.ListAsync(); } catch { clients = Array.Empty<Client>(); }
         try { architects = await ArchitectStore.ListAsync(); } catch { architects = Array.Empty<Architect>(); }
         StateHasChanged();
+    }
+
+    // Xero's contacts, the same read the directory's import uses. Customers first; a contact Xero
+    // has not flagged either way yet (brand new — the flags only turn on with a first invoice or
+    // bill) is kept, supplier-only contacts are left out. A failed read leaves the current mapping
+    // as the one option, so the value survives a save.
+    private async Task LoadXeroContactsAsync()
+    {
+        try
+        {
+            var snapshot = await Subcontractors.FetchXeroSuppliersAsync();
+            xeroContacts = snapshot.Suppliers
+                .Where(contact => contact.IsCustomer || !contact.IsSupplier)
+                .OrderByDescending(contact => contact.IsCustomer)
+                .ThenBy(contact => contact.Name, StringComparer.OrdinalIgnoreCase)
+                .ToList();
+            xeroContactsError = !snapshot.IsConfigured
+                ? "Xero isn't connected — the contacts list can't be read."
+                : snapshot.Error;
+        }
+        catch
+        {
+            xeroContacts = Array.Empty<XeroSupplier>();
+            xeroContactsError = "Couldn't read the contacts from Xero. The current mapping is kept.";
+        }
+        StateHasChanged();
+    }
+
+    private void OnXeroContactChanged(ChangeEventArgs e)
+    {
+        xeroContactId = e.Value?.ToString() ?? "";
+        var chosen = xeroContacts?.FirstOrDefault(contact => contact.ContactId == xeroContactId);
+        if (chosen is not null) xeroContactName = chosen.Name;
+        else if (xeroContactId.Length == 0) xeroContactName = "";
+        // else: the mapped contact missing from the list keeps the name it was saved with.
     }
 
     private void OnPartyChanged(ChangeEventArgs e)
@@ -337,7 +414,9 @@
                     addressLine.Trim(),
                     town.Trim(),
                     postcode.Trim(),
-                    string.IsNullOrWhiteSpace(xeroSiteName) ? null : xeroSiteName.Trim()),
+                    string.IsNullOrWhiteSpace(xeroSiteName) ? null : xeroSiteName.Trim(),
+                    string.IsNullOrWhiteSpace(xeroContactId) ? null : xeroContactId.Trim(),
+                    string.IsNullOrWhiteSpace(xeroContactId) ? null : xeroContactName.Trim()),
                 CancellationToken.None);
             await Projects.RefreshAsync(CancellationToken.None);
             Close();

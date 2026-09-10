@@ -3,7 +3,7 @@ namespace Jewel.JPMS.Components;
 public partial class ValuationInvoicesSection
 {
     private List<DropdownMenu.Item> InvoiceMenuItems(ValuationInvoice invoice) =>
-        LifecycleItems(invoice).Concat(AmendItems(invoice)).Concat(RecordItems(invoice)).ToList();
+        LifecycleItems(invoice).Concat(AmendItems(invoice)).Concat(XeroNumberItems(invoice)).Concat(RecordItems(invoice)).ToList();
 
     private IEnumerable<DropdownMenu.Item> LifecycleItems(ValuationInvoice invoice) => invoice.Status switch
     {
@@ -28,6 +28,16 @@ public partial class ValuationInvoicesSection
         },
         _ => Array.Empty<DropdownMenu.Item>(),
     };
+
+    // The Xero number of an invoice raised there by hand, recorded after the fact (2026-09-10) —
+    // offered wherever the portal did not raise it itself and the row is not cancelled.
+    private IEnumerable<DropdownMenu.Item> XeroNumberItems(ValuationInvoice invoice)
+    {
+        if (invoice.IsRaisedInXeroByPortal || invoice.Status == ValuationInvoiceStatus.Cancelled) yield break;
+        yield return Item(string.IsNullOrWhiteSpace(invoice.XeroInvoiceNumber) ? "Record Xero number…" : "Change Xero number…",
+            () => OpenXeroNumber(invoice),
+            "The number Xero gave a sales invoice raised there by hand — recorded here, nothing written to Xero", group: 1);
+    }
 
     private IEnumerable<DropdownMenu.Item> AmendItems(ValuationInvoice invoice)
     {

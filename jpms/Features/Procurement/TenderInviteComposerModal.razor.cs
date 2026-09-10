@@ -50,9 +50,12 @@ public partial class TenderInviteComposerModal
             .Distinct(StringComparer.OrdinalIgnoreCase)
             .ToList();
 
-    // The tender list's directory emails — the BCC the composer opens with.
+    // The tender list's directory emails — the BCC the composer opens with. Only the rows still
+    // in the running: a firm that has Declined, or already Won, is never re-invited by default
+    // (the same rule as BidPackageInviteMailAssembler.DefaultBccAsync on the server).
     private IReadOnlyList<string> TenderListEmails =>
         Recipients
+            .Where(r => r.Status != BidPackageRecipientStatus.Declined && r.Status != BidPackageRecipientStatus.Won)
             .Select(r => Subs.Find(r.SubcontractorId))
             .Where(s => s is not null && !string.IsNullOrWhiteSpace(s.ContactEmail))
             .Select(s => s!.ContactEmail.Trim())

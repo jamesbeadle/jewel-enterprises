@@ -84,16 +84,35 @@ public sealed class BidPackageInviteMailAssembler
         return new InvitePlan(plan.Attach, htmlBody, linkedFiles);
     }
 
-    /// <summary>The invited recipients with a directory email — the BCC list both paths default to.</summary>
-    public async Task<IReadOnlyList<MailboxDraftRecipient>> DefaultBccAsync(string bidPackageId, CancellationToken cancellationToken)
+    /// <summary>
+    /// The BCC list both paths default to: the tender-list recipients still in the running — on the
+    /// list (Invited) or Responded; Declined and Won are skipped — that have a directory email.
+    /// With <paramref name="recipientIds"/> (non-empty) only those BidPackageRecipient ids are
+    /// included, still requiring a directory email (2026-09-10 — the connector re-invited eleven
+    /// firms because the list was every row regardless of status). Ids that resolve to nothing are
+    /// ignored; the caller decides what an empty result means.
+    /// </summary>
+    public async Task<IReadOnlyList<MailboxDraftRecipient>> DefaultBccAsync(
+        string bidPackageId, CancellationToken cancellationToken, IReadOnlyCollection<string>? recipientIds = null)
     {
-        var bcc = await (
+        var declined = (int)BidPackageRecipientStatus.Declined;
+        var won = (int)BidPackageRecipientStatus.Won;
+        var wanted = recipientIds is { Count: > 0 }
+            ? recipientIds.Where(id => !string.IsNullOrWhiteSpace(id)).Select(id => id.Trim()).Distinct().ToList()
+            : null;
+
+        var query =
             from recipient in context.BidPackageRecipients
             where recipient.BidPackageId == bidPackageId
+                && recipient.Status != declined && recipient.Status != won
             join sub in context.Subcontractors on recipient.SubcontractorId equals sub.SubcontractorId
             where sub.ContactEmail != null && sub.ContactEmail != ""
-            select new { sub.ContactEmail, sub.CompanyName })
-            .ToListAsync(cancellationToken);
+            select new { recipient.RecipientId, sub.ContactEmail, sub.CompanyName };
+
+        if (wanted is not null)
+            query = query.Where(row => wanted.Contains(row.RecipientId));
+
+        var bcc = await query.ToListAsync(cancellationToken);
 
         return bcc
             .GroupBy(r => r.ContactEmail, StringComparer.OrdinalIgnoreCase)

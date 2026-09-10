@@ -36,7 +36,9 @@ internal static class BidPackageContextReads
                 subcontractorId = recipient.SubcontractorId,
                 company = sub != null ? sub.CompanyName : recipient.SubcontractorId,
                 status = ((BidPackageRecipientStatus)recipient.Status).ToString(),
-                invitedAt = recipient.InvitedAt,
+                // The stamp of the row being ADDED to the list (the entity's InvitedAt) — not
+                // evidence an invite email went; read_record_emails has the sent copy.
+                addedToListAt = recipient.InvitedAt,
                 respondedAt = recipient.RespondedAt
             })
             .ToListAsync(ct);
@@ -67,18 +69,56 @@ internal static class BidPackageContextReads
             .Select(row => new { bidPackageAttachmentId = row.BidPackageAttachmentId, row.FileName, row.ContentType })
             .ToListAsync(ct);
 
-    public static async Task<IReadOnlyList<object>> LinkedDocumentsOf(JpmsContext db, string bidPackageId, CancellationToken ct) =>
-        await (
+    // A linked document is named by its code and title; a drawing that has neither yet (a file
+    // dropped on the register, never coded) is named by its current revision's file name — the
+    // same rule the register and the invite's attachment list follow — so the model never lists
+    // "" "" for a document that will travel with the invite. The current revision is the latest
+    // approved one, else the newest received, exactly as BidPackageInviteMailAssembler attaches.
+    public static async Task<IReadOnlyList<object>> LinkedDocumentsOf(JpmsContext db, string bidPackageId, CancellationToken ct)
+    {
+        var drawings = await (
             from link in db.BidPackageDrawings.AsNoTracking()
             where link.BidPackageId == bidPackageId
             join drawing in db.Drawings.AsNoTracking() on link.DrawingId equals drawing.DrawingId
             orderby link.LinkedAt descending
             select new
             {
-                drawingId = drawing.DrawingId,
+                drawing.DrawingId,
                 drawing.DrawingCode,
                 drawing.Title,
-                currentRevision = drawing.CurrentApprovedRevisionLabel
+                drawing.CurrentApprovedRevisionLabel
             })
             .ToListAsync(ct);
+        if (drawings.Count == 0) return Array.Empty<object>();
+
+        var drawingIds = drawings.Select(d => d.DrawingId).ToList();
+        var revisions = await db.DrawingRevisions.AsNoTracking()
+            .Where(revision => drawingIds.Contains(revision.DrawingId))
+            .Select(revision => new { revision.DrawingId, revision.FileName, revision.ApprovalStatus, revision.ReceivedAt })
+            .ToListAsync(ct);
+        var currentFileNames = revisions
+            .GroupBy(revision => revision.DrawingId)
+            .ToDictionary(
+                group => group.Key,
+                group => group
+                    .OrderByDescending(revision => revision.ApprovalStatus == (int)DrawingApprovalStatus.Approved)
+                    .ThenByDescending(revision => revision.ReceivedAt)
+                    .First().FileName);
+
+        return drawings
+            .Select(drawing =>
+            {
+                currentFileNames.TryGetValue(drawing.DrawingId, out var fileName);
+                var unnamed = string.IsNullOrWhiteSpace(drawing.DrawingCode) && string.IsNullOrWhiteSpace(drawing.Title);
+                return (object)new
+                {
+                    drawingId = drawing.DrawingId,
+                    drawingCode = drawing.DrawingCode,
+                    title = unnamed ? fileName ?? "" : drawing.Title,
+                    currentRevision = drawing.CurrentApprovedRevisionLabel,
+                    fileName
+                };
+            })
+            .ToList();
+    }
 }

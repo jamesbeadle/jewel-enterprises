@@ -2,38 +2,23 @@ using Jewel.JPMS.Api.Data.Entities;
 
 namespace Jewel.JPMS.Api.Features.ValuationInvoices.XeroRaise;
 
-/// <summary>The three portal facts a raise needs beyond the invoice: who the client is, whether
-/// the directory already links them to a Xero contact, and which certificate the register holds.</summary>
+/// <summary>The portal facts a raise needs beyond the invoice: the Xero contact mapped on the
+/// project (never the client's name — 2026-09-10) and which certificate the register holds.</summary>
 internal static class ValuationInvoiceXeroRaiseSources
 {
-    /// <summary>The client account's name when the project corresponds with a client directly;
-    /// the project's free-text client name otherwise (an architect's project still invoices the client).</summary>
-    public static async Task<string> ClientNameAsync(JpmsContext context, ProjectEntity project, CancellationToken ct)
+    /// <summary>
+    /// The Xero contact the project's sales invoices are raised on, exactly as mapped in Project
+    /// settings: (ContactID or null, the name to show). Null id means no mapping — a blocker, never
+    /// a name match and never a contact created with the invoice. The name shown is the mapped
+    /// contact's, else the project's client name so the preview still says who would be invoiced.
+    /// </summary>
+    public static (string? ContactId, string ContactName) MappedContactOf(ProjectEntity project)
     {
-        if ((PartyKind)project.PartyKind == PartyKind.Client && project.PartyId is not null)
-        {
-            var client = await context.Clients.AsNoTracking().SingleOrDefaultAsync(row => row.ClientId == project.PartyId, ct);
-            if (client is not null && !string.IsNullOrWhiteSpace(client.Name)) return client.Name.Trim();
-        }
-        if (string.IsNullOrWhiteSpace(project.ClientName))
-            throw new InvalidOperationException($"{project.Name} has no client name — set the client on the project first.");
-        return project.ClientName.Trim();
-    }
-
-    /// <summary>A directory record of category Client with this name and a Xero link gives the
-    /// contact outright; otherwise Xero is asked by name.</summary>
-    public static async Task<string?> LinkedXeroContactIdAsync(JpmsContext context, string clientName, CancellationToken ct)
-    {
-        var recordIds = await context.Subcontractors.AsNoTracking()
-            .Where(row => row.Category == (int)DirectoryCategory.Client && row.CompanyName == clientName)
-            .Select(row => row.SubcontractorId)
-            .ToListAsync(ct);
-        if (recordIds.Count == 0) return null;
-        return await context.SubcontractorXeroLinks.AsNoTracking()
-            .Where(link => recordIds.Contains(link.SubcontractorId))
-            .OrderBy(link => link.ImportedAt)
-            .Select(link => link.XeroContactId)
-            .FirstOrDefaultAsync(ct);
+        var contactId = string.IsNullOrWhiteSpace(project.XeroContactId) ? null : project.XeroContactId.Trim();
+        var name = contactId is not null && !string.IsNullOrWhiteSpace(project.XeroContactName)
+            ? project.XeroContactName.Trim()
+            : (project.ClientName ?? "").Trim();
+        return (contactId, name);
     }
 
     /// <summary>The newest certificate filed against the invoice's claim — the register is the

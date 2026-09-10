@@ -126,10 +126,15 @@ internal sealed class RecordingXero : IXeroClient
             "Tax type OUTPUT2 from the contact's default.", null));
     }
 
-    public Task<XeroSalesContactLookup> LookupSalesContactAsync(string? contactId, string contactName, CancellationToken ct)
+    /// <summary>The contact ids Xero "holds" — a lookup for any other id is NotFound (never a name match).</summary>
+    public HashSet<string> KnownSalesContacts { get; } = new() { "xero-contact-quarry" };
+
+    public Task<XeroSalesContactLookup> LookupSalesContactAsync(string contactId, CancellationToken ct)
     {
-        Calls.Add($"LookupSalesContact:{contactName}");
-        return Task.FromResult(new XeroSalesContactLookup(contactId ?? "xero-contact-by-name", "Tax type OUTPUT2 from the contact's default."));
+        Calls.Add($"LookupSalesContact:{contactId}");
+        return Task.FromResult(KnownSalesContacts.Contains(contactId)
+            ? XeroSalesContactLookup.Found("Quarry Developments Ltd", "Tax type OUTPUT2 from the contact's default.")
+            : XeroSalesContactLookup.NotFound("Xero has no contact with the id mapped on the project."));
     }
 
     public Task<XeroApprovalResult> AttachToInvoiceAsync(string invoiceId, string fileName, string contentType, byte[] content, CancellationToken ct)
