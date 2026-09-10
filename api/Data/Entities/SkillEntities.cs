@@ -3,18 +3,19 @@ using System.ComponentModel.DataAnnotations;
 namespace Jewel.JPMS.Api.Data.Entities;
 
 /// <summary>
-/// One skill: a versioned markdown manual attached to an agent (docs/ai/05-agents-and-skills.md).
-/// This is the DOMAIN half of the agent split — the agent scaffolding is code
-/// (contracts/Ai/AgentCatalogue.cs); the discipline knowledge is this row, edited in the portal by
-/// the person who owns it. A new commercial rule is an update here, not a deploy.
+/// One skill: a versioned markdown manual the team's own Claude reads through the MCP connector
+/// (docs/ai/10-mcp-connector.md §2d). The connector's tools and actions are code; the discipline
+/// knowledge is this row, edited in the portal by the person who owns it and wired to actions on
+/// the AI Actions page. A new house rule is an update here, not a deploy.
 /// </summary>
 public sealed class SkillEntity
 {
     /// <summary>agentskills.io name — "nigel-commercial-doctrine". Stable; edits version the row.</summary>
     [Key, MaxLength(128)] public string SkillKey { get; set; } = "";
 
-    /// <summary>The AgentCatalogue key this skill belongs to, or "shared" — pinned for every
-    /// agent (the JBB Second Brain). Loose string on purpose, like every link in this schema.</summary>
+    /// <summary>The discipline this skill belongs to (SkillDisciplines), or "shared" for house-wide
+    /// knowledge. A labelling axis only — attachments decide what rides with an action. Loose
+    /// string on purpose, like every link in this schema; the column keeps its historical name.</summary>
     [MaxLength(64)] public string AgentKey { get; set; } = "shared";
 
     [MaxLength(256)] public string DisplayName { get; set; } = "";

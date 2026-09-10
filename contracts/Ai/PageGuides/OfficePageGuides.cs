@@ -191,26 +191,7 @@ public static class OfficePageGuides
             + "nobody watching), action, outcome, tools used, duration, tokens and cost, plus "
             + "totals underneath. Manually: All runs and Unattended only filters; clicking a row "
             + "that carries a route navigates to the page that run touched. You navigate_to only — "
-            + "the log is read-only. This is the run log of the agents listed on /admin/agents; it "
-            + "is not the request-watching queue at /agents."),
-
-        new("/agents", "Agent queue",
-            "The queue of requests being watched by applied discipline agents, across every "
-            + "project — each row shows the agent, its discipline, an Active or Complete badge, "
-            + "the request reference and title, and a status message. The page is a read-only "
-            + "list; clicking a row opens that request's detail page. Agents are applied FROM a "
-            + "request page — nothing is added or configured here. You navigate_to; list_requests "
-            + "and get_request_context read the underlying requests. Distinct from /admin/agents "
-            + "(the AI agent registry) and /agents/activity (the run log)."),
-
-        new("/admin/agents", "AI agents",
-            "The assistant's agent registry, live — the real catalogue the turn loop runs on, one "
-            + "card per agent showing its key, description, who may engage it, its triggers and "
-            + "route prefixes, its code-owned working instructions and \"done means\", and the "
-            + "skills it works from. The page is read-only apart from links — \"Add a skill\" and "
-            + "each skill row deep-link into /admin/skills. Agent configuration is code and cannot "
-            + "be changed here; agent knowledge is edited on /admin/skills. You navigate_to; "
-            + "switch_agent changes the agent in force in conversation, not anything on this page."),
+            + "the log is read-only. Every connector tool call lands here under the caller's name."),
 
         new("/admin/skills", "AI skills",
             "The assistant's editable domain skills — versioned markdown manuals that are in force "

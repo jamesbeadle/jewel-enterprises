@@ -11,10 +11,8 @@ namespace Jewel.JPMS.Models;
 /// the mechanism stops being reusable.</para>
 /// </summary>
 public sealed record AiTaskScope(
-    /// <summary>Names the task flow, e.g. "variation-draft". Historical note: before the agent
-    /// registry (2026-08-12) this was also stamped as the conversation's CapabilityKey — old
-    /// AgentActivity rows still carry it. Today the agent comes from AgentCatalogue.ForRoute /
-    /// switch_agent; the task key only labels the dialog work.</summary>
+    /// <summary>Names the task flow, e.g. "variation-draft". Historical: old AgentActivity rows
+    /// carry it as the conversation's CapabilityKey. The task key only labels the dialog work.</summary>
     string TaskKey,
     /// <summary>A ModalCatalog key, e.g. "variation_draft".</summary>
     string ModalKey,

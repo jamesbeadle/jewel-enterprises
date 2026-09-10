@@ -399,12 +399,8 @@ public static class SidebarFolders
                 // administrators-only register; nothing else in the system shows the marks.
                 new SidebarRow(new NavigationItem("KPI emails", "/admin/kpis"),
                     DesktopNavigation.AdministratorOnly),
-                // The agent architecture, live — the registry the turn loop actually runs on,
-                // each agent with its configuration and its skills (docs/ai/05-agents-and-skills.md).
-                new SidebarRow(new NavigationItem("AI Agents", "/admin/agents"),
-                    DesktopNavigation.DirectorRoles),
-                // The assistant's skills — the domain knowledge behind each agent, edited by the
-                // discipline owner (docs/ai/05-agents-and-skills.md). Directors rather than
+                // The connector's skills — the working knowledge the team's own Claude reads, edited
+                // by the discipline owner (docs/ai/10-mcp-connector.md §2d). Directors rather than
                 // administrator-only, deliberately: the MD maintaining his own doctrine is the
                 // entire point of the store. Mirrors the API's SkillRoles.ManageSkills.
                 new SidebarRow(new NavigationItem("AI Skills", "/admin/skills"),

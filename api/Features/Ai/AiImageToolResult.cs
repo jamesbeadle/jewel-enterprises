@@ -3,9 +3,8 @@ namespace Jewel.JPMS.Api.Features.Ai;
 /// <summary>
 /// The carrier for an IMAGE flowing back through a tool result — read_email_attachment on a
 /// photo, a drawing, a marked-up plan. Tool rows persist as plain strings, so the image rides as
-/// a marker line, its media type, its file name and the base64, and <c>AiTurnRunner</c>'s replay
-/// turns the row into a real image block inside the tool_result — the model SEES the picture,
-/// the same way it sees a pasted chat screenshot (AddAiAttachmentHandler's Context rows).
+/// a marker line, its media type, its file name and the base64, and the MCP endpoint turns the
+/// row into a real image content block in the tools/call result — the model SEES the picture.
 ///
 /// <para>The budget pass swaps the body for <see cref="BudgetStandIn"/> before counting: the
 /// base64 is megabytes of characters but ~1,600 tokens of image, and counted raw it would blow

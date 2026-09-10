@@ -29,7 +29,7 @@ public partial class AiSkillsAdmin
         await LoadAsync();
 
         // Deep links from the AI Agents page land straight in the right editor:
-        // ?skill=… opens that skill; ?agent=…&new=1 starts a new one already attached to it.
+        // ?skill=… opens that skill; ?agent=…&new=1 starts a new one under that discipline.
         // Parsed from the URL by hand, the same way ProjectRequestDetail reads ?openModal=.
         var skillParam = QueryValue("skill");
         if (!string.IsNullOrWhiteSpace(skillParam))
@@ -244,10 +244,7 @@ public partial class AiSkillsAdmin
         }
     }
 
-    private static string AgentLabel(string agentKey) =>
-        agentKey == "shared"
-            ? "Shared (all agents)"
-            : AgentCatalogue.Find(agentKey)?.DisplayName ?? agentKey;
+    private static string AgentLabel(string agentKey) => SkillDisciplines.LabelFor(agentKey);
 
     private static string FormatSize(int characters) =>
         characters >= 10_000 ? $"{characters / 1000}k chars" : $"{characters:N0} chars";

@@ -9,8 +9,8 @@
   </PropertyGroup>
 
   <ItemGroup>
-    <!-- The assistant harness (tests/Assistant) runs the real AiTurnRunner against an in-memory
-         JpmsContext — same major/minor as the api's EF Core. -->
+    <!-- Connector and handler tests run against an in-memory JpmsContext — same major/minor as
+         the api's EF Core. -->
     <PackageReference Include="Microsoft.EntityFrameworkCore.InMemory" Version="8.0.10" />
     <PackageReference Include="Microsoft.NET.Test.Sdk" Version="17.8.0" />
     <PackageReference Include="xunit" Version="2.6.2" />

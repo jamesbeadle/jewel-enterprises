@@ -113,7 +113,7 @@ Admin by James's call. Won on a lead creates the client account and the project 
 Users `/admin/users` (Revoked `/admin/users/revoked` — sibling tab, no rail row) ·
 System `/admin/system` · Integrations `/admin/integrations` · Trades `/admin/trades` ·
 KPI emails `/admin/kpis` ·
-AI Agents `/admin/agents` · AI Skills `/admin/skills` · AI Actions `/admin/ai-actions`
+AI Skills `/admin/skills` · AI Actions `/admin/ai-actions`
 
 First five are administrators only; the three AI rows are directors too. The admin homepage
 (`/dashboard` as Administrator) rolls the same destinations into one **Actions** dropdown.

@@ -34,14 +34,14 @@ public sealed class SaveAiSkillValidation
             errors.Add($"That body is too long ({MaxBodyLength:N0} characters max). Move the bulk "
                        + "into reference documents and keep the body to the method.");
 
-        // The agent key must name a real agent or the shared set — a typo here would file the
-        // skill somewhere no turn ever loads from, silently.
+        // The discipline must be one the store knows — a typo here would file the skill under a
+        // heading nothing lists, silently.
         var agentKey = command.AgentKey?.Trim().ToLowerInvariant();
         if (string.IsNullOrWhiteSpace(agentKey))
-            errors.Add("An agent is required — pick one, or \"shared\" for every agent.");
-        else if (agentKey != "shared" && AgentCatalogue.Find(agentKey) is null)
-            errors.Add($"No agent named \"{agentKey}\" exists. Valid keys: shared, "
-                       + string.Join(", ", AgentCatalogue.All.Select(agent => agent.Key)) + ".");
+            errors.Add("A discipline is required — pick one, or \"shared\" for house-wide knowledge.");
+        else if (!SkillDisciplines.IsKnown(agentKey))
+            errors.Add($"No discipline named \"{agentKey}\" exists. Valid keys: "
+                       + string.Join(", ", SkillDisciplines.All.Select(discipline => discipline.Key)) + ".");
 
         if (errors.Count == 0) return ValidationOutcome.Passed;
         return new ValidationOutcome(errors);

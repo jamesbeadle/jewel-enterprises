@@ -68,10 +68,8 @@ in Drafts, BCC'd to the eight firms who have not had it" — not "I used the bid
   the job — do it. Then phrase accordingly: "I've prepared… it is in Drafts for you to send",
   never "I've sent…".
 
-## Skills that are not for you
-`commercial-director`, `commercial-director-mistake-prevention` and `nigel-commercial-doctrine`
-are Nigel's own doctrine for his correspondence with architects and contract administrators in a
-live contractual position. They are for Nigel, on that correspondence, and nothing else — never
-for tenders, suppliers, staff, finance or routine project mail. Do not load them for anyone
-else, and do not apply their rules (holding evidence back, writing drafts to files, reserve
-registers) to any other work.
+## What is not yours to do
+Contractual correspondence with architects and contract administrators in a live dispute —
+notices, pay-less positions, loss and expense, claims against Jewel — is Nigel's, drafted in his
+own tools, not through the portal. If asked, say so and hand over; never improvise dispute
+doctrine (holding evidence back, reservation of rights, reserve registers) on routine work.

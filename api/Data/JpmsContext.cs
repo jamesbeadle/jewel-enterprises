@@ -201,7 +201,7 @@ public sealed partial class JpmsContext : DbContext
     public DbSet<OAuthTokenEntity> OAuthTokens => Set<OAuthTokenEntity>();
 
     // The assistant's skills — the domain half of an agent, edited in the portal
-    // (docs/ai/05-agents-and-skills.md). Revisions are append-only.
+    // (docs/ai/10-mcp-connector.md §2d). Revisions are append-only.
     public DbSet<SkillEntity> Skills => Set<SkillEntity>();
     public DbSet<SkillReferenceEntity> SkillReferences => Set<SkillReferenceEntity>();
     public DbSet<SkillRevisionEntity> SkillRevisions => Set<SkillRevisionEntity>();

@@ -152,7 +152,7 @@ ready to be written into the skill store and attached (area level) on the AI Act
   field, or data is erased. The same brain gains: draft WOs have no number (list by status, not
   reference); set_cost_code_budget and Xero WO links take absolute/complete values.
 
-Attachment mechanics are docs/ai/10 §2d; the seeded area mapping is scripts/seed-ai-action-skills.sql.
+Attachment mechanics are docs/ai/10 §2d; the live area mapping is the AI Actions page (the seed scripts were removed 2026-09-10 — the database is the source of truth, docs/ai/skills its mirror).
 
 ## 7. Resolution — 2026-08-31, same day
 
@@ -177,9 +177,8 @@ The fix order was worked the same day the audit was written. Shipped:
   discard/restore/remove-tag). Endpoints keep their inline checks deliberately — both sides read
   the same RoleSet constant, so there is one source of truth (rationale in the gates files).
 - **§6 skills**: nine written to docs/ai/skills/jpms/ (the eight extracted plus
-  jpms-connector-mechanics carrying the full-record-write rule) and seeded with 26 area
-  attachments by scripts/seed-jpms-workflow-skills.sql — idempotent, and it never overwrites a
-  skill the team has since edited.
+  jpms-connector-mechanics carrying the full-record-write rule) and attached to their areas on
+  the AI Actions page.
 
 **Resolved 2026-08-31 evening (the accountant's month-end ask)**: the LABOUR half of the
 write clusters is no longer open. Sign-off (sign_off_labour_week / remove_labour_week_sign_off,

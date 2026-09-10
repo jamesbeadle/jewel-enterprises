@@ -8,23 +8,24 @@
 <PageTitle>AI skills · JPMS</PageTitle>
 
 @*
-    The skill store's admin page (docs/ai/05-agents-and-skills.md §2.2). This is the OWNERSHIP SPLIT
-    in a screen: the agents themselves — their tools, their dialogs, the turn loop — are code, and a
-    developer changes them. The DOMAIN knowledge each agent works from is a skill: a versioned
-    markdown manual, edited here by the discipline owner. A new commercial rule lands here and is in
-    force on the assistant's very next message. No deploy.
+    The skill store's admin page (docs/ai/10-mcp-connector.md §2d). The connector's tools and actions
+    are code, and a developer changes them. The DOMAIN knowledge the team's own Claude works from is
+    a skill: a versioned markdown manual, edited here by the discipline owner, and wired to the
+    connector's actions on the AI Actions page. A new house rule lands here and is in force from the
+    next conversation. No deploy.
 
-    Format is agentskills.io, same as Nigel's pack: a key, a description (what the assistant routes
-    on), a markdown body, and optional reference documents the model loads on demand.
+    Format is agentskills.io: a key, a description (what the model loads on), a markdown body, and
+    optional reference documents the model loads on demand.
 *@
 
 <Page CanAccess="CanSee" AccessDeniedMessage="You do not have access to the assistant's skills.">
         <PageHeader>
             <SubtitleContent>
-                The domain knowledge behind each agent — doctrine, method, standing rules — written as
-                markdown and versioned on every save. A skill saved here is in force on the assistant's
-                next message. <span class="text-content">Pinned</span> skills ride with the agent on every
-                turn; unpinned ones are loaded by the assistant when the task needs them.
+                The working knowledge the team's own Claude reads through the connector — doctrine,
+                method, standing rules — written as markdown and versioned on every save. A skill saved
+                here is in force from the next conversation. Which skills ride with which actions is set
+                on AI Actions; <span class="text-content">Pinned</span> marks house doctrine that belongs
+                everywhere.
             </SubtitleContent>
         </PageHeader>
 
@@ -60,7 +61,7 @@
                                 <thead>
                                     <tr>
                                         <th>Skill</th>
-                                        <th>Agent</th>
+                                        <th>Discipline</th>
                                         <th>Pinned</th>
                                         <th>Active</th>
                                         <th class="text-right">Version</th>
@@ -139,16 +140,15 @@
                         </span>
                     </label>
                     <label class="block">
-                        <span class="block text-xs font-medium text-content-muted mb-1">Agent</span>
+                        <span class="block text-xs font-medium text-content-muted mb-1">Discipline</span>
                         <select class="field w-full" @bind="editing.AgentKey">
-                            <option value="shared">Shared — every agent</option>
-                            @foreach (var agent in AgentCatalogue.All)
+                            @foreach (var discipline in SkillDisciplines.All)
                             {
-                                <option value="@agent.Key">@agent.DisplayName (@agent.Key)</option>
+                                <option value="@discipline.Key">@discipline.DisplayName</option>
                             }
                         </select>
                         <span class="block mt-1 text-xs text-content-subtle">
-                            Which agent works from this skill. Shared is for house-wide knowledge.
+                            Which discipline this skill belongs to. Shared is for house-wide knowledge.
                         </span>
                     </label>
                 </div>
@@ -167,7 +167,7 @@
                 <div class="flex flex-wrap items-center gap-6">
                     <label class="inline-flex items-center gap-2 text-sm text-content">
                         <input type="checkbox" @bind="editing.Pinned" />
-                        Pinned — in force on every turn of its agent
+                        Pinned — house doctrine, always in force
                     </label>
                     <label class="inline-flex items-center gap-2 text-sm text-content">
                         <input type="checkbox" @bind="editing.IsActive" />

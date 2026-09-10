@@ -1,16 +1,13 @@
 
 namespace Jewel.JPMS.Api.Features.Ai.Tools;
 
-/// <summary>What a tool can see when it runs. Scoped per turn.</summary>
-/// <summary>What a tool can see when it runs. <paramref name="Services"/> is the request scope, so a
-/// tool can resolve a feature service (RequestContextAssembler, RequestEmailReader) rather than
-/// re-implementing it. <paramref name="AgentKey"/> is the agent in force this hop — the skill
-/// tools use it to keep an agent inside its own (plus shared) skill set.</summary>
+/// <summary>What a tool can see when it runs — one MCP tools/call. <paramref name="Services"/> is
+/// the request scope, so a tool can resolve a feature service (RequestContextAssembler,
+/// RequestEmailReader) rather than re-implementing it. <paramref name="Scope"/> is always null over
+/// the connector (there is no page in view); it survives only so the tools' "defaults to the
+/// record in view" fallbacks keep compiling.</summary>
 public sealed record AiToolContext(
-    JpmsContext Db, SignedInUser User, AiScope? Scope, IServiceProvider Services, string AgentKey = "orchestrator",
-    /// <summary>The conversation the hop belongs to — what scopes "the files attached to this
-    /// chat" (AiSourceTools). Null only in tests that never touch a conversation.</summary>
-    string? ConversationId = null);
+    JpmsContext Db, SignedInUser User, AiScope? Scope, IServiceProvider Services);
 
 public enum AiToolKind
 {

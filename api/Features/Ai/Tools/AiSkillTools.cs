@@ -4,7 +4,7 @@ namespace Jewel.JPMS.Api.Features.Ai.Tools;
 /// <summary>
 /// The skill store's read tools: list what the portal has been taught, load one skill's full
 /// text, and load a skill's larger reference documents on demand. The store survives the retired
-/// in-portal chat unchanged (docs/ai/05-agents-and-skills.md §2.3) — over the MCP connector the
+/// in-portal chat unchanged (docs/ai/10-mcp-connector.md §2d) — over the MCP connector the
 /// model discovers skills with list_skills instead of a system prompt, and the AgentKey column
 /// now reads as the skill's discipline grouping.</summary>
 internal static class AiSkillTools

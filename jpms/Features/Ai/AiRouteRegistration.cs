@@ -8,7 +8,7 @@ public static class AiRouteRegistration
         queries.Register<ListAgentActivity, IReadOnlyList<AgentActivity>>(
             new QueryRoute("/api/agents/activity", BuildAgentActivityPath));
 
-        // The skill store — the AI Skills admin page (docs/ai/05-agents-and-skills.md §2).
+        // The skill store — the AI Skills admin page (docs/ai/10-mcp-connector.md §2d).
         queries.Register<ListAiSkills, IReadOnlyList<SkillSummary>>(
             new QueryRoute("/api/ai/skills", _ => "/api/ai/skills"));
 

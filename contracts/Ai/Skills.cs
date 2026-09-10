@@ -3,19 +3,18 @@ using Jewel.JPMS.Contracts.Cqrs;
 namespace Jewel.JPMS.Contracts.Ai;
 
 /// <summary>
-/// Skills are the DOMAIN half of an agent (docs/ai/05-agents-and-skills.md): versioned markdown
+/// Skills are the team-owned knowledge the connector serves (docs/ai/10-mcp-connector.md §2d): versioned markdown
 /// manuals — doctrine, method, standing rules — stored in the database and edited in the portal by
-/// the person who owns the discipline. The agent scaffolding (tools, dialogs, the turn loop) is
-/// hard-coded; the construction-industry knowledge is a skill, and updating it is a portal action,
-/// not a deploy.
+/// the person who owns the discipline. The connector's tools and actions are hard-coded; the
+/// construction-industry knowledge is a skill, and updating it is a portal action, not a deploy.
 ///
-/// <para>Format follows agentskills.io, which Nigel's pack already uses: a name, a description
+/// <para>Format follows agentskills.io: a name, a description
 /// (what the orchestrator routes on), a markdown body, and optional reference documents loaded on
 /// demand by the model via load_skill / load_skill_reference.</para>
 /// </summary>
 public sealed record SkillSummary(
     string SkillKey,
-    /// <summary>The agent it belongs to (AgentCatalogue key), or "shared" — pinned for EVERY agent.</summary>
+    /// <summary>The discipline it belongs to (a SkillDisciplines key), or "shared" for house-wide knowledge.</summary>
     string AgentKey,
     string DisplayName,
     string Description,

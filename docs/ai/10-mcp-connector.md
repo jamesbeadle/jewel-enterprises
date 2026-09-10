@@ -1,8 +1,9 @@
 # 10 — The MCP connector: the portal in everyone's own AI tool
 
-*Written 2026-08-27, the day the turn-based side chat (06–09) was retired. This document describes
-what replaced it and why, how the pieces fit, and how to extend it. It supersedes 04–09 as the
-description of how AI reaches JPMS; those documents remain as the historical record of the chat.*
+*Written 2026-08-27, the day the in-portal chat was retired, and the one description of how AI
+reaches JPMS. The chat's own documents (00–09), its agent registry and its AI Agents page were
+removed on 2026-09-10; the skill store and the AI Skills / AI Actions pages are what remains of
+that design (see 12-connector-weakness-audit.md for why).*
 
 ## 1. The decision
 

@@ -1041,20 +1041,6 @@ Modals: none — disconnect confirmation is inline, not a dialog.
 
 Modals: none — rename and delete are both inline row states, not dialogs.
 
-### AI Agents — `/admin/agents`
-`Pages/AiAgentsAdmin.razor` (247 lines) — live read of `AgentCatalogue`, each agent card merged with its skills from the store; admin/MD/FD only.
-
-- AuthGate ⚠️ (manual preamble) → not-available text panel 🔒 for non-CanSee
-- PageHeader ⚠️ — Eyebrow "Assistant" · Title "AI agents" · two explanatory Subtitle paragraphs
-- Agent card list 🔒 (foreach over code-owned catalogue, not a store — needs no gate):
-  - Panel ✅-shaped 🔒 per agent — header (DisplayName, agent-key Badge ⚠️, "FRONT OF HOUSE" Badge for orchestrator ⚠️), Description, "Available to" role list
-  - "Engages on" / "Starts automatically on" tag rows — Badge ⚠️ chips
-  - `<details>` disclosure 🔒 "Working instructions & what 'done' means" — PromptFragment + DoneMeans text
-  - Skills sub-panel 🔒 — header + "Add a skill" link, then: "Loading…" text / EmptyState 🔒 / list of skill rows (KeyValueList-ish clickable rows ⚠️ — name, shared-tag, description, Pinned/On-demand + version + off Badge)
-  - Trailing greyed "Chaser & Mailbox Triage" card 🔒 — declared-but-not-built placeholder, "autonomous · not built yet" Badge
-  - Footer note 🔒 linking to Agent Activity
-- Modals: none
-
 ### AI Skills Admin — `/admin/skills`
 `Pages/AiSkillsAdmin.razor` (280 lines) — the skill-store admin: list of skills, and a full markdown editor for one skill plus its reference documents.
 

@@ -7,9 +7,9 @@ namespace Jewel.JPMS.Contracts.Ai;
 /// apply there, and what is deliberately done elsewhere. Loaded on demand through the
 /// load_page_guide tool, never pinned — sixty guides in every prompt would drown the turn.
 ///
-/// <para>Guides are developer-owned mechanics, same side of the ownership split as
-/// <see cref="AgentCatalogue"/>: a page change and its guide change ship in the same commit.
-/// Domain judgement stays in skills.</para>
+/// <para>Guides are developer-owned mechanics, same side of the ownership split as the tool
+/// catalogue: a page change and its guide change ship in the same commit. Domain judgement stays
+/// in skills.</para>
 /// </summary>
 public sealed record PageGuide(
     /// <summary>The route template in the site map's own spelling ("/projects/{project}/requests").
