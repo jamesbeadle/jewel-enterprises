@@ -63,16 +63,16 @@ public sealed record RunningCell(MonthCell Own, decimal CumIncome, decimal CumPr
 
 public sealed record MovementRow(
     Project Project,
-    IReadOnlyList<RunningCell> MonthCells,  // the window's month ends, oldest first
-    MonthCell Window,                       // the six months' own figures taken together (the Δ cell's hover)
-    decimal? WindowDelta,                   // running % now minus six months ago — "6-mo Δ" (null when there was no % back then)
+    IReadOnlyList<RunningCell> MonthCells,  // the month ends on screen, oldest first — the latest six, or an earlier page of six
+    MonthCell Window,                       // the LATEST six months' own figures taken together (the Δ cell's hover) — never the page on screen
+    decimal? WindowDelta,                   // running % now minus six months ago — "6-mo Δ" (null when there was no % back then); to date whichever page is on screen
     decimal? RunningPercent,                // running % to date — "Position now"
     decimal PositionMoney,                  // cumulative profit £ (the memo line)
     decimal MoneySixMonthDelta,             // £ over the window — the trajectory's headline
     bool Stale);
 
 public sealed record MovementModel(
-    IReadOnlyList<DateTime> Months,
+    IReadOnlyList<DateTime> Months,            // the month columns on screen — paged back six at a time from the latest (2026-09-10)
     IReadOnlyList<MovementRow> Rows,
     IReadOnlyList<RunningCell> ColumnTotals,   // the combined book to date, per month end
     MonthCell TotalWindow,

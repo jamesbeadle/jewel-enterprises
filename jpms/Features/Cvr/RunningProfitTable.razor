@@ -18,8 +18,8 @@
                 {
                     <th class="text-center whitespace-nowrap">@month.ToString("MMM yy")</th>
                 }
-                <th class="text-center whitespace-nowrap">6-mo Δ</th>
-                <th class="text-center whitespace-nowrap">Position now</th>
+                <th class="text-center whitespace-nowrap" title="Running % now against six months ago — the job to date, not the months on screen">6-mo Δ</th>
+                <th class="text-center whitespace-nowrap" title="The job to date, whichever months are on screen">Position now</th>
             </tr>
         </thead>
         <tbody>
@@ -63,7 +63,7 @@
                         }
                     }
                     <td class="text-center text-xs font-semibold tabular-nums @ProfitClass(row.WindowDelta ?? 0m)"
-                        title="@($"running % now vs 6 months ago · the window itself: invoiced {MoneyCompact(row.Window.Income)} · profit {SignedMoneyCompact(row.Window.Profit)}")">
+                        title="@($"running % now vs 6 months ago — the job to date, whichever months are on screen · the latest six months: invoiced {MoneyCompact(row.Window.Income)} · profit {SignedMoneyCompact(row.Window.Profit)}")">
                         @(row.WindowDelta is decimal windowDelta ? SignedPp(windowDelta) : "—")
                     </td>
                     <td class="text-center rounded text-xs font-semibold whitespace-nowrap border @ProfitClass(row.RunningPercent ?? 0m)">
@@ -106,7 +106,7 @@
                         </td>
                     }
                     <td class="text-center text-xs border-t tabular-nums @ProfitClass(Movement.TotalWindowDelta ?? 0m)"
-                        title="@($"running % now vs 6 months ago · the window itself: invoiced {MoneyCompact(Movement.TotalWindow.Income)} · profit {SignedMoneyCompact(Movement.TotalWindow.Profit)}")">
+                        title="@($"running % now vs 6 months ago — the book to date, whichever months are on screen · the latest six months: invoiced {MoneyCompact(Movement.TotalWindow.Income)} · profit {SignedMoneyCompact(Movement.TotalWindow.Profit)}")">
                         @(Movement.TotalWindowDelta is decimal totalWindowDelta ? SignedPp(totalWindowDelta) : "—")
                     </td>
                     <td class="text-center text-xs border-t whitespace-nowrap @ProfitClass(Movement.TotalRunningPercent ?? 0m)">

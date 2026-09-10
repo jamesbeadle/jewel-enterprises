@@ -16,7 +16,10 @@
    the table's own row order and owns the labour-accrual overlay and the low-invoicing floor;
    the basis switch and the floor live here because this is the first Xero panel a reader
    meets, and both are bound back to the page because every Xero panel reads the basis and the
-   export reads the floor. *@
+   export reads the floor. The ‹ › page the six month columns back and forward in time (Jeremy,
+   2026-09-10: "go back further… see what the run rate was prior"), a page of six at a time;
+   the page owns the window and the bounds, this only renders the controls. "6-mo Δ" and
+   "Position now" never move with the page — they are the job to date. *@
 <div class="panel p-5 mb-6">
     <div class="flex items-start justify-between gap-x-6 gap-y-1 flex-wrap">
         <div>
@@ -29,6 +32,21 @@
             </p>
         </div>
         <div class="flex items-center gap-x-5 gap-y-1 flex-wrap">
+            @* Paging the months: six earlier, six later, back to the latest six. Controls, never
+               gated — a page with nothing to show is simply not offered (Disabled). *@
+            <Toolbar>
+                <ToolbarButton Icon="chevron-left" Label="Earlier — the six months before"
+                               Disabled="@(!CanPageEarlier)" OnClick="OnPageEarlier" />
+                <span class="text-xs text-content-subtle tabular-nums whitespace-nowrap px-1"
+                      title="@(IsLatestWindow ? "The latest six months" : "Six earlier months — 6-mo Δ and Position now are still the job to date")">
+                    @(Movement.Months[0].ToString("MMM yy")) – @(Movement.Months[^1].ToString("MMM yy"))
+                </span>
+                <ToolbarButton Icon="chevron-right" Label="Later — the six months after"
+                               Disabled="@IsLatestWindow" OnClick="OnPageLater" />
+                <ToolbarDivider />
+                <ToolbarButton Icon="calendar-today" Label="Back to the latest six months"
+                               Disabled="@IsLatestWindow" OnClick="OnPageToNow" />
+            </Toolbar>
             @* The basis switch for every Xero panel on the page (grid, trajectory, cumulative
                charts) — a control, so never gated. Default OFF: pure Xero, exactly what the
                accountant reconciles. ON overlays approved timesheet cost that no Xero-approved
@@ -59,8 +77,8 @@
         <span class="text-content-muted">Main figure</span> — the whole job to that month end:
         cumulative profit (income less cost of sales less overheads tracked to the site, in Xero)
         over cumulative invoicing, exactly the accountant's "Running % Profit" row — so the row
-        reads as the project's trend, and the last month always agrees with "Position now" (the £
-        beneath it is the profit it is made of).
+        reads as the project's trend, and on the latest page the last month always agrees with
+        "Position now" (the £ beneath it is the profit it is made of).
         <span class="text-content-muted">Small print</span> — that month on its own: the month's
         profit over the month's invoicing, then the month's profit or loss in £. ▲ or ▼ after the
         month's margin says it ran above or below the job's running % at the end of the month
@@ -75,7 +93,9 @@
         <span class="text-content-muted">Hover</span> a cell for the month's invoicing (so the
         margin can be checked), what the month did to the running % in points, and the position
         to date. "6-mo Δ" is the running % now against six months ago — "—" where the job wasn't
-        invoiced back then. "n/a" is a job with costs but no invoicing at all yet — no honest
+        invoiced back then. ‹ › page the month columns back six months at a time to see the run
+        rate before; "6-mo Δ" and "Position now" stay the job to date whichever months are on
+        screen, so an earlier page reads "where it was, where it is now". "n/a" is a job with costs but no invoicing at all yet — no honest
         percentage exists; the £ is beneath. "—" is a month before anything happened. Young jobs
         swing wildly by nature — deposits against little cost read absurdly high — so read them by
         the £, not the %. This grid reports the
@@ -115,6 +135,13 @@
     /// <summary>The low-invoicing floor: a month invoicing under it shows its £ only. Bound to the page, which builds the model (and the export) from it.</summary>
     [Parameter] public decimal MonthPercentFloor { get; set; } = RunningMovement.DefaultMonthPercentFloor;
     [Parameter] public EventCallback<decimal> MonthPercentFloorChanged { get; set; }
+
+    /// <summary>Paging the month columns — the page owns the window; these are its bounds and its moves.</summary>
+    [Parameter] public bool IsLatestWindow { get; set; } = true;
+    [Parameter] public bool CanPageEarlier { get; set; }
+    [Parameter] public EventCallback OnPageEarlier { get; set; }
+    [Parameter] public EventCallback OnPageLater { get; set; }
+    [Parameter] public EventCallback OnPageToNow { get; set; }
 
     /// <summary>The host's labour-accrual overlay, handed on to the grid cell by cell.</summary>
     [Parameter, EditorRequired] public Func<string, DateTime, string> AccrualHover { get; set; } = default!;

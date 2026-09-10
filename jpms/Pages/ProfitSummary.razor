@@ -125,6 +125,8 @@
             <RunningProfitPanel Movement="movement" BasisLabel="@BasisLabel"
                                 @bind-IncludeLabourAccrual="includeLabourAccrual"
                                 @bind-MonthPercentFloor="monthPercentFloor"
+                                IsLatestWindow="IsLatestWindow" CanPageEarlier="CanPageEarlier"
+                                OnPageEarlier="PageEarlier" OnPageLater="PageLater" OnPageToNow="PageToNow"
                                 AccrualHover="AccrualHover"
                                 AccrualOwnFor="AccrualOwnFor"
                                 AccrualToDateFor="AccrualToDateFor" />
@@ -171,8 +173,10 @@
         }
         </LoadGate>
 
+        @* The trajectory cards read the LATEST six months whichever page the grid is on: their
+           headline is the position now, and the card sits over the table's to-date figures. *@
         @if (selectionInitialised && SelectedProjects.Count > 0
-             && SitePnl.Current is { IsConfigured: true } && MovementFor(GridProjects) is { } trend)
+             && SitePnl.Current is { IsConfigured: true } && MovementFor(GridProjects, ThisMonth) is { } trend)
         {
             <TrajectoryPanel Cards="TrajectoriesFor(trend)" BasisLabel="@BasisLabel" />
         }
