@@ -7,8 +7,9 @@
     nothing left to value) with its next expected valuation date, soonest first (projects
     without a date sit at the bottom as "Not set"). Overdue dates
     are flagged red, dates within the next seven days amber, so the FD can see at a glance which
-    valuations need chasing. Rows link to the project; the date itself is set from the project's
-    Setup tab.
+    valuations need chasing. Rows link to the project's Valuation Report — where the claim is
+    raised (ValuationDue.ProjectRoute, the same landing as the overdue-filtered portfolio); the
+    date itself is set from the project's Settings tab.
 *@
 
 <section class="panel overflow-hidden">
@@ -43,7 +44,7 @@
                 {
                     <tr class="last:border-b-0 hover:bg-surface-raised/60">
                         <td>
-                            <a href="@($"/projects/{project.ProjectId}/financials")" class="hover:underline underline-offset-4">
+                            <a href="@ValuationDue.ProjectRoute(project.ProjectId)" class="hover:underline underline-offset-4">
                                 <span class="font-mono text-xs text-content-subtle mr-2">@project.Reference</span>
                                 <span class="text-content font-medium">@project.Name</span>
                             </a>

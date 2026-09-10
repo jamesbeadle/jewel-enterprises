@@ -50,7 +50,10 @@
     {
         <p class="text-sm text-content-subtle italic mb-3">No live project has an overdue valuation date. Dates are set on each project's Settings tab.</p>
     }
-    <ProjectsTable Projects="VisibleProjects" />
+    @* Filtered to overdue valuations, a row is a claim to chase — it lands on the project's
+       Valuation Report. Unfiltered, the row keeps the role's default project tab. *@
+    <ProjectsTable Projects="VisibleProjects"
+                   RowHref="@(overdueValuationsOnly ? OverdueRowHref : null)" />
 
     <Modal IsOpen="showForm" Title="New project" ShowFooter="false" OnCancel="CloseForm">
         <NewProjectForm OnCreated="HandleCreated" OnClosed="CloseForm" />
@@ -71,6 +74,9 @@
             .ToList();
 
     private int OverdueValuationCount => ActiveProjects.Count(ValuationDue.IsOverdue);
+
+    private static readonly Func<Project, string> OverdueRowHref =
+        project => ValuationDue.ProjectRoute(project.ProjectId);
 
     // Mirrors the server-side authorisation (CreateProjectShellAuthorisation):
     // Managing Director and Project Manager. Master admins hold every role and so qualify too.

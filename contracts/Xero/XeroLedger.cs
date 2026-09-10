@@ -99,8 +99,30 @@ public sealed record ListXeroLedgerLines(XeroAllocationStatus? Status = null)
 /// </summary>
 public sealed record GetXeroLedgerCounts : IQuery<XeroLedgerCounts>;
 
-/// <summary>One count per allocation status, for the allocation page's tab bar.</summary>
-public sealed record XeroLedgerCounts(int Unallocated, int Allocated, int Bucketed, int Ignored, int Disputed = 0)
+/// <summary>
+/// One count per allocation status, for the allocation page's tab bar — plus how the Unallocated
+/// status breaks down once the page's own partition is applied (2026-09-10).
+///
+/// <see cref="Unallocated"/> is every line still in that status, and it is NOT the number of
+/// things anyone has to do: the allocation page sorts those lines into the ordinary queue, the
+/// Labour section (worker bills settled by timesheets — hidden once covered) and the Work Order
+/// bills cards (one Approve per bill, not per line) before it shows a single one. The home tile
+/// used to show the raw status count, which read 44 against a page whose tabs added up to 15. The
+/// partition is computed on the server with the same recognition the unallocated read uses, so
+/// the tile and the tab bar can never disagree.
+/// </summary>
+/// <param name="ToCode">Unallocated lines in the ordinary queue — nothing recognised them as labour
+/// or as a Work Order bill — whether or not Xero's tracking suggests a project (the page's
+/// "Unallocated (n)" tab plus its per-project tabs). Each wants a project and cost centre.</param>
+/// <param name="WorkOrderBills">Bills (not lines) matched to an open work order, each waiting for
+/// one Approve on the Work Order bills tab.</param>
+/// <param name="LabourOutstanding">Worker-supplier lines recognised as labour but not yet covered
+/// by timesheets — the Labour tab's number.</param>
+/// <param name="LabourCovered">Worker-supplier lines already covered by timesheets. Nothing to do;
+/// the page keeps them behind "show covered".</param>
+public sealed record XeroLedgerCounts(
+    int Unallocated, int Allocated, int Bucketed, int Ignored, int Disputed = 0,
+    int ToCode = 0, int WorkOrderBills = 0, int LabourOutstanding = 0, int LabourCovered = 0)
 {
     public int For(XeroAllocationStatus status) => status switch
     {
@@ -111,6 +133,13 @@ public sealed record XeroLedgerCounts(int Unallocated, int Allocated, int Bucket
         XeroAllocationStatus.Disputed    => Disputed,
         _ => 0
     };
+
+    /// <summary>
+    /// What the allocation page will actually ask someone to do: lines to code, bills to approve
+    /// and labour lines still to be marked. This — never <see cref="Unallocated"/> — is the
+    /// number a "to allocate" tile shows.
+    /// </summary>
+    public int AwaitingAction => ToCode + WorkOrderBills + LabourOutstanding;
 
     public static readonly XeroLedgerCounts Empty = new(0, 0, 0, 0, 0);
 }

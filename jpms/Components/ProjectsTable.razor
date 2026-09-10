@@ -16,7 +16,7 @@
             <tbody>
                 @foreach (var project in Projects)
                 {
-                    <tr class="is-clickable" @onclick="() => OpenProject(project.ProjectId)">
+                    <tr class="is-clickable" @onclick="() => OpenProject(project)">
                         <td class="font-mono text-xs">@project.Reference</td>
                         <td class="text-content font-medium">@project.Name</td>
                         <td class="hidden md:table-cell">@project.ClientName</td>
@@ -33,6 +33,11 @@
 @code {
     [Parameter, EditorRequired] public IReadOnlyList<Project> Projects { get; set; } = Array.Empty<Project>();
 
-    private void OpenProject(string projectId) =>
-        Nav.NavigateTo($"/projects/{projectId}");
+    // Where a row lands. Unset, the bare project URL — the role's default first tab. A list
+    // shown FOR a reason (the overdue-valuations filter) sets this to the page where that work
+    // gets done, so the reader arrives on the record they came for rather than the default tab.
+    [Parameter] public Func<Project, string>? RowHref { get; set; }
+
+    private void OpenProject(Project project) =>
+        Nav.NavigateTo(RowHref?.Invoke(project) ?? $"/projects/{project.ProjectId}");
 }

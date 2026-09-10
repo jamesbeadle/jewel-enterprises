@@ -28,4 +28,10 @@ public static class ValuationDue
     // The portfolio page filtered to the overdue rows — where the dashboard tile lands.
     public const string OverdueFilterQuery = "valuations=overdue";
     public const string OverdueFilterRoute = "/projects?" + OverdueFilterQuery;
+
+    // Where a valuation is chased: the project's live Valuation Report, where the claim is raised.
+    // A list reached BECAUSE valuations are due (the overdue-filtered portfolio, the dashboard's
+    // Upcoming valuations panel) lands its rows here, never on the role's default project tab —
+    // the FD clicking an overdue project wants the claim, not the RFI register (2026-09-10).
+    public static string ProjectRoute(string projectId) => $"/projects/{projectId}/valuation";
 }

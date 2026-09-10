@@ -96,9 +96,14 @@ public partial class RoleHome
                 tiles.Add(new("Control Centre inbox", toTriage.ToString(), "/control-centre",
                     Note: toTriage > 0 ? "awaiting routing" : "queue clear", IsBad: toTriage > 0));
 
+            // The Xero figure is what the allocation page will actually ask for — lines to code,
+            // Work Order bills to approve, labour lines to mark — NOT the raw Unallocated status
+            // count (2026-09-10: that read 44 against a tab bar adding up to 15, the difference
+            // being worker bills already covered by timesheets, which the page hides). The
+            // server partitions with the page's own recognition, so the two can't disagree.
             if (ShowAllocation && XeroLedger.Counts is { } ledger)
-                tiles.Add(new("Xero lines to allocate", ledger.Unallocated.ToString(), "/finance/allocation",
-                    Note: ledger.Unallocated > 0 ? "awaiting coding" : "all coded", IsBad: ledger.Unallocated > 0));
+                tiles.Add(new("Xero costs to allocate", ledger.AwaitingAction.ToString(), "/finance/allocation",
+                    Note: AllocationNote(ledger), IsBad: ledger.AwaitingAction > 0));
 
             // Fed by MyTodosPanel's one fetch (OnOpenItemsChanged), so the tiles and the panel
             // below can never disagree about what is open.
@@ -146,6 +151,19 @@ public partial class RoleHome
     // Same definition as MyTodosPanel.IsOverdue — the tile and the row highlight must agree.
     private static bool IsOverdueTodo(TodoItem item) =>
         !item.IsComplete && item.DueAt is not null && item.DueAt.Value < DateTimeOffset.Now.Date;
+
+    // The Xero tile's second line: what the figure is made of, in the page's own words — the
+    // tabs a reader will meet when they click through ("13 lines · 2 WO bills"). Only the parts
+    // that are non-zero; "all coded" when nothing is waiting.
+    private static string AllocationNote(XeroLedgerCounts ledger)
+    {
+        if (ledger.AwaitingAction == 0) return "all coded";
+        var parts = new List<string>(3);
+        if (ledger.ToCode > 0) parts.Add(ledger.ToCode == 1 ? "1 line" : $"{ledger.ToCode} lines");
+        if (ledger.WorkOrderBills > 0) parts.Add(ledger.WorkOrderBills == 1 ? "1 WO bill" : $"{ledger.WorkOrderBills} WO bills");
+        if (ledger.LabourOutstanding > 0) parts.Add(ledger.LabourOutstanding == 1 ? "1 labour line" : $"{ledger.LabourOutstanding} labour lines");
+        return string.Join(" · ", parts);
+    }
 
     // ---- Navigation cards -------------------------------------------------------------------------
 

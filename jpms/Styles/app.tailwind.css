@@ -197,7 +197,16 @@
     }
 
     .data-table td {
-        @apply h-12 px-6 py-4 bg-surface border-b border-line-strong text-content-muted align-middle;
+        @apply h-12 px-6 py-4 bg-surface border-b border-line-strong align-middle;
+    }
+
+    /* The body-text colour sits at ZERO specificity on purpose. `.data-table td` (0,1,1) outranks
+       any single utility (0,1,0), so if the colour lived in the rule above, a cell's own tone —
+       `text-positive` / `text-negative` on a signed figure (Profit / Loss, Overspend, a delta),
+       `text-content` on the trailing money column — would be silently overridden and every
+       figure would read as G4 grey. `:where()` keeps G4 as the default and lets the tone win. */
+    :where(.data-table td) {
+        @apply text-content-muted;
     }
 
     .data-table tbody tr:last-child td {
@@ -217,7 +226,13 @@
     }
 
     .data-table tfoot td {
-        @apply bg-canvas border-t border-line-strong font-semibold text-content;
+        @apply bg-canvas border-t border-line-strong font-semibold;
+    }
+
+    /* Same reason as the body rule: a totals row's signed figures keep their tone. Later in the
+       file than the body rule, so at equal (zero) specificity white wins for the footer. */
+    :where(.data-table tfoot td) {
+        @apply text-content;
     }
 
     .data-table-dense th {
